@@ -1,0 +1,71 @@
+{
+  "auth": {
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "signOut": "Sign Out",
+    "email": "Email",
+    "password": "Password",
+    "googleSignIn": "Sign in with Google",
+    "or": "or",
+    "error": "Sign in error",
+    "success": "Successfully signed in"
+  },
+  "team": {
+    "create": "Create Team",
+    "invite": "Invite Member",
+    "members": "Team Members",
+    "settings": "Team Settings"
+  },
+  "workTypes": {
+    "title": "Work Types",
+    "add": "Add Work Type",
+    "edit": "Edit",
+    "delete": "Delete",
+    "name": "Name",
+    "unit": "Unit of Measurement"
+  },
+  "locations": {
+    "title": "Locations",
+    "add": "Add Location",
+    "edit": "Edit",
+    "delete": "Delete",
+    "name": "Name",
+    "description": "Description"
+  },
+  "timeTracking": {
+    "start": "Start",
+    "pause": "Pause",
+    "resume": "Resume",
+    "stop": "Stop",
+    "confirmStop": "Do you really want to finish work and stop the timer?",
+    "yes": "Yes",
+    "cancel": "Cancel",
+    "workAmount": "Amount of Work Done"
+  },
+  "reports": {
+    "title": "Reports",
+    "export": "Export to Excel",
+    "filter": {
+      "year": "Year",
+      "month": "Month",
+      "day": "Day"
+    },
+    "columns": {
+      "date": "Date",
+      "worker": "Worker",
+      "location": "Location",
+      "workType": "Work Type",
+      "timeSpent": "Time Spent",
+      "workAmount": "Work Amount"
+    }
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success"
+  }
+} 

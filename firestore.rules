@@ -1,0 +1,62 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Перевірка чи користувач авторизований
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Перевірка чи користувач є членом команди
+    function isTeamMember(teamId) {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/teams/$(teamId)/members/$(request.auth.uid));
+    }
+    
+    // Перевірка чи користувач є адміністратором команди
+    function isTeamAdmin(teamId) {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/teams/$(teamId)).data.adminId == request.auth.uid;
+    }
+    
+    // Правила для користувачів
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || 
+        exists(/databases/$(database)/documents/teams/{teamId}/members/$(request.auth.uid)));
+      allow write: if request.auth.uid == userId;
+    }
+    
+    // Правила для команд
+    match /teams/{teamId} {
+      allow read: if isTeamMember(teamId);
+      allow create: if isAuthenticated();
+      allow update, delete: if isTeamAdmin(teamId);
+      
+      // Правила для учасників команди
+      match /members/{memberId} {
+        allow read: if isTeamMember(teamId);
+        allow write: if isTeamAdmin(teamId);
+      }
+      
+      // Правила для локацій
+      match /locations/{locationId} {
+        allow read: if isTeamMember(teamId);
+        allow write: if isTeamMember(teamId);
+      }
+      
+      // Правила для видів робіт
+      match /workTypes/{workTypeId} {
+        allow read: if isTeamMember(teamId);
+        allow write: if isTeamMember(teamId);
+      }
+      
+      // Правила для записів роботи
+      match /workRecords/{recordId} {
+        allow read: if isTeamMember(teamId);
+        allow create: if isTeamMember(teamId) && request.resource.data.userId == request.auth.uid;
+        allow update, delete: if isTeamMember(teamId) && (
+          resource.data.userId == request.auth.uid || isTeamAdmin(teamId)
+        );
+      }
+    }
+  }
+} 

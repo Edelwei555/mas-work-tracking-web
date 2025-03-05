@@ -1,0 +1,18 @@
+.app {
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+.app-header {
+  background-color: white;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.app-main {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+} 
