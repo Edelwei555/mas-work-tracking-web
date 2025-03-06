@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getAuth, Auth } from 'firebase/auth';
+import { getFirestore, Firestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   // TODO: Додати конфігурацію Firebase
@@ -12,8 +12,20 @@ const firebaseConfig = {
   appId: process.env.REACT_APP_FIREBASE_APP_ID
 };
 
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+// Логуємо конфігурацію для перевірки
+console.log('Firebase конфігурація:', {
+  authDomain: firebaseConfig.authDomain,
+  projectId: firebaseConfig.projectId
+});
 
+const app = initializeApp(firebaseConfig);
+console.log('Firebase успішно ініціалізовано');
+
+const auth: Auth = getAuth(app);
+console.log('Auth сервіс ініціалізовано');
+
+const db: Firestore = getFirestore(app);
+console.log('Firestore сервіс ініціалізовано');
+
+export { auth, db };
 export default app; 

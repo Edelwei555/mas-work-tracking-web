@@ -1,8 +1,15 @@
 [build]
-command = "CI=false npm run build"
+command = "CI="" npm install --legacy-peer-deps && npm run build"
 publish = "build"
+
+[build.environment]
+CI = ""
 
 [[redirects]]
 from = "/*"
 to = "/index.html"
-status = 200 
+status = 200
+
+# Автоматично скасовувати старі білди при новому коміті
+[build.queue]
+stop_previous_build = true 

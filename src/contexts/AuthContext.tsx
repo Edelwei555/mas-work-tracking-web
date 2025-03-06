@@ -1,14 +1,19 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import {
   User,
+  Auth,
   GoogleAuthProvider,
   signInWithPopup,
+  browserPopupRedirectResolver,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
   onAuthStateChanged
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
+
+// Перевіряємо, що auth не undefined і правильного типу
+const firebaseAuth = auth as Auth;
 
 interface AuthContextType {
   currentUser: User | null;
@@ -34,29 +39,80 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   const signInWithGoogle = async () => {
-    const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
+    try {
+      console.log('Починаємо Google автентифікацію...');
+      
+      const provider = new GoogleAuthProvider();
+      console.log('Google провайдер створено');
+      
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
+      console.log('Встановлено параметри провайдера');
+      
+      console.log('Відкриваємо вікно автентифікації...');
+      const result = await signInWithPopup(firebaseAuth, provider, browserPopupRedirectResolver);
+      
+      console.log('Успішна автентифікація:', {
+        email: result.user.email,
+        displayName: result.user.displayName,
+        uid: result.user.uid
+      });
+    } catch (error: any) {
+      console.error('Помилка Google автентифікації:', {
+        code: error.code,
+        message: error.message,
+        stack: error.stack
+      });
+      throw error;
+    }
   };
 
   const signInWithEmail = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
+    try {
+      console.log('Починаємо email автентифікацію...');
+      const result = await signInWithEmailAndPassword(firebaseAuth, email, password);
+      console.log('Успішна email автентифікація:', result.user.email);
+    } catch (error: any) {
+      console.error('Помилка email автентифікації:', error);
+      throw error;
+    }
   };
 
   const signUpWithEmail = async (email: string, password: string) => {
-    await createUserWithEmailAndPassword(auth, email, password);
+    try {
+      console.log('Починаємо реєстрацію через email...');
+      const result = await createUserWithEmailAndPassword(firebaseAuth, email, password);
+      console.log('Успішна реєстрація:', result.user.email);
+    } catch (error: any) {
+      console.error('Помилка реєстрації:', error);
+      throw error;
+    }
   };
 
   const signOut = async () => {
-    await firebaseSignOut(auth);
+    try {
+      console.log('Починаємо вихід з системи...');
+      await firebaseSignOut(firebaseAuth);
+      console.log('Успішний вихід з системи');
+    } catch (error: any) {
+      console.error('Помилка виходу з системи:', error);
+      throw error;
+    }
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    console.log('Встановлюємо слухача зміни стану автентифікації...');
+    const unsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
+      console.log('Зміна стану автентифікації:', user ? `Користувач ${user.email}` : 'Не авторизований');
       setCurrentUser(user);
       setLoading(false);
     });
 
-    return unsubscribe;
+    return () => {
+      console.log('Видаляємо слухача зміни стану автентифікації');
+      unsubscribe();
+    };
   }, []);
 
   const value = {
