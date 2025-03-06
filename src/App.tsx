@@ -22,8 +22,18 @@ interface PrivateRouteProps {
 }
 
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
-  const { currentUser } = useAuth();
-  return currentUser ? <>{children}</> : <Navigate to="/login" />;
+  const { currentUser, loading } = useAuth();
+  console.log('PrivateRoute перевірка:', { 
+    isAuthenticated: !!currentUser, 
+    loading,
+    path: window.location.pathname 
+  });
+
+  if (loading) {
+    return <div>Завантаження...</div>;
+  }
+
+  return currentUser ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
 const App: React.FC = () => {
@@ -32,7 +42,14 @@ const App: React.FC = () => {
       <AuthProvider>
         <div className="app">
           <Routes>
-            <Route path="/login" element={<LoginForm />} />
+            <Route 
+              path="/login" 
+              element={
+                <PublicRoute>
+                  <LoginForm />
+                </PublicRoute>
+              } 
+            />
             <Route
               path="/"
               element={
@@ -42,17 +59,38 @@ const App: React.FC = () => {
               }
             >
               <Route index element={<Navigate to="/time-tracking" replace />} />
+              <Route path="time-tracking" element={<TimeTracking />} />
               <Route path="teams" element={<Teams />} />
               <Route path="work-types" element={<WorkTypes />} />
               <Route path="locations" element={<Locations />} />
-              <Route path="time-tracking" element={<TimeTracking />} />
               <Route path="reports" element={<Reports />} />
             </Route>
+            <Route path="*" element={<Navigate to="/time-tracking" replace />} />
           </Routes>
         </div>
       </AuthProvider>
     </BrowserRouter>
   );
+};
+
+interface PublicRouteProps {
+  children: React.ReactNode;
+}
+
+const PublicRoute: React.FC<PublicRouteProps> = ({ children }) => {
+  const { currentUser, loading } = useAuth();
+  
+  console.log('PublicRoute перевірка:', { 
+    isAuthenticated: !!currentUser, 
+    loading,
+    path: window.location.pathname 
+  });
+
+  if (loading) {
+    return <div>Завантаження...</div>;
+  }
+
+  return currentUser ? <Navigate to="/time-tracking" replace /> : <>{children}</>;
 };
 
 export default App;

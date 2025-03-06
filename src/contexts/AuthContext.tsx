@@ -3,8 +3,7 @@ import {
   User,
   Auth,
   GoogleAuthProvider,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
@@ -43,162 +42,143 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Встановлюємо персистентність при ініціалізації
   useEffect(() => {
-    const setupPersistence = async () => {
+    const setupAuth = async () => {
       try {
-        console.log('Налаштування персистентності...');
         await setPersistence(firebaseAuth, browserLocalPersistence);
         console.log('Встановлено локальну персистентність');
       } catch (error) {
-        console.error('Помилка встановлення персистентності:', error);
+        console.error('Помилка при налаштуванні персистентності:', error);
+      } finally {
+        setLoading(false);
       }
     };
-    setupPersistence();
+
+    setupAuth();
   }, []);
 
   useEffect(() => {
-    const handleRedirectResult = async () => {
-      try {
-        console.log('Перевіряємо результат редіректу...', {
-          pathname: location.pathname,
-          search: location.search
+    const unsubscribe = onAuthStateChanged(firebaseAuth, 
+      (user) => {
+        console.log('Зміна стану автентифікації:', {
+          isAuthenticated: !!user,
+          email: user?.email,
+          currentPath: location.pathname,
+          timestamp: new Date().toISOString()
         });
-        
-        const result = await getRedirectResult(firebaseAuth);
-        console.log('Отримано результат редіректу:', result ? 'успішно' : 'немає результату');
-        
-        if (result) {
-          console.log('Успішна автентифікація після редіректу:', {
-            email: result.user.email,
-            displayName: result.user.displayName,
-            uid: result.user.uid,
-            isAnonymous: result.user.isAnonymous,
-            emailVerified: result.user.emailVerified
+
+        if (user) {
+          console.log('Користувач автентифікований:', {
+            uid: user.uid,
+            email: user.email,
+            emailVerified: user.emailVerified,
+            displayName: user.displayName,
+            photoURL: user.photoURL
           });
           
-          // Перевіряємо поточний шлях
+          setCurrentUser(user);
+          
           if (location.pathname === '/login') {
-            console.log('Перенаправляємо на головну сторінку...');
-            navigate('/');
+            console.log('Спроба перенаправлення на /time-tracking...');
+            try {
+              navigate('/time-tracking', { replace: true });
+              console.log('Перенаправлення виконано успішно');
+            } catch (error) {
+              console.error('Помилка при перенаправленні:', error);
+            }
           }
         } else {
-          console.log('Немає результату редіректу');
+          console.log('Користувач не автентифікований');
+          setCurrentUser(null);
+          
+          if (location.pathname !== '/login') {
+            console.log('Спроба перенаправлення на /login...');
+            try {
+              navigate('/login', { replace: true });
+              console.log('Перенаправлення виконано успішно');
+            } catch (error) {
+              console.error('Помилка при перенаправленні:', error);
+            }
+          }
         }
-      } catch (error: any) {
-        console.error('Помилка при обробці результату редіректу:', {
-          code: error.code,
-          message: error.message,
-          stack: error.stack,
-          pathname: location.pathname
-        });
+      },
+      (error) => {
+        console.error('Помилка при зміні стану автентифікації:', error);
       }
-    };
+    );
 
-    handleRedirectResult();
-  }, [navigate, location]);
+    return () => {
+      console.log('Відписка від слухача автентифікації');
+      unsubscribe();
+    };
+  }, [navigate, location.pathname]);
 
   const signInWithGoogle = async () => {
     try {
-      setLoading(true);
-      console.log('Починаємо Google автентифікацію...');
-      
+      console.log('Починаємо Google автентифікацію через popup...');
       const provider = new GoogleAuthProvider();
       provider.addScope('email');
       provider.addScope('profile');
-      console.log('Google провайдер створено');
       
-      provider.setCustomParameters({
-        prompt: 'select_account'
+      const result = await signInWithPopup(firebaseAuth, provider);
+      console.log('Успішна Google автентифікація:', {
+        user: result.user.email,
+        timestamp: new Date().toISOString()
       });
-      console.log('Встановлено параметри провайдера');
-      
-      console.log('Починаємо редірект на сторінку автентифікації Google...');
-      await signInWithRedirect(firebaseAuth, provider);
-      console.log('Редірект виконано');
-    } catch (error: any) {
-      console.error('Помилка Google автентифікації:', {
-        code: error.code,
-        message: error.message,
-        stack: error.stack
-      });
+    } catch (error) {
+      console.error('Помилка Google автентифікації:', error);
       throw error;
-    } finally {
-      setLoading(false);
     }
   };
 
   const signInWithEmail = async (email: string, password: string) => {
     try {
-      setLoading(true);
-      console.log('Починаємо email автентифікацію...');
+      console.log('Починаємо вхід через email...', {
+        email,
+        timestamp: new Date().toISOString()
+      });
+      
       const result = await signInWithEmailAndPassword(firebaseAuth, email, password);
-      console.log('Успішна email автентифікація:', result.user.email);
-      navigate('/');
-    } catch (error: any) {
-      console.error('Помилка email автентифікації:', error);
+      console.log('Успішний вхід через email:', {
+        user: result.user.email,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Помилка входу через email:', error);
       throw error;
-    } finally {
-      setLoading(false);
     }
   };
 
   const signUpWithEmail = async (email: string, password: string) => {
     try {
-      setLoading(true);
-      console.log('Починаємо реєстрацію через email...');
+      console.log('Починаємо реєстрацію через email...', {
+        email,
+        timestamp: new Date().toISOString()
+      });
+      
       const result = await createUserWithEmailAndPassword(firebaseAuth, email, password);
-      console.log('Успішна реєстрація:', result.user.email);
-      navigate('/');
-    } catch (error: any) {
-      console.error('Помилка реєстрації:', error);
+      console.log('Успішна реєстрація через email:', {
+        user: result.user.email,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Помилка реєстрації через email:', {
+        error,
+        timestamp: new Date().toISOString()
+      });
       throw error;
-    } finally {
-      setLoading(false);
     }
   };
 
   const signOut = async () => {
     try {
-      setLoading(true);
-      console.log('Починаємо вихід з системи...');
       await firebaseSignOut(firebaseAuth);
-      console.log('Успішний вихід з системи');
-      navigate('/login');
-    } catch (error: any) {
-      console.error('Помилка виходу з системи:', error);
+      console.log('Успішний вихід');
+    } catch (error) {
+      console.error('Помилка виходу:', error);
       throw error;
-    } finally {
-      setLoading(false);
     }
   };
-
-  useEffect(() => {
-    console.log('Встановлюємо слухача зміни стану автентифікації...');
-    const unsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
-      console.log('Зміна стану автентифікації:', {
-        isAuthenticated: !!user,
-        email: user?.email,
-        emailVerified: user?.emailVerified,
-        isAnonymous: user?.isAnonymous,
-        currentPath: location.pathname
-      });
-      
-      setCurrentUser(user);
-      setLoading(false);
-      
-      // Якщо користувач не авторизований і не на сторінці логіну, перенаправляємо на логін
-      if (!user && location.pathname !== '/login') {
-        console.log('Перенаправляємо на сторінку логіну...');
-        navigate('/login');
-      }
-    });
-
-    return () => {
-      console.log('Видаляємо слухача зміни стану автентифікації');
-      unsubscribe();
-    };
-  }, [navigate, location]);
 
   const value = {
     currentUser,
