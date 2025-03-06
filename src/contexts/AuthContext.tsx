@@ -13,7 +13,7 @@ import {
   browserLocalPersistence
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 // Перевіряємо, що auth не undefined і правильного типу
 const firebaseAuth = auth as Auth;
@@ -41,11 +41,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Встановлюємо персистентність при ініціалізації
   useEffect(() => {
     const setupPersistence = async () => {
       try {
+        console.log('Налаштування персистентності...');
         await setPersistence(firebaseAuth, browserLocalPersistence);
         console.log('Встановлено локальну персистентність');
       } catch (error) {
@@ -58,16 +60,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const handleRedirectResult = async () => {
       try {
-        console.log('Перевіряємо результат редіректу...');
+        console.log('Перевіряємо результат редіректу...', {
+          pathname: location.pathname,
+          search: location.search
+        });
+        
         const result = await getRedirectResult(firebaseAuth);
+        console.log('Отримано результат редіректу:', result ? 'успішно' : 'немає результату');
+        
         if (result) {
           console.log('Успішна автентифікація після редіректу:', {
             email: result.user.email,
             displayName: result.user.displayName,
-            uid: result.user.uid
+            uid: result.user.uid,
+            isAnonymous: result.user.isAnonymous,
+            emailVerified: result.user.emailVerified
           });
-          // Перенаправляємо на головну сторінку після успішної автентифікації
-          navigate('/');
+          
+          // Перевіряємо поточний шлях
+          if (location.pathname === '/login') {
+            console.log('Перенаправляємо на головну сторінку...');
+            navigate('/');
+          }
         } else {
           console.log('Немає результату редіректу');
         }
@@ -75,14 +89,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('Помилка при обробці результату редіректу:', {
           code: error.code,
           message: error.message,
-          stack: error.stack
+          stack: error.stack,
+          pathname: location.pathname
         });
-        // Можливо, потрібно показати користувачу повідомлення про помилку
       }
     };
 
     handleRedirectResult();
-  }, [navigate]);
+  }, [navigate, location]);
 
   const signInWithGoogle = async () => {
     try {
@@ -90,6 +104,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Починаємо Google автентифікацію...');
       
       const provider = new GoogleAuthProvider();
+      provider.addScope('email');
+      provider.addScope('profile');
       console.log('Google провайдер створено');
       
       provider.setCustomParameters({
@@ -160,12 +176,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     console.log('Встановлюємо слухача зміни стану автентифікації...');
     const unsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
-      console.log('Зміна стану автентифікації:', user ? `Користувач ${user.email}` : 'Не авторизований');
+      console.log('Зміна стану автентифікації:', {
+        isAuthenticated: !!user,
+        email: user?.email,
+        emailVerified: user?.emailVerified,
+        isAnonymous: user?.isAnonymous,
+        currentPath: location.pathname
+      });
+      
       setCurrentUser(user);
       setLoading(false);
       
       // Якщо користувач не авторизований і не на сторінці логіну, перенаправляємо на логін
-      if (!user && window.location.pathname !== '/login') {
+      if (!user && location.pathname !== '/login') {
+        console.log('Перенаправляємо на сторінку логіну...');
         navigate('/login');
       }
     });
@@ -174,7 +198,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Видаляємо слухача зміни стану автентифікації');
       unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, location]);
 
   const value = {
     currentUser,
