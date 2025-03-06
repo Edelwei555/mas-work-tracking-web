@@ -3,8 +3,8 @@ import {
   User,
   Auth,
   GoogleAuthProvider,
-  signInWithPopup,
-  browserPopupRedirectResolver,
+  signInWithRedirect,
+  getRedirectResult,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
@@ -38,6 +38,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    const handleRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(firebaseAuth);
+        if (result) {
+          console.log('Успішна автентифікація після редіректу:', {
+            email: result.user.email,
+            displayName: result.user.displayName,
+            uid: result.user.uid
+          });
+        }
+      } catch (error: any) {
+        console.error('Помилка при обробці результату редіректу:', {
+          code: error.code,
+          message: error.message,
+          stack: error.stack
+        });
+      }
+    };
+
+    handleRedirectResult();
+  }, []);
+
   const signInWithGoogle = async () => {
     try {
       console.log('Починаємо Google автентифікацію...');
@@ -50,14 +73,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       console.log('Встановлено параметри провайдера');
       
-      console.log('Відкриваємо вікно автентифікації...');
-      const result = await signInWithPopup(firebaseAuth, provider, browserPopupRedirectResolver);
-      
-      console.log('Успішна автентифікація:', {
-        email: result.user.email,
-        displayName: result.user.displayName,
-        uid: result.user.uid
-      });
+      console.log('Починаємо редірект на сторінку автентифікації Google...');
+      await signInWithRedirect(firebaseAuth, provider);
+      console.log('Редірект виконано');
     } catch (error: any) {
       console.error('Помилка Google автентифікації:', {
         code: error.code,
