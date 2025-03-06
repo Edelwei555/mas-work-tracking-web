@@ -8,9 +8,12 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
-  onAuthStateChanged
+  onAuthStateChanged,
+  setPersistence,
+  browserLocalPersistence
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
+import { useNavigate } from 'react-router-dom';
 
 // Перевіряємо, що auth не undefined і правильного типу
 const firebaseAuth = auth as Auth;
@@ -37,10 +40,25 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  // Встановлюємо персистентність при ініціалізації
+  useEffect(() => {
+    const setupPersistence = async () => {
+      try {
+        await setPersistence(firebaseAuth, browserLocalPersistence);
+        console.log('Встановлено локальну персистентність');
+      } catch (error) {
+        console.error('Помилка встановлення персистентності:', error);
+      }
+    };
+    setupPersistence();
+  }, []);
 
   useEffect(() => {
     const handleRedirectResult = async () => {
       try {
+        console.log('Перевіряємо результат редіректу...');
         const result = await getRedirectResult(firebaseAuth);
         if (result) {
           console.log('Успішна автентифікація після редіректу:', {
@@ -48,6 +66,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             displayName: result.user.displayName,
             uid: result.user.uid
           });
+          // Перенаправляємо на головну сторінку після успішної автентифікації
+          navigate('/');
+        } else {
+          console.log('Немає результату редіректу');
         }
       } catch (error: any) {
         console.error('Помилка при обробці результату редіректу:', {
@@ -55,14 +77,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           message: error.message,
           stack: error.stack
         });
+        // Можливо, потрібно показати користувачу повідомлення про помилку
       }
     };
 
     handleRedirectResult();
-  }, []);
+  }, [navigate]);
 
   const signInWithGoogle = async () => {
     try {
+      setLoading(true);
       console.log('Починаємо Google автентифікацію...');
       
       const provider = new GoogleAuthProvider();
@@ -83,39 +107,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         stack: error.stack
       });
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
   const signInWithEmail = async (email: string, password: string) => {
     try {
+      setLoading(true);
       console.log('Починаємо email автентифікацію...');
       const result = await signInWithEmailAndPassword(firebaseAuth, email, password);
       console.log('Успішна email автентифікація:', result.user.email);
+      navigate('/');
     } catch (error: any) {
       console.error('Помилка email автентифікації:', error);
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
   const signUpWithEmail = async (email: string, password: string) => {
     try {
+      setLoading(true);
       console.log('Починаємо реєстрацію через email...');
       const result = await createUserWithEmailAndPassword(firebaseAuth, email, password);
       console.log('Успішна реєстрація:', result.user.email);
+      navigate('/');
     } catch (error: any) {
       console.error('Помилка реєстрації:', error);
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
   const signOut = async () => {
     try {
+      setLoading(true);
       console.log('Починаємо вихід з системи...');
       await firebaseSignOut(firebaseAuth);
       console.log('Успішний вихід з системи');
+      navigate('/login');
     } catch (error: any) {
       console.error('Помилка виходу з системи:', error);
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -125,13 +163,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Зміна стану автентифікації:', user ? `Користувач ${user.email}` : 'Не авторизований');
       setCurrentUser(user);
       setLoading(false);
+      
+      // Якщо користувач не авторизований і не на сторінці логіну, перенаправляємо на логін
+      if (!user && window.location.pathname !== '/login') {
+        navigate('/login');
+      }
     });
 
     return () => {
       console.log('Видаляємо слухача зміни стану автентифікації');
       unsubscribe();
     };
-  }, []);
+  }, [navigate]);
 
   const value = {
     currentUser,
