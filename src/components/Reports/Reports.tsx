@@ -5,6 +5,7 @@ import { WorkType, getTeamWorkTypes } from '../../services/workTypes';
 import { Location, getTeamLocations } from '../../services/locations';
 import { TimeEntry, getTeamTimeEntries } from '../../services/timeTracking';
 import { getUserTeams, getTeamMembers, User } from '../../services/teams';
+import { exportToExcel, exportToPDF, exportToCSV } from '../../services/export';
 import './Reports.css';
 
 interface ReportFilters {
@@ -189,9 +190,24 @@ const Reports: React.FC = () => {
   };
 
   const handleExport = async (format: 'excel' | 'pdf' | 'csv') => {
-    // TODO: Додати логіку експорту
-    // Використовуємо allTimeEntries для експорту, а не filteredEntries
-    console.log(`Exporting ${allTimeEntries.length} entries to ${format}`);
+    if (!teamId || allTimeEntries.length === 0) return;
+
+    try {
+      switch (format) {
+        case 'excel':
+          await exportToExcel(allTimeEntries, locations, workTypes, teamMembers);
+          break;
+        case 'pdf':
+          await exportToPDF(allTimeEntries, locations, workTypes, teamMembers);
+          break;
+        case 'csv':
+          await exportToCSV(allTimeEntries, locations, workTypes, teamMembers);
+          break;
+      }
+    } catch (err) {
+      setError(t('reports.exportError'));
+      console.error('Error exporting report:', err);
+    }
   };
 
   if (loading) {

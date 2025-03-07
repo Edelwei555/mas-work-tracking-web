@@ -2,7 +2,7 @@ import { TimeEntry } from './timeTracking';
 import { Location } from './locations';
 import { WorkType } from './workTypes';
 import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import Papa from 'papaparse';
 
@@ -16,93 +16,102 @@ interface ExportData {
 }
 
 const prepareData = (
-  timeEntries: TimeEntry[],
+  entries: TimeEntry[],
   locations: Location[],
-  workTypes: WorkType[]
+  workTypes: WorkType[],
+  teamMembers: { id: string; displayName: string; email: string }[]
 ): ExportData[] => {
-  return timeEntries.map(entry => ({
-    date: (entry.startTime as Date).toLocaleDateString(),
-    worker: entry.userId,
-    location: locations.find(l => l.id === entry.locationId)?.name || '',
-    workType: workTypes.find(w => w.id === entry.workTypeId)?.name || '',
-    timeSpent: entry.duration || 0,
-    workAmount: entry.workAmount || 0
-  }));
+  return entries.map(entry => {
+    const member = teamMembers.find(m => m.id === entry.userId);
+    const location = locations.find(l => l.id === entry.locationId);
+    const workType = workTypes.find(w => w.id === entry.workTypeId);
+    
+    return {
+      date: entry.startTime.toLocaleDateString(),
+      worker: member?.displayName || member?.email || '',
+      location: location?.name || '',
+      workType: workType?.name || '',
+      timeSpent: Math.round((entry.endTime!.getTime() - entry.startTime.getTime()) / 1000 / 60),
+      workAmount: entry.workAmount || 0
+    };
+  });
 };
 
 export const exportToExcel = async (
-  timeEntries: TimeEntry[],
+  entries: TimeEntry[],
   locations: Location[],
-  workTypes: WorkType[]
-) => {
-  const data = prepareData(timeEntries, locations, workTypes);
+  workTypes: WorkType[],
+  teamMembers: { id: string; displayName: string; email: string }[]
+): Promise<void> => {
+  const data = prepareData(entries, locations, workTypes, teamMembers);
+  
   const ws = XLSX.utils.json_to_sheet(data);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Звіт');
+  
   XLSX.writeFile(wb, 'звіт.xlsx');
 };
 
 export const exportToPDF = async (
-  timeEntries: TimeEntry[],
+  entries: TimeEntry[],
   locations: Location[],
-  workTypes: WorkType[]
-) => {
-  const data = prepareData(timeEntries, locations, workTypes);
+  workTypes: WorkType[],
+  teamMembers: { id: string; displayName: string; email: string }[]
+): Promise<void> => {
+  const data = prepareData(entries, locations, workTypes, teamMembers);
+  
   const doc = new jsPDF();
-
-  // Додаємо заголовок
+  
+  // Заголовок
   doc.setFontSize(16);
   doc.text('Звіт про роботу', 14, 15);
-
-  // Додаємо дату генерації
-  doc.setFontSize(10);
-  doc.text(`Згенеровано: ${new Date().toLocaleString()}`, 14, 25);
-
-  // Додаємо таблицю
+  
+  // Таблиця
   const tableData = data.map(row => [
     row.date,
     row.worker,
     row.location,
     row.workType,
-    row.timeSpent.toString(),
+    `${row.timeSpent} хв`,
     row.workAmount.toString()
   ]);
-
+  
   (doc as any).autoTable({
-    head: [['Дата', 'Працівник', 'Локація', 'Вид роботи', 'Час', 'Обсяг']],
+    head: [['Дата', 'Працівник', 'Локація', 'Тип роботи', 'Час', 'Обсяг']],
     body: tableData,
-    startY: 30,
+    startY: 20,
     theme: 'grid',
-    headStyles: { fillColor: [41, 128, 185] },
-    styles: { fontSize: 8 },
-    columnStyles: {
-      0: { cellWidth: 25 },
-      1: { cellWidth: 30 },
-      2: { cellWidth: 30 },
-      3: { cellWidth: 30 },
-      4: { cellWidth: 20 },
-      5: { cellWidth: 20 }
-    }
+    headStyles: { fillColor: [0, 123, 255] },
+    styles: { fontSize: 8 }
   });
-
+  
   doc.save('звіт.pdf');
 };
 
 export const exportToCSV = async (
-  timeEntries: TimeEntry[],
+  entries: TimeEntry[],
   locations: Location[],
-  workTypes: WorkType[]
-) => {
-  const data = prepareData(timeEntries, locations, workTypes);
-  const csv = Papa.unparse(data);
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  const url = URL.createObjectURL(blob);
+  workTypes: WorkType[],
+  teamMembers: { id: string; displayName: string; email: string }[]
+): Promise<void> => {
+  const data = prepareData(entries, locations, workTypes, teamMembers);
   
-  link.setAttribute('href', url);
-  link.setAttribute('download', 'звіт.csv');
-  link.style.visibility = 'hidden';
-  document.body.appendChild(link);
+  const headers = ['Дата', 'Працівник', 'Локація', 'Тип роботи', 'Час', 'Обсяг'];
+  const csvContent = [
+    headers.join(','),
+    ...data.map(row => [
+      row.date,
+      `"${row.worker}"`,
+      `"${row.location}"`,
+      `"${row.workType}"`,
+      `${row.timeSpent}`,
+      row.workAmount
+    ].join(','))
+  ].join('\n');
+  
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'звіт.csv';
   link.click();
-  document.body.removeChild(link);
 }; 
