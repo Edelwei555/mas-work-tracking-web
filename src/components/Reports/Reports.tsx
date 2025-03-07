@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { WorkType, getTeamWorkTypes } from '../../services/workTypes';
 import { Location, getTeamLocations } from '../../services/locations';
 import { TimeEntry, getTeamTimeEntries } from '../../services/timeTracking';
-import { Team, getUserTeams } from '../../services/teams';
+import { getUserTeams } from '../../services/teams';
 import './Reports.css';
 
 interface ReportFilters {
@@ -15,8 +15,7 @@ interface ReportFilters {
 const Reports: React.FC = () => {
   const { t } = useTranslation();
   const { currentUser } = useAuth();
-  const [selectedTeam, setSelectedTeam] = useState<string>('');
-  const [teams, setTeams] = useState<Team[]>([]);
+  const [teamId, setTeamId] = useState<string>('');
   const [workTypes, setWorkTypes] = useState<WorkType[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
@@ -27,41 +26,41 @@ const Reports: React.FC = () => {
     endDate: new Date()
   });
 
-  // Завантаження команд
+  // Завантаження команди користувача
   useEffect(() => {
-    const fetchTeams = async () => {
+    const fetchTeam = async () => {
       if (!currentUser) return;
       
       try {
-        const fetchedTeams = await getUserTeams(currentUser.uid);
-        setTeams(fetchedTeams);
-        
-        if (fetchedTeams.length > 0 && fetchedTeams[0].id) {
-          setSelectedTeam(fetchedTeams[0].id);
+        const teams = await getUserTeams(currentUser.uid);
+        if (teams.length > 0 && teams[0].id) {
+          setTeamId(teams[0].id);
+        } else {
+          setError(t('teams.noTeams'));
         }
       } catch (err) {
         setError(t('common.error'));
-        console.error('Error fetching teams:', err);
+        console.error('Error fetching team:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchTeams();
+    fetchTeam();
   }, [currentUser, t]);
 
-  // Завантаження даних при зміні команди
+  // Завантаження даних після отримання ID команди
   useEffect(() => {
     const fetchData = async () => {
-      if (!currentUser || !selectedTeam) return;
+      if (!currentUser || !teamId) return;
       
       try {
         setLoading(true);
         
         // Отримуємо види робіт та локації
         const [fetchedWorkTypes, fetchedLocations] = await Promise.all([
-          getTeamWorkTypes(selectedTeam),
-          getTeamLocations(selectedTeam)
+          getTeamWorkTypes(teamId),
+          getTeamLocations(teamId)
         ]);
         
         setWorkTypes(fetchedWorkTypes);
@@ -76,13 +75,13 @@ const Reports: React.FC = () => {
     };
 
     fetchData();
-  }, [currentUser, selectedTeam, t]);
+  }, [currentUser, teamId, t]);
 
   const handleGenerateReport = async () => {
-    if (!selectedTeam) return;
+    if (!teamId) return;
 
     try {
-      const entries = await getTeamTimeEntries(selectedTeam, filters.startDate, filters.endDate);
+      const entries = await getTeamTimeEntries(teamId, filters.startDate, filters.endDate);
       setTimeEntries(entries);
     } catch (err) {
       setError(t('reports.error'));
@@ -106,7 +105,7 @@ const Reports: React.FC = () => {
     return <div className="loading">{t('common.loading')}</div>;
   }
 
-  if (teams.length === 0) {
+  if (!teamId) {
     return <div className="error-message">{t('teams.noTeams')}</div>;
   }
 
@@ -117,50 +116,33 @@ const Reports: React.FC = () => {
 
       <div className="reports-form">
         <div className="form-group">
-          <label>{t('teams.select')}</label>
-          <select 
-            value={selectedTeam}
-            onChange={(e) => setSelectedTeam(e.target.value)}
-          >
-            <option value="">{t('teams.selectTeam')}</option>
-            {teams.map(team => (
-              <option key={team.id} value={team.id}>{team.name}</option>
-            ))}
-          </select>
+          <label>{t('reports.dateRange')}</label>
+          <div className="date-range">
+            <input 
+              type="date"
+              name="startDate"
+              value={filters.startDate.toISOString().split('T')[0]}
+              onChange={handleDateChange}
+              placeholder={t('reports.startDate')}
+            />
+            <input 
+              type="date"
+              name="endDate"
+              value={filters.endDate.toISOString().split('T')[0]}
+              onChange={handleDateChange}
+              placeholder={t('reports.endDate')}
+            />
+          </div>
         </div>
 
-        {selectedTeam && (
-          <>
-            <div className="form-group">
-              <label>{t('reports.dateRange')}</label>
-              <div className="date-range">
-                <input 
-                  type="date"
-                  name="startDate"
-                  value={filters.startDate.toISOString().split('T')[0]}
-                  onChange={handleDateChange}
-                  placeholder={t('reports.startDate')}
-                />
-                <input 
-                  type="date"
-                  name="endDate"
-                  value={filters.endDate.toISOString().split('T')[0]}
-                  onChange={handleDateChange}
-                  placeholder={t('reports.endDate')}
-                />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <button 
-                className="btn-primary"
-                onClick={handleGenerateReport}
-              >
-                {t('reports.generate')}
-              </button>
-            </div>
-          </>
-        )}
+        <div className="form-group">
+          <button 
+            className="btn-primary"
+            onClick={handleGenerateReport}
+          >
+            {t('reports.generate')}
+          </button>
+        </div>
       </div>
 
       {timeEntries.length > 0 ? (

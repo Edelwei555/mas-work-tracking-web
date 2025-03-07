@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { WorkType, getTeamWorkTypes } from '../../services/workTypes';
 import { Location, getTeamLocations } from '../../services/locations';
 import { TimeEntry, saveTimeEntry, getCurrentTimeEntry } from '../../services/timeTracking';
-import { Team, getUserTeams } from '../../services/teams';
+import { getUserTeams } from '../../services/teams';
 import './TimeTracking.css';
 
 const TimeTracking: React.FC = () => {
@@ -14,47 +14,46 @@ const TimeTracking: React.FC = () => {
   const [elapsedTime, setElapsedTime] = useState<number>(0);
   const [selectedWorkType, setSelectedWorkType] = useState<string>('');
   const [selectedLocation, setSelectedLocation] = useState<string>('');
-  const [selectedTeam, setSelectedTeam] = useState<string>('');
+  const [teamId, setTeamId] = useState<string>('');
   const [workAmount, setWorkAmount] = useState<string>('');
   const [workTypes, setWorkTypes] = useState<WorkType[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
-  const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
 
-  // Завантаження команд
+  // Завантаження команди користувача
   useEffect(() => {
-    const fetchTeams = async () => {
+    const fetchTeam = async () => {
       if (!currentUser) return;
       
       try {
-        const fetchedTeams = await getUserTeams(currentUser.uid);
-        setTeams(fetchedTeams);
-        
-        if (fetchedTeams.length > 0 && fetchedTeams[0].id) {
-          setSelectedTeam(fetchedTeams[0].id);
+        const teams = await getUserTeams(currentUser.uid);
+        if (teams.length > 0 && teams[0].id) {
+          setTeamId(teams[0].id);
+        } else {
+          setError(t('teams.noTeams'));
         }
       } catch (err) {
         setError(t('common.error'));
-        console.error('Error fetching teams:', err);
+        console.error('Error fetching team:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchTeams();
+    fetchTeam();
   }, [currentUser, t]);
 
-  // Завантаження даних при зміні команди
+  // Завантаження даних після отримання ID команди
   useEffect(() => {
     const fetchData = async () => {
-      if (!currentUser || !selectedTeam) return;
+      if (!currentUser || !teamId) return;
       
       try {
         setLoading(true);
         
         // Отримуємо поточний запис часу
-        const currentEntry = await getCurrentTimeEntry(currentUser.uid, selectedTeam);
+        const currentEntry = await getCurrentTimeEntry(currentUser.uid, teamId);
         if (currentEntry) {
           setTimeEntry(currentEntry);
           setSelectedWorkType(currentEntry.workTypeId);
@@ -63,8 +62,8 @@ const TimeTracking: React.FC = () => {
 
         // Отримуємо види робіт та локації
         const [fetchedWorkTypes, fetchedLocations] = await Promise.all([
-          getTeamWorkTypes(selectedTeam),
-          getTeamLocations(selectedTeam)
+          getTeamWorkTypes(teamId),
+          getTeamLocations(teamId)
         ]);
         
         setWorkTypes(fetchedWorkTypes);
@@ -79,7 +78,7 @@ const TimeTracking: React.FC = () => {
     };
 
     fetchData();
-  }, [currentUser, selectedTeam, t]);
+  }, [currentUser, teamId, t]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -105,11 +104,11 @@ const TimeTracking: React.FC = () => {
   };
 
   const handleStart = () => {
-    if (!selectedWorkType || !selectedLocation || !currentUser || !selectedTeam) return;
+    if (!selectedWorkType || !selectedLocation || !currentUser || !teamId) return;
 
     setTimeEntry({
       userId: currentUser.uid,
-      teamId: selectedTeam,
+      teamId: teamId,
       workTypeId: selectedWorkType,
       locationId: selectedLocation,
       startTime: new Date(),
@@ -149,12 +148,12 @@ const TimeTracking: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!timeEntry || !workAmount || !currentUser || !selectedTeam) return;
+    if (!timeEntry || !workAmount || !currentUser || !teamId) return;
 
     try {
       await saveTimeEntry({
         ...timeEntry as TimeEntry,
-        teamId: selectedTeam,
+        teamId: teamId,
         workAmount: parseFloat(workAmount)
       });
 
@@ -174,7 +173,7 @@ const TimeTracking: React.FC = () => {
     return <div className="loading">{t('common.loading')}</div>;
   }
 
-  if (teams.length === 0) {
+  if (!teamId) {
     return <div className="error-message">{t('teams.noTeams')}</div>;
   }
 
@@ -184,107 +183,89 @@ const TimeTracking: React.FC = () => {
       
       <div className="time-tracking-form">
         <div className="form-group">
-          <label>{t('teams.select')}</label>
+          <label>{t('workTypes.title')}</label>
           <select 
-            value={selectedTeam}
-            onChange={(e) => setSelectedTeam(e.target.value)}
+            value={selectedWorkType}
+            onChange={(e) => setSelectedWorkType(e.target.value)}
             disabled={!!timeEntry}
           >
-            <option value="">{t('teams.selectTeam')}</option>
-            {teams.map(team => (
-              <option key={team.id} value={team.id}>{team.name}</option>
+            <option value="">{t('common.select')}</option>
+            {workTypes.map(type => (
+              <option key={type.id} value={type.id}>{type.name}</option>
             ))}
           </select>
         </div>
 
-        {selectedTeam && (
-          <>
-            <div className="form-group">
-              <label>{t('workTypes.title')}</label>
-              <select 
-                value={selectedWorkType}
-                onChange={(e) => setSelectedWorkType(e.target.value)}
-                disabled={!!timeEntry}
-              >
-                <option value="">{t('common.select')}</option>
-                {workTypes.map(type => (
-                  <option key={type.id} value={type.id}>{type.name}</option>
-                ))}
-              </select>
-            </div>
+        <div className="form-group">
+          <label>{t('locations.title')}</label>
+          <select 
+            value={selectedLocation}
+            onChange={(e) => setSelectedLocation(e.target.value)}
+            disabled={!!timeEntry}
+          >
+            <option value="">{t('common.select')}</option>
+            {locations.map(location => (
+              <option key={location.id} value={location.id}>{location.name}</option>
+            ))}
+          </select>
+        </div>
 
-            <div className="form-group">
-              <label>{t('locations.title')}</label>
-              <select 
-                value={selectedLocation}
-                onChange={(e) => setSelectedLocation(e.target.value)}
-                disabled={!!timeEntry}
-              >
-                <option value="">{t('common.select')}</option>
-                {locations.map(location => (
-                  <option key={location.id} value={location.id}>{location.name}</option>
-                ))}
-              </select>
-            </div>
+        <div className="timer-display">
+          {formatTime(elapsedTime)}
+        </div>
 
-            <div className="timer-display">
-              {formatTime(elapsedTime)}
-            </div>
+        <div className="timer-controls">
+          {!timeEntry && (
+            <button 
+              className="btn-primary"
+              onClick={handleStart}
+              disabled={!selectedWorkType || !selectedLocation}
+            >
+              {t('timeTracking.start')}
+            </button>
+          )}
 
-            <div className="timer-controls">
-              {!timeEntry && (
-                <button 
-                  className="btn-primary"
-                  onClick={handleStart}
-                  disabled={!selectedWorkType || !selectedLocation}
-                >
-                  {t('timeTracking.start')}
+          {timeEntry && !timeEntry.endTime && (
+            <>
+              {timeEntry.isRunning ? (
+                <button className="btn-warning" onClick={handlePause}>
+                  {t('timeTracking.pause')}
+                </button>
+              ) : (
+                <button className="btn-primary" onClick={handleResume}>
+                  {t('timeTracking.resume')}
                 </button>
               )}
+              <button className="btn-danger" onClick={handleStop}>
+                {t('timeTracking.stop')}
+              </button>
+            </>
+          )}
+        </div>
 
-              {timeEntry && !timeEntry.endTime && (
-                <>
-                  {timeEntry.isRunning ? (
-                    <button className="btn-warning" onClick={handlePause}>
-                      {t('timeTracking.pause')}
-                    </button>
-                  ) : (
-                    <button className="btn-primary" onClick={handleResume}>
-                      {t('timeTracking.resume')}
-                    </button>
-                  )}
-                  <button className="btn-danger" onClick={handleStop}>
-                    {t('timeTracking.stop')}
-                  </button>
-                </>
-              )}
+        {timeEntry?.endTime && (
+          <div className="work-amount-form">
+            <div className="form-group">
+              <label>{t('timeTracking.workAmount')}</label>
+              <input
+                type="number"
+                value={workAmount}
+                onChange={(e) => setWorkAmount(e.target.value)}
+                min="0"
+                step="0.1"
+              />
+              <span className="unit">
+                {workTypes.find(t => t.id === selectedWorkType)?.unit}
+              </span>
             </div>
-
-            {timeEntry?.endTime && (
-              <div className="work-amount-form">
-                <div className="form-group">
-                  <label>{t('timeTracking.workAmount')}</label>
-                  <input
-                    type="number"
-                    value={workAmount}
-                    onChange={(e) => setWorkAmount(e.target.value)}
-                    min="0"
-                    step="0.1"
-                  />
-                  <span className="unit">
-                    {workTypes.find(t => t.id === selectedWorkType)?.unit}
-                  </span>
-                </div>
-                <button 
-                  className="btn-success"
-                  onClick={handleSave}
-                  disabled={!workAmount}
-                >
-                  {t('common.save')}
-                </button>
-              </div>
-            )}
-          </>
+            <button 
+              className="btn-success"
+              onClick={handleSave}
+              disabled={!workAmount}
+            >
+              {t('common.save')}
+            </button>
+          </div>
         )}
       </div>
     </div>
