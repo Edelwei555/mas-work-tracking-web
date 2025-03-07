@@ -108,8 +108,9 @@ const TimeTracking: React.FC = () => {
     if (timeEntry?.isRunning) {
       interval = setInterval(() => {
         const now = new Date();
-        const start = timeEntry.startTime as Date;
-        const elapsed = now.getTime() - start.getTime() - (timeEntry.pausedTime || 0);
+        const start = timeEntry.startTime ? new Date(timeEntry.startTime) : new Date();
+        const pausedTime = timeEntry.pausedTime || 0;
+        const elapsed = Math.max(0, now.getTime() - start.getTime() - pausedTime);
         setElapsedTime(elapsed);
       }, 1000);
     }
@@ -140,12 +141,17 @@ const TimeTracking: React.FC = () => {
   };
 
   const handlePause = () => {
-    if (!timeEntry) return;
+    if (!timeEntry || !timeEntry.startTime) return;
+
+    const now = new Date();
+    const start = new Date(timeEntry.startTime);
+    const currentElapsed = now.getTime() - start.getTime();
+    const totalPausedTime = (timeEntry.pausedTime || 0) + currentElapsed;
 
     setTimeEntry({
       ...timeEntry,
       isRunning: false,
-      pausedTime: (timeEntry.pausedTime || 0) + (new Date().getTime() - (timeEntry.startTime as Date).getTime())
+      pausedTime: totalPausedTime
     });
   };
 
