@@ -19,7 +19,7 @@ export const generateReport = async (userId: string, filters: ReportFilters): Pr
   // Якщо вибрана команда, отримуємо ID всіх її учасників
   if (filters.teamId) {
     const teamMembers = await getTeamMembers(filters.teamId);
-    userIds = Array.from(new Set([...userIds, ...teamMembers]));
+    userIds = Array.from(new Set([...userIds, ...teamMembers.map(member => member.id)]));
   }
 
   // Створюємо запит для кожного користувача
