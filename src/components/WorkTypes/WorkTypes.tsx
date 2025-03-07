@@ -24,7 +24,7 @@ const WorkTypes: React.FC = () => {
       
       try {
         const teams = await getUserTeams(currentUser.uid);
-        if (teams.length > 0) {
+        if (teams.length > 0 && teams[0].id) {
           setTeamId(teams[0].id);
         } else {
           setError(t('teams.noTeams'));
