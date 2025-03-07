@@ -21,6 +21,23 @@ const TimeTracking: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
 
+  // Функція оновлення списків
+  const refreshLists = async () => {
+    if (!teamId) return;
+    
+    try {
+      const [fetchedWorkTypes, fetchedLocations] = await Promise.all([
+        getTeamWorkTypes(teamId),
+        getTeamLocations(teamId)
+      ]);
+      
+      setWorkTypes(fetchedWorkTypes);
+      setLocations(fetchedLocations);
+    } catch (err) {
+      console.error('Error refreshing lists:', err);
+    }
+  };
+
   // Завантаження команди користувача
   useEffect(() => {
     const fetchTeam = async () => {
@@ -184,28 +201,34 @@ const TimeTracking: React.FC = () => {
       <div className="time-tracking-form">
         <div className="form-group">
           <label>{t('workTypes.title')}</label>
-          <select 
+          <select
             value={selectedWorkType}
             onChange={(e) => setSelectedWorkType(e.target.value)}
-            disabled={!!timeEntry}
+            onFocus={refreshLists}
+            required
           >
-            <option value="">{t('common.select')}</option>
+            <option value="">{t('timeTracking.selectWorkType')}</option>
             {workTypes.map(type => (
-              <option key={type.id} value={type.id}>{type.name}</option>
+              <option key={type.id} value={type.id}>
+                {type.name}
+              </option>
             ))}
           </select>
         </div>
 
         <div className="form-group">
           <label>{t('locations.title')}</label>
-          <select 
+          <select
             value={selectedLocation}
             onChange={(e) => setSelectedLocation(e.target.value)}
-            disabled={!!timeEntry}
+            onFocus={refreshLists}
+            required
           >
-            <option value="">{t('common.select')}</option>
+            <option value="">{t('timeTracking.selectLocation')}</option>
             {locations.map(location => (
-              <option key={location.id} value={location.id}>{location.name}</option>
+              <option key={location.id} value={location.id}>
+                {location.name}
+              </option>
             ))}
           </select>
         </div>
