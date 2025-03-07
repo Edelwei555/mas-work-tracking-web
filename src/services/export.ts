@@ -1,6 +1,7 @@
 import { TimeEntry } from './timeTracking';
 import { Location } from './locations';
 import { WorkType } from './workTypes';
+import { User } from './teams';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
@@ -19,7 +20,7 @@ const prepareData = (
   entries: TimeEntry[],
   locations: Location[],
   workTypes: WorkType[],
-  teamMembers: { id: string; displayName: string; email: string }[]
+  teamMembers: User[]
 ): ExportData[] => {
   return entries.map(entry => {
     const member = teamMembers.find(m => m.id === entry.userId);
@@ -41,7 +42,7 @@ export const exportToExcel = async (
   entries: TimeEntry[],
   locations: Location[],
   workTypes: WorkType[],
-  teamMembers: { id: string; displayName: string; email: string }[]
+  teamMembers: User[]
 ): Promise<void> => {
   const data = prepareData(entries, locations, workTypes, teamMembers);
   
@@ -56,7 +57,7 @@ export const exportToPDF = async (
   entries: TimeEntry[],
   locations: Location[],
   workTypes: WorkType[],
-  teamMembers: { id: string; displayName: string; email: string }[]
+  teamMembers: User[]
 ): Promise<void> => {
   const data = prepareData(entries, locations, workTypes, teamMembers);
   
@@ -92,7 +93,7 @@ export const exportToCSV = async (
   entries: TimeEntry[],
   locations: Location[],
   workTypes: WorkType[],
-  teamMembers: { id: string; displayName: string; email: string }[]
+  teamMembers: User[]
 ): Promise<void> => {
   const data = prepareData(entries, locations, workTypes, teamMembers);
   
