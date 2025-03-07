@@ -4,12 +4,15 @@ import { useAuth } from '../../contexts/AuthContext';
 import { WorkType, getTeamWorkTypes } from '../../services/workTypes';
 import { Location, getTeamLocations } from '../../services/locations';
 import { TimeEntry, getTeamTimeEntries } from '../../services/timeTracking';
-import { getUserTeams } from '../../services/teams';
+import { getUserTeams, getTeamMembers, User } from '../../services/teams';
 import './Reports.css';
 
 interface ReportFilters {
   startDate: Date;
   endDate: Date;
+  locationIds: string[];
+  workTypeIds: string[];
+  userIds: string[];
 }
 
 const Reports: React.FC = () => {
@@ -18,12 +21,17 @@ const Reports: React.FC = () => {
   const [teamId, setTeamId] = useState<string>('');
   const [workTypes, setWorkTypes] = useState<WorkType[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
-  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
+  const [teamMembers, setTeamMembers] = useState<User[]>([]);
+  const [allTimeEntries, setAllTimeEntries] = useState<TimeEntry[]>([]); // Всі записи команди
+  const [filteredEntries, setFilteredEntries] = useState<TimeEntry[]>([]); // Відфільтровані записи для відображення
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filters, setFilters] = useState<ReportFilters>({
     startDate: new Date(new Date().setMonth(new Date().getMonth() - 1)),
-    endDate: new Date()
+    endDate: new Date(),
+    locationIds: [],
+    workTypeIds: [],
+    userIds: []
   });
 
   // Завантаження команди користувача
@@ -41,8 +49,6 @@ const Reports: React.FC = () => {
       } catch (err) {
         setError(t('common.error'));
         console.error('Error fetching team:', err);
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -57,14 +63,16 @@ const Reports: React.FC = () => {
       try {
         setLoading(true);
         
-        // Отримуємо види робіт та локації
-        const [fetchedWorkTypes, fetchedLocations] = await Promise.all([
+        // Отримуємо види робіт, локації та учасників команди
+        const [fetchedWorkTypes, fetchedLocations, fetchedMembers] = await Promise.all([
           getTeamWorkTypes(teamId),
-          getTeamLocations(teamId)
+          getTeamLocations(teamId),
+          getTeamMembers(teamId)
         ]);
         
         setWorkTypes(fetchedWorkTypes);
         setLocations(fetchedLocations);
+        setTeamMembers(fetchedMembers);
         setError('');
       } catch (err) {
         setError(t('common.error'));
@@ -81,11 +89,32 @@ const Reports: React.FC = () => {
     if (!teamId) return;
 
     try {
+      setLoading(true);
       const entries = await getTeamTimeEntries(teamId, filters.startDate, filters.endDate);
-      setTimeEntries(entries);
+      setAllTimeEntries(entries);
+      
+      // Фільтруємо записи для відображення
+      let filtered = [...entries];
+      
+      if (filters.locationIds.length > 0) {
+        filtered = filtered.filter(entry => filters.locationIds.includes(entry.locationId));
+      }
+      
+      if (filters.workTypeIds.length > 0) {
+        filtered = filtered.filter(entry => filters.workTypeIds.includes(entry.workTypeId));
+      }
+
+      if (filters.userIds.length > 0) {
+        filtered = filtered.filter(entry => filters.userIds.includes(entry.userId));
+      }
+      
+      setFilteredEntries(filtered);
+      setError('');
     } catch (err) {
       setError(t('reports.error'));
       console.error('Error generating report:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -97,8 +126,72 @@ const Reports: React.FC = () => {
     }));
   };
 
+  const handleCheckboxChange = (type: 'locationIds' | 'workTypeIds' | 'userIds', id: string) => {
+    setFilters(prev => {
+      const newFilters = {
+        ...prev,
+        [type]: prev[type].includes(id)
+          ? prev[type].filter(item => item !== id)
+          : [...prev[type], id]
+      };
+
+      // Перефільтровуємо існуючі записи
+      let filtered = [...allTimeEntries];
+      
+      if (newFilters.locationIds.length > 0) {
+        filtered = filtered.filter(entry => newFilters.locationIds.includes(entry.locationId));
+      }
+      
+      if (newFilters.workTypeIds.length > 0) {
+        filtered = filtered.filter(entry => newFilters.workTypeIds.includes(entry.workTypeId));
+      }
+
+      if (newFilters.userIds.length > 0) {
+        filtered = filtered.filter(entry => newFilters.userIds.includes(entry.userId));
+      }
+      
+      setFilteredEntries(filtered);
+      return newFilters;
+    });
+  };
+
+  const handleSelectAll = (type: 'locationIds' | 'workTypeIds' | 'userIds') => {
+    setFilters(prev => {
+      const allIds = type === 'locationIds' 
+        ? locations.map(l => l.id!)
+        : type === 'workTypeIds'
+          ? workTypes.map(w => w.id!)
+          : teamMembers.map(m => m.id);
+
+      const newFilters = {
+        ...prev,
+        [type]: prev[type].length === allIds.length ? [] : allIds
+      };
+
+      // Перефільтровуємо існуючі записи
+      let filtered = [...allTimeEntries];
+      
+      if (newFilters.locationIds.length > 0) {
+        filtered = filtered.filter(entry => newFilters.locationIds.includes(entry.locationId));
+      }
+      
+      if (newFilters.workTypeIds.length > 0) {
+        filtered = filtered.filter(entry => newFilters.workTypeIds.includes(entry.workTypeId));
+      }
+
+      if (newFilters.userIds.length > 0) {
+        filtered = filtered.filter(entry => newFilters.userIds.includes(entry.userId));
+      }
+      
+      setFilteredEntries(filtered);
+      return newFilters;
+    });
+  };
+
   const handleExport = async (format: 'excel' | 'pdf' | 'csv') => {
     // TODO: Додати логіку експорту
+    // Використовуємо allTimeEntries для експорту, а не filteredEntries
+    console.log(`Exporting ${allTimeEntries.length} entries to ${format}`);
   };
 
   if (loading) {
@@ -135,6 +228,81 @@ const Reports: React.FC = () => {
           </div>
         </div>
 
+        <div className="form-group filter-group">
+          <label>
+            {t('reports.columns.worker')}
+            <button 
+              type="button" 
+              className="select-all-btn"
+              onClick={() => handleSelectAll('userIds')}
+            >
+              {filters.userIds.length === teamMembers.length ? t('common.deselectAll') : t('common.selectAll')}
+            </button>
+          </label>
+          <div className="checkbox-list">
+            {teamMembers.map(member => (
+              <label key={member.id} className="checkbox-item">
+                <input
+                  type="checkbox"
+                  checked={filters.userIds.includes(member.id)}
+                  onChange={() => handleCheckboxChange('userIds', member.id)}
+                />
+                {member.displayName || member.email}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div className="form-group filter-group">
+          <label>
+            {t('locations.title')}
+            <button 
+              type="button" 
+              className="select-all-btn"
+              onClick={() => handleSelectAll('locationIds')}
+            >
+              {filters.locationIds.length === locations.length ? t('common.deselectAll') : t('common.selectAll')}
+            </button>
+          </label>
+          <div className="checkbox-list">
+            {locations.map(location => (
+              <label key={location.id} className="checkbox-item">
+                <input
+                  type="checkbox"
+                  checked={filters.locationIds.includes(location.id!)}
+                  onChange={() => handleCheckboxChange('locationIds', location.id!)}
+                />
+                {location.name}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div className="form-group filter-group">
+          <label>
+            {t('workTypes.title')}
+            <button 
+              type="button" 
+              className="select-all-btn"
+              onClick={() => handleSelectAll('workTypeIds')}
+            >
+              {filters.workTypeIds.length === workTypes.length ? t('common.deselectAll') : t('common.selectAll')}
+            </button>
+          </label>
+          <div className="checkbox-list">
+            {workTypes.map(workType => (
+              <label key={workType.id} className="checkbox-item">
+                <input
+                  type="checkbox"
+                  checked={filters.workTypeIds.includes(workType.id!)}
+                  onChange={() => handleCheckboxChange('workTypeIds', workType.id!)}
+                />
+                {workType.name}
+              </label>
+            ))}
+          </div>
+        </div>
+
         <div className="form-group">
           <button 
             className="btn-primary"
@@ -145,7 +313,7 @@ const Reports: React.FC = () => {
         </div>
       </div>
 
-      {timeEntries.length > 0 ? (
+      {filteredEntries.length > 0 ? (
         <div className="report-results">
           <table>
             <thead>
@@ -159,16 +327,22 @@ const Reports: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {timeEntries.map(entry => (
-                <tr key={entry.id}>
-                  <td>{entry.startTime.toLocaleDateString()}</td>
-                  <td>{entry.userId}</td>
-                  <td>{locations.find(l => l.id === entry.locationId)?.name}</td>
-                  <td>{workTypes.find(w => w.id === entry.workTypeId)?.name}</td>
-                  <td>{Math.round((entry.endTime!.getTime() - entry.startTime.getTime()) / 1000 / 60)} хв</td>
-                  <td>{entry.workAmount} {workTypes.find(w => w.id === entry.workTypeId)?.unit}</td>
-                </tr>
-              ))}
+              {filteredEntries.map(entry => {
+                const member = teamMembers.find(m => m.id === entry.userId);
+                const location = locations.find(l => l.id === entry.locationId);
+                const workType = workTypes.find(w => w.id === entry.workTypeId);
+                
+                return (
+                  <tr key={entry.id}>
+                    <td>{entry.startTime.toLocaleDateString()}</td>
+                    <td>{member?.displayName || member?.email}</td>
+                    <td>{location?.name}</td>
+                    <td>{workType?.name}</td>
+                    <td>{Math.round((entry.endTime!.getTime() - entry.startTime.getTime()) / 1000 / 60)} хв</td>
+                    <td>{entry.workAmount}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -181,7 +355,7 @@ const Reports: React.FC = () => {
           type="button"
           className="btn-secondary"
           onClick={() => handleExport('excel')}
-          disabled={timeEntries.length === 0}
+          disabled={allTimeEntries.length === 0}
         >
           {t('reports.exportOptions.excel')}
         </button>
@@ -189,7 +363,7 @@ const Reports: React.FC = () => {
           type="button"
           className="btn-secondary"
           onClick={() => handleExport('pdf')}
-          disabled={timeEntries.length === 0}
+          disabled={allTimeEntries.length === 0}
         >
           {t('reports.exportOptions.pdf')}
         </button>
@@ -197,7 +371,7 @@ const Reports: React.FC = () => {
           type="button"
           className="btn-secondary"
           onClick={() => handleExport('csv')}
-          disabled={timeEntries.length === 0}
+          disabled={allTimeEntries.length === 0}
         >
           {t('reports.exportOptions.csv')}
         </button>

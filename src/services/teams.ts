@@ -6,77 +6,49 @@ export interface Team {
   id?: string;
   name: string;
   description?: string;
-  userId: string;
-  adminId: string;
+  createdBy: string;
 }
 
-export interface TeamMember {
+export interface User {
   id: string;
   email: string;
-  role: string;
+  displayName?: string;
 }
 
 export const getUserTeams = async (userId: string): Promise<Team[]> => {
   try {
-    const teamsRef = collection(db, 'teams');
-    const q = query(teamsRef, where('adminId', '==', userId));
+    const q = query(collection(db, 'teams'), where('createdBy', '==', userId));
     const querySnapshot = await getDocs(q);
-    
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     } as Team));
   } catch (error) {
-    console.error('Error getting teams:', error);
+    console.error('Error getting user teams:', error);
     throw error;
   }
 };
 
-export const getTeamMembers = async (teamId: string): Promise<TeamMember[]> => {
+export const getTeamMembers = async (teamId: string): Promise<User[]> => {
   try {
-    const membersRef = collection(db, `teams/${teamId}/members`);
-    const querySnapshot = await getDocs(membersRef);
+    const q = query(collection(db, `teams/${teamId}/members`));
+    const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
-    } as TeamMember));
+    } as User));
   } catch (error) {
     console.error('Error getting team members:', error);
     throw error;
   }
 };
 
-export const addTeam = async (team: Omit<Team, 'id'>): Promise<string> => {
+export const addTeam = async (team: Team): Promise<string> => {
   try {
-    console.log('Спроба створення команди:', {
-      ...team,
-      adminId: team.adminId
-    });
-
-    // Створюємо команду
     const docRef = await addDoc(collection(db, 'teams'), team);
-    console.log('Команду створено з ID:', docRef.id);
-    
-    // Додаємо адміністратора як учасника
-    const memberPath = `teams/${docRef.id}/members/${team.adminId}`;
-    console.log('Додаємо адміністратора:', memberPath);
-    
-    await setDoc(doc(db, memberPath), {
-      role: 'admin',
-      addedAt: new Date()
-    });
-    console.log('Адміністратора додано як учасника');
-    
     return docRef.id;
   } catch (error) {
     console.error('Error adding team:', error);
-    if (error instanceof Error) {
-      console.error('Error details:', {
-        message: error.message,
-        name: error.name,
-        stack: error.stack
-      });
-    }
     throw error;
   }
 };
@@ -93,8 +65,7 @@ export const updateTeam = async (id: string, team: Partial<Team>): Promise<void>
 
 export const deleteTeam = async (id: string): Promise<void> => {
   try {
-    const teamRef = doc(db, 'teams', id);
-    await deleteDoc(teamRef);
+    await deleteDoc(doc(db, 'teams', id));
   } catch (error) {
     console.error('Error deleting team:', error);
     throw error;

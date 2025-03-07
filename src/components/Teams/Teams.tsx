@@ -54,13 +54,12 @@ const Teams: React.FC = () => {
       if (editingId) {
         await updateTeam(editingId, {
           ...formData,
-          userId: currentUser.uid
+          createdBy: currentUser.uid
         });
       } else {
         const teamData = {
           ...formData,
-          userId: currentUser.uid,
-          adminId: currentUser.uid
+          createdBy: currentUser.uid
         };
         console.log('Дані для створення команди:', teamData);
         await addTeam(teamData);

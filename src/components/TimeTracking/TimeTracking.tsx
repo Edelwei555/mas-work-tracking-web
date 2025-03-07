@@ -252,11 +252,9 @@ const TimeTracking: React.FC = () => {
                 value={workAmount}
                 onChange={(e) => setWorkAmount(e.target.value)}
                 min="0"
-                step="0.1"
+                step="0.01"
+                required
               />
-              <span className="unit">
-                {workTypes.find(t => t.id === selectedWorkType)?.unit}
-              </span>
             </div>
             <button 
               className="btn-success"
