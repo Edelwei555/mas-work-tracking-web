@@ -13,8 +13,7 @@ const Locations: React.FC = () => {
   const [error, setError] = useState('');
   const [teamId, setTeamId] = useState<string>('');
   const [newLocation, setNewLocation] = useState({
-    name: '',
-    address: ''
+    name: ''
   });
 
   // Завантаження команди користувача
@@ -67,7 +66,6 @@ const Locations: React.FC = () => {
       setLoading(true);
       await addLocation({
         name: newLocation.name,
-        address: newLocation.address,
         teamId,
       });
 
@@ -76,7 +74,7 @@ const Locations: React.FC = () => {
       setLocations(updatedLocations);
       
       // Очищаємо форму
-      setNewLocation({ name: '', address: '' });
+      setNewLocation({ name: '' });
       setError('');
     } catch (err) {
       setError(t('locations.error.add'));
@@ -130,17 +128,6 @@ const Locations: React.FC = () => {
           />
         </div>
 
-        <div className="form-group">
-          <label>{t('locations.address')}</label>
-          <input
-            type="text"
-            value={newLocation.address}
-            onChange={(e) => setNewLocation(prev => ({ ...prev, address: e.target.value }))}
-            placeholder={t('locations.addressPlaceholder')}
-            required
-          />
-        </div>
-
         <button type="submit" className="btn-primary">
           {t('locations.add')}
         </button>
@@ -151,7 +138,6 @@ const Locations: React.FC = () => {
           <div key={location.id} className="location-item">
             <div className="location-info">
               <h3>{location.name}</h3>
-              <p>{t('locations.addressLabel')}: {location.address}</p>
             </div>
             <button
               onClick={() => handleDelete(location.id!)}

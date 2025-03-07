@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
-import { WorkType, getTeamWorkTypes, addWorkType, updateWorkType, deleteWorkType } from '../../services/workTypes';
+import { WorkType, getTeamWorkTypes, addWorkType, deleteWorkType } from '../../services/workTypes';
 import { getUserTeams } from '../../services/teams';
 import './WorkTypes.css';
 
@@ -13,8 +13,7 @@ const WorkTypes: React.FC = () => {
   const [error, setError] = useState('');
   const [teamId, setTeamId] = useState<string>('');
   const [newWorkType, setNewWorkType] = useState({
-    name: '',
-    unit: ''
+    name: ''
   });
 
   // Завантаження команди користувача
@@ -67,7 +66,6 @@ const WorkTypes: React.FC = () => {
       setLoading(true);
       await addWorkType({
         name: newWorkType.name,
-        unit: newWorkType.unit,
         teamId,
       });
 
@@ -76,7 +74,7 @@ const WorkTypes: React.FC = () => {
       setWorkTypes(updatedWorkTypes);
       
       // Очищаємо форму
-      setNewWorkType({ name: '', unit: '' });
+      setNewWorkType({ name: '' });
       setError('');
     } catch (err) {
       setError(t('workTypes.error.add'));
@@ -130,17 +128,6 @@ const WorkTypes: React.FC = () => {
           />
         </div>
 
-        <div className="form-group">
-          <label>{t('workTypes.unit')}</label>
-          <input
-            type="text"
-            value={newWorkType.unit}
-            onChange={(e) => setNewWorkType(prev => ({ ...prev, unit: e.target.value }))}
-            placeholder={t('workTypes.unitPlaceholder')}
-            required
-          />
-        </div>
-
         <button type="submit" className="btn-primary">
           {t('workTypes.add')}
         </button>
@@ -151,7 +138,6 @@ const WorkTypes: React.FC = () => {
           <div key={workType.id} className="work-type-item">
             <div className="work-type-info">
               <h3>{workType.name}</h3>
-              <p>{t('workTypes.unitLabel')}: {workType.unit}</p>
             </div>
             <button
               onClick={() => handleDelete(workType.id!)}

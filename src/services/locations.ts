@@ -13,7 +13,6 @@ import { db } from '../config/firebase';
 export interface Location {
   id?: string;
   name: string;
-  address: string;
   teamId: string;
   createdBy?: string;
 }

@@ -13,7 +13,6 @@ import { db } from '../config/firebase';
 export interface WorkType {
   id?: string;
   name: string;
-  unit: string;
   teamId: string;
   createdBy?: string;
 }
