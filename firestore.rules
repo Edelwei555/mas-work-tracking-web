@@ -1,62 +1,80 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Перевірка чи користувач авторизований
+    // Функції для перевірки ролей
     function isAuthenticated() {
       return request.auth != null;
     }
     
-    // Перевірка чи користувач є членом команди
-    function isTeamMember(teamId) {
+    function isAdmin(userId) {
       return isAuthenticated() && 
-        exists(/databases/$(database)/documents/teams/$(teamId)/members/$(request.auth.uid));
+        exists(/databases/$(database)/documents/users/$(userId)) &&
+        get(/databases/$(database)/documents/users/$(userId)).data.role == 'admin';
     }
     
-    // Перевірка чи користувач є адміністратором команди
-    function isTeamAdmin(teamId) {
+    function isTeamMember(teamId, userId) {
       return isAuthenticated() && 
-        get(/databases/$(database)/documents/teams/$(teamId)).data.adminId == request.auth.uid;
+        exists(/databases/$(database)/documents/teams/$(teamId)/members/$(userId));
     }
     
+    function isTeamAdmin(teamId, userId) {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/teams/$(teamId)/members/$(userId)) &&
+        get(/databases/$(database)/documents/teams/$(teamId)/members/$(userId)).data.role == 'admin';
+    }
+
     // Правила для користувачів
     match /users/{userId} {
-      allow read: if isAuthenticated() && (request.auth.uid == userId || 
-        exists(/databases/$(database)/documents/teams/{teamId}/members/$(request.auth.uid)));
-      allow write: if request.auth.uid == userId;
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isAuthenticated() && request.auth.uid == userId;
+      allow delete: if isAdmin(request.auth.uid);
     }
-    
+
     // Правила для команд
     match /teams/{teamId} {
-      allow read: if isTeamMember(teamId);
+      allow read: if isAuthenticated() && isTeamMember(teamId, request.auth.uid);
       allow create: if isAuthenticated();
-      allow update, delete: if isTeamAdmin(teamId);
-      
-      // Правила для учасників команди
-      match /members/{memberId} {
-        allow read: if isTeamMember(teamId);
-        allow write: if isTeamAdmin(teamId);
-      }
-      
-      // Правила для локацій
-      match /locations/{locationId} {
-        allow read: if isTeamMember(teamId);
-        allow write: if isTeamMember(teamId);
-      }
-      
-      // Правила для видів робіт
-      match /workTypes/{workTypeId} {
-        allow read: if isTeamMember(teamId);
-        allow write: if isTeamMember(teamId);
-      }
-      
-      // Правила для записів роботи
-      match /workRecords/{recordId} {
-        allow read: if isTeamMember(teamId);
-        allow create: if isTeamMember(teamId) && request.resource.data.userId == request.auth.uid;
-        allow update, delete: if isTeamMember(teamId) && (
-          resource.data.userId == request.auth.uid || isTeamAdmin(teamId)
-        );
-      }
+      allow update: if isAuthenticated() && isTeamAdmin(teamId, request.auth.uid);
+      allow delete: if isAuthenticated() && isTeamAdmin(teamId, request.auth.uid);
+    }
+
+    // Правила для учасників команд
+    match /teams/{teamId}/members/{userId} {
+      allow read: if isAuthenticated() && isTeamMember(teamId, request.auth.uid);
+      allow create: if isAuthenticated() && isTeamAdmin(teamId, request.auth.uid);
+      allow update: if isAuthenticated() && isTeamAdmin(teamId, request.auth.uid);
+      allow delete: if isAuthenticated() && isTeamAdmin(teamId, request.auth.uid);
+    }
+
+    // Правила для записів часу
+    match /timeEntries/{entryId} {
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        isTeamMember(resource.data.teamId, request.auth.uid)
+      );
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        isTeamAdmin(resource.data.teamId, request.auth.uid)
+      );
+      allow delete: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        isTeamAdmin(resource.data.teamId, request.auth.uid)
+      );
+    }
+
+    // Правила для типів робіт
+    match /workTypes/{typeId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin(request.auth.uid);
+    }
+
+    // Правила для локацій
+    match /locations/{locationId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin(request.auth.uid);
     }
   }
 } 

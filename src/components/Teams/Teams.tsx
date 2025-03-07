@@ -42,23 +42,36 @@ const Teams: React.FC = () => {
     if (!currentUser) return;
 
     try {
+      console.log('Поточний користувач:', {
+        uid: currentUser.uid,
+        email: currentUser.email
+      });
+
       if (editingId) {
         await updateTeam(editingId, {
           ...formData,
           userId: currentUser.uid
         });
       } else {
-        await addTeam({
+        const teamData = {
           ...formData,
-          userId: currentUser.uid
-        });
+          userId: currentUser.uid,
+          adminId: currentUser.uid
+        };
+        console.log('Дані для створення команди:', teamData);
+        await addTeam(teamData);
       }
 
       await fetchTeams();
       resetForm();
+      setError('');
     } catch (err) {
-      setError(t('common.error'));
       console.error('Error saving team:', err);
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError(t('common.error'));
+      }
     }
   };
 
