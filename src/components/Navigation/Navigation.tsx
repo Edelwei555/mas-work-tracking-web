@@ -80,7 +80,7 @@ const Navigation: React.FC = () => {
             {currentUser.email}
           </Link>
           <Button
-            color="inherit"
+            variant="text"
             onClick={handleLogout}
             className="logout-button"
           >
