@@ -8,7 +8,7 @@ import { getUserTeams } from '../../services/teams';
 import './TimeTracking.css';
 
 const TimeTracking: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { currentUser } = useAuth();
   const [timeEntry, setTimeEntry] = useState<Partial<TimeEntry> | null>(null);
   const [elapsedTime, setElapsedTime] = useState<number>(0);
@@ -20,6 +20,11 @@ const TimeTracking: React.FC = () => {
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
+
+  // Перезавантаження перекладів
+  useEffect(() => {
+    i18n.reloadResources();
+  }, [i18n]);
 
   // Функція оновлення списків
   const refreshLists = async () => {
