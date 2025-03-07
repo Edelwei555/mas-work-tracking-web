@@ -67,6 +67,7 @@ const Locations: React.FC = () => {
       await addLocation({
         name: newLocation.name,
         teamId,
+        createdBy: currentUser.uid
       });
 
       // Оновлюємо список

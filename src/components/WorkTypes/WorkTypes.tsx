@@ -67,6 +67,7 @@ const WorkTypes: React.FC = () => {
       await addWorkType({
         name: newWorkType.name,
         teamId,
+        createdBy: currentUser.uid
       });
 
       // Оновлюємо список

@@ -70,7 +70,10 @@ service cloud.firestore {
     // Правила для типів робіт
     match /workTypes/{typeId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.teamId != null && isTeamMember(request.resource.data.teamId, request.auth.uid);
+      allow create: if isAuthenticated() && 
+        request.resource.data.teamId != null && 
+        request.resource.data.createdBy == request.auth.uid &&
+        isTeamMember(request.resource.data.teamId, request.auth.uid);
       allow update: if isAuthenticated() && resource.data.teamId != null && isTeamMember(resource.data.teamId, request.auth.uid);
       allow delete: if isAuthenticated() && resource.data.teamId != null && isTeamMember(resource.data.teamId, request.auth.uid);
     }
@@ -78,7 +81,10 @@ service cloud.firestore {
     // Правила для локацій
     match /locations/{locationId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.teamId != null && isTeamMember(request.resource.data.teamId, request.auth.uid);
+      allow create: if isAuthenticated() && 
+        request.resource.data.teamId != null && 
+        request.resource.data.createdBy == request.auth.uid &&
+        isTeamMember(request.resource.data.teamId, request.auth.uid);
       allow update: if isAuthenticated() && resource.data.teamId != null && isTeamMember(resource.data.teamId, request.auth.uid);
       allow delete: if isAuthenticated() && resource.data.teamId != null && isTeamMember(resource.data.teamId, request.auth.uid);
     }
