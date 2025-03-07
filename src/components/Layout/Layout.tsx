@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button, IconButton, Menu, MenuItem } from '@mui/material';
-import { Timer, Group, Language } from '@mui/icons-material';
+import { Timer, Group, Language, Work, LocationOn, Assessment } from '@mui/icons-material';
 import './Layout.css';
 
 const Layout: React.FC = () => {
@@ -49,11 +49,35 @@ const Layout: React.FC = () => {
             </Button>
             <Button
               component={Link}
+              to="/work-types"
+              startIcon={<Work />}
+              className={location.pathname === '/work-types' ? 'active' : ''}
+            >
+              {t('workTypes.title')}
+            </Button>
+            <Button
+              component={Link}
+              to="/locations"
+              startIcon={<LocationOn />}
+              className={location.pathname === '/locations' ? 'active' : ''}
+            >
+              {t('locations.title')}
+            </Button>
+            <Button
+              component={Link}
               to="/teams"
               startIcon={<Group />}
               className={location.pathname.startsWith('/teams') ? 'active' : ''}
             >
               {t('nav.teams')}
+            </Button>
+            <Button
+              component={Link}
+              to="/reports"
+              startIcon={<Assessment />}
+              className={location.pathname === '/reports' ? 'active' : ''}
+            >
+              {t('reports.title')}
             </Button>
           </nav>
         </div>

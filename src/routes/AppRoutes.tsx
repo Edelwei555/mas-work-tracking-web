@@ -7,6 +7,9 @@ import Profile from '../components/Profile/Profile';
 import TimeTracking from '../components/TimeTracking/TimeTracking';
 import Teams from '../components/Teams/Teams';
 import TeamMembers from '../components/Teams/TeamMembers';
+import WorkTypes from '../components/WorkTypes/WorkTypes';
+import Locations from '../components/Locations/Locations';
+import Reports from '../components/Reports/Reports';
 import Layout from '../components/Layout/Layout';
 
 // Компонент-обгортка для TeamMembers
@@ -46,8 +49,11 @@ const AppRoutes: React.FC = () => {
       }>
         <Route index element={<TimeTracking />} />
         <Route path="profile" element={<Profile />} />
+        <Route path="work-types" element={<WorkTypes />} />
+        <Route path="locations" element={<Locations />} />
         <Route path="teams" element={<Teams />} />
         <Route path="teams/:teamId" element={<TeamMembersWrapper />} />
+        <Route path="reports" element={<Reports />} />
       </Route>
 
       {/* Перенаправлення невідомих маршрутів */}
