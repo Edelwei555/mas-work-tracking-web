@@ -17,12 +17,13 @@ export interface WorkType {
   createdBy?: string;
 }
 
-export const addWorkType = async (workType: Omit<WorkType, 'id'>) => {
+export const addWorkType = async (workType: WorkType): Promise<void> => {
+  console.log('Додавання типу роботи в Firestore:', workType);
   try {
     const docRef = await addDoc(collection(db, 'workTypes'), workType);
-    return docRef.id;
+    console.log('Тип роботи додано з ID:', docRef.id);
   } catch (error) {
-    console.error('Error adding work type:', error);
+    console.error('Деталі помилки:', error);
     throw error;
   }
 };

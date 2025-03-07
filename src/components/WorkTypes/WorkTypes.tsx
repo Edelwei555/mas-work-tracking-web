@@ -60,7 +60,13 @@ const WorkTypes: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser || !teamId) return;
+    if (!currentUser) return;
+
+    console.log('Дані для створення типу роботи:', {
+      name: newWorkType.name,
+      teamId: teamId,
+      createdBy: currentUser.uid
+    });
 
     try {
       setLoading(true);
