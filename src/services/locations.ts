@@ -13,9 +13,9 @@ import { db } from '../config/firebase';
 export interface Location {
   id?: string;
   name: string;
-  description?: string;
+  address: string;
   teamId: string;
-  createdBy: string;
+  createdBy?: string;
 }
 
 export const addLocation = async (location: Omit<Location, 'id'>) => {
@@ -45,10 +45,10 @@ export const getTeamLocations = async (teamId: string) => {
   }
 };
 
-export const updateLocation = async (id: string, location: Partial<Location>) => {
+export const updateLocation = async (id: string, location: Partial<Omit<Location, 'id'>>) => {
   try {
-    const locationRef = doc(db, 'locations', id);
-    await updateDoc(locationRef, location);
+    const docRef = doc(db, 'locations', id);
+    await updateDoc(docRef, location);
   } catch (error) {
     console.error('Error updating location:', error);
     throw error;
@@ -57,8 +57,8 @@ export const updateLocation = async (id: string, location: Partial<Location>) =>
 
 export const deleteLocation = async (id: string) => {
   try {
-    const locationRef = doc(db, 'locations', id);
-    await deleteDoc(locationRef);
+    const docRef = doc(db, 'locations', id);
+    await deleteDoc(docRef);
   } catch (error) {
     console.error('Error deleting location:', error);
     throw error;

@@ -1,37 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
-import { Location, getTeamLocations, addLocation, updateLocation, deleteLocation } from '../../services/locations';
+import { Location, getTeamLocations, addLocation, deleteLocation } from '../../services/locations';
 import { getUserTeams } from '../../services/teams';
 import './Locations.css';
-
-interface LocationFormData {
-  name: string;
-  description: string;
-}
 
 const Locations: React.FC = () => {
   const { t } = useTranslation();
   const { currentUser } = useAuth();
   const [locations, setLocations] = useState<Location[]>([]);
-  const [teamId, setTeamId] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [isEditing, setIsEditing] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState<LocationFormData>({ 
-    name: '', 
-    description: ''
+  const [teamId, setTeamId] = useState<string>('');
+  const [newLocation, setNewLocation] = useState({
+    name: '',
+    address: ''
   });
 
   // Завантаження команди користувача
   useEffect(() => {
     const fetchTeam = async () => {
       if (!currentUser) return;
-
+      
       try {
         const teams = await getUserTeams(currentUser.uid);
-        if (teams.length > 0 && teams[0].id) {
+        if (teams.length > 0) {
           setTeamId(teams[0].id);
         } else {
           setError(t('teams.noTeams'));
@@ -39,27 +32,25 @@ const Locations: React.FC = () => {
       } catch (err) {
         setError(t('common.error'));
         console.error('Error fetching team:', err);
-      } finally {
-        setLoading(false);
       }
     };
 
     fetchTeam();
   }, [currentUser, t]);
 
-  // Завантаження локацій після отримання ID команди
+  // Завантаження локацій
   useEffect(() => {
     const fetchLocations = async () => {
       if (!teamId) return;
-
+      
       try {
         setLoading(true);
         const fetchedLocations = await getTeamLocations(teamId);
         setLocations(fetchedLocations);
         setError('');
       } catch (err) {
-        setError(t('common.error'));
-        console.error('Error fetching locations:', err);
+        setError(t('locations.error.load'));
+        console.error('Error loading locations:', err);
       } finally {
         setLoading(false);
       }
@@ -73,55 +64,45 @@ const Locations: React.FC = () => {
     if (!currentUser || !teamId) return;
 
     try {
-      if (editingId) {
-        await updateLocation(editingId, {
-          ...formData,
-          teamId,
-          createdBy: currentUser.uid
-        });
-      } else {
-        await addLocation({
-          ...formData,
-          teamId,
-          createdBy: currentUser.uid
-        });
-      }
+      setLoading(true);
+      await addLocation({
+        name: newLocation.name,
+        address: newLocation.address,
+        teamId,
+      });
 
+      // Оновлюємо список
       const updatedLocations = await getTeamLocations(teamId);
       setLocations(updatedLocations);
-      resetForm();
+      
+      // Очищаємо форму
+      setNewLocation({ name: '', address: '' });
+      setError('');
     } catch (err) {
-      setError(t('common.error'));
-      console.error('Error saving location:', err);
+      setError(t('locations.error.add'));
+      console.error('Error adding location:', err);
+    } finally {
+      setLoading(false);
     }
-  };
-
-  const handleEdit = (location: Location) => {
-    setFormData({
-      name: location.name,
-      description: location.description || ''
-    });
-    setEditingId(location.id || null);
-    setIsEditing(true);
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm(t('common.confirmDelete'))) return;
-
+    if (!teamId) return;
+    
     try {
+      setLoading(true);
       await deleteLocation(id);
+      
+      // Оновлюємо список
       const updatedLocations = await getTeamLocations(teamId);
       setLocations(updatedLocations);
+      setError('');
     } catch (err) {
-      setError(t('common.error'));
+      setError(t('locations.error.delete'));
       console.error('Error deleting location:', err);
+    } finally {
+      setLoading(false);
     }
-  };
-
-  const resetForm = () => {
-    setFormData({ name: '', description: '' });
-    setEditingId(null);
-    setIsEditing(false);
   };
 
   if (loading) {
@@ -137,63 +118,47 @@ const Locations: React.FC = () => {
       <h2>{t('locations.title')}</h2>
       {error && <div className="error-message">{error}</div>}
 
-      <form onSubmit={handleSubmit} className="location-form">
+      <form onSubmit={handleSubmit} className="add-form">
         <div className="form-group">
-          <label htmlFor="name">{t('locations.name')}</label>
+          <label>{t('locations.name')}</label>
           <input
             type="text"
-            id="name"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            value={newLocation.name}
+            onChange={(e) => setNewLocation(prev => ({ ...prev, name: e.target.value }))}
+            placeholder={t('locations.namePlaceholder')}
             required
           />
         </div>
 
         <div className="form-group">
-          <label htmlFor="description">{t('locations.description')}</label>
-          <textarea
-            id="description"
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            rows={3}
+          <label>{t('locations.address')}</label>
+          <input
+            type="text"
+            value={newLocation.address}
+            onChange={(e) => setNewLocation(prev => ({ ...prev, address: e.target.value }))}
+            placeholder={t('locations.addressPlaceholder')}
+            required
           />
         </div>
 
-        <div className="form-buttons">
-          <button type="submit" className="btn-primary">
-            {isEditing ? t('common.save') : t('locations.add')}
-          </button>
-          {isEditing && (
-            <button type="button" className="btn-secondary" onClick={resetForm}>
-              {t('common.cancel')}
-            </button>
-          )}
-        </div>
+        <button type="submit" className="btn-primary">
+          {t('locations.add')}
+        </button>
       </form>
 
       <div className="locations-list">
         {locations.map(location => (
           <div key={location.id} className="location-item">
             <div className="location-info">
-              <span className="name">{location.name}</span>
-              {location.description && (
-                <span className="description">{location.description}</span>
-              )}
+              <h3>{location.name}</h3>
+              <p>{t('locations.addressLabel')}: {location.address}</p>
             </div>
-            <div className="location-actions">
-              <button
-                className="btn-edit"
-                onClick={() => handleEdit(location)}
-              >
-                {t('common.edit')}
-              </button>
-              <button
-                className="btn-delete"
-                onClick={() => location.id && handleDelete(location.id)}
-              >
-                {t('common.delete')}
-              </button>
-            </div>
+            <button
+              onClick={() => handleDelete(location.id!)}
+              className="btn-delete"
+            >
+              {t('common.delete')}
+            </button>
           </div>
         ))}
       </div>

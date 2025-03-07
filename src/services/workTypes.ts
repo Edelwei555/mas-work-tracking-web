@@ -13,8 +13,9 @@ import { db } from '../config/firebase';
 export interface WorkType {
   id?: string;
   name: string;
+  unit: string;
   teamId: string;
-  createdBy: string;
+  createdBy?: string;
 }
 
 export const addWorkType = async (workType: Omit<WorkType, 'id'>) => {
@@ -44,10 +45,10 @@ export const getTeamWorkTypes = async (teamId: string) => {
   }
 };
 
-export const updateWorkType = async (id: string, workType: Partial<WorkType>) => {
+export const updateWorkType = async (id: string, workType: Partial<Omit<WorkType, 'id'>>) => {
   try {
-    const workTypeRef = doc(db, 'workTypes', id);
-    await updateDoc(workTypeRef, workType);
+    const docRef = doc(db, 'workTypes', id);
+    await updateDoc(docRef, workType);
   } catch (error) {
     console.error('Error updating work type:', error);
     throw error;
@@ -56,8 +57,8 @@ export const updateWorkType = async (id: string, workType: Partial<WorkType>) =>
 
 export const deleteWorkType = async (id: string) => {
   try {
-    const workTypeRef = doc(db, 'workTypes', id);
-    await deleteDoc(workTypeRef);
+    const docRef = doc(db, 'workTypes', id);
+    await deleteDoc(docRef);
   } catch (error) {
     console.error('Error deleting work type:', error);
     throw error;

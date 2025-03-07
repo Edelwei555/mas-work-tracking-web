@@ -5,31 +5,26 @@ import { WorkType, getTeamWorkTypes, addWorkType, updateWorkType, deleteWorkType
 import { getUserTeams } from '../../services/teams';
 import './WorkTypes.css';
 
-interface WorkTypeFormData {
-  name: string;
-}
-
 const WorkTypes: React.FC = () => {
   const { t } = useTranslation();
   const { currentUser } = useAuth();
   const [workTypes, setWorkTypes] = useState<WorkType[]>([]);
-  const [teamId, setTeamId] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [isEditing, setIsEditing] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState<WorkTypeFormData>({ 
-    name: ''
+  const [teamId, setTeamId] = useState<string>('');
+  const [newWorkType, setNewWorkType] = useState({
+    name: '',
+    unit: ''
   });
 
   // Завантаження команди користувача
   useEffect(() => {
     const fetchTeam = async () => {
       if (!currentUser) return;
-
+      
       try {
         const teams = await getUserTeams(currentUser.uid);
-        if (teams.length > 0 && teams[0].id) {
+        if (teams.length > 0) {
           setTeamId(teams[0].id);
         } else {
           setError(t('teams.noTeams'));
@@ -37,27 +32,25 @@ const WorkTypes: React.FC = () => {
       } catch (err) {
         setError(t('common.error'));
         console.error('Error fetching team:', err);
-      } finally {
-        setLoading(false);
       }
     };
 
     fetchTeam();
   }, [currentUser, t]);
 
-  // Завантаження видів робіт після отримання ID команди
+  // Завантаження видів робіт
   useEffect(() => {
     const fetchWorkTypes = async () => {
       if (!teamId) return;
-
+      
       try {
         setLoading(true);
         const fetchedWorkTypes = await getTeamWorkTypes(teamId);
         setWorkTypes(fetchedWorkTypes);
         setError('');
       } catch (err) {
-        setError(t('common.error'));
-        console.error('Error fetching work types:', err);
+        setError(t('workTypes.error.load'));
+        console.error('Error loading work types:', err);
       } finally {
         setLoading(false);
       }
@@ -71,54 +64,45 @@ const WorkTypes: React.FC = () => {
     if (!currentUser || !teamId) return;
 
     try {
-      if (editingId) {
-        await updateWorkType(editingId, {
-          ...formData,
-          teamId,
-          createdBy: currentUser.uid
-        });
-      } else {
-        await addWorkType({
-          ...formData,
-          teamId,
-          createdBy: currentUser.uid
-        });
-      }
+      setLoading(true);
+      await addWorkType({
+        name: newWorkType.name,
+        unit: newWorkType.unit,
+        teamId,
+      });
 
+      // Оновлюємо список
       const updatedWorkTypes = await getTeamWorkTypes(teamId);
       setWorkTypes(updatedWorkTypes);
-      resetForm();
+      
+      // Очищаємо форму
+      setNewWorkType({ name: '', unit: '' });
+      setError('');
     } catch (err) {
-      setError(t('common.error'));
-      console.error('Error saving work type:', err);
+      setError(t('workTypes.error.add'));
+      console.error('Error adding work type:', err);
+    } finally {
+      setLoading(false);
     }
-  };
-
-  const handleEdit = (workType: WorkType) => {
-    setFormData({
-      name: workType.name
-    });
-    setEditingId(workType.id || null);
-    setIsEditing(true);
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm(t('common.confirmDelete'))) return;
-
+    if (!teamId) return;
+    
     try {
+      setLoading(true);
       await deleteWorkType(id);
+      
+      // Оновлюємо список
       const updatedWorkTypes = await getTeamWorkTypes(teamId);
       setWorkTypes(updatedWorkTypes);
+      setError('');
     } catch (err) {
-      setError(t('common.error'));
+      setError(t('workTypes.error.delete'));
       console.error('Error deleting work type:', err);
+    } finally {
+      setLoading(false);
     }
-  };
-
-  const resetForm = () => {
-    setFormData({ name: '' });
-    setEditingId(null);
-    setIsEditing(false);
   };
 
   if (loading) {
@@ -134,50 +118,47 @@ const WorkTypes: React.FC = () => {
       <h2>{t('workTypes.title')}</h2>
       {error && <div className="error-message">{error}</div>}
 
-      <form onSubmit={handleSubmit} className="work-type-form">
+      <form onSubmit={handleSubmit} className="add-form">
         <div className="form-group">
-          <label htmlFor="name">{t('workTypes.name')}</label>
+          <label>{t('workTypes.name')}</label>
           <input
             type="text"
-            id="name"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            value={newWorkType.name}
+            onChange={(e) => setNewWorkType(prev => ({ ...prev, name: e.target.value }))}
+            placeholder={t('workTypes.namePlaceholder')}
             required
           />
         </div>
 
-        <div className="form-buttons">
-          <button type="submit" className="btn-primary">
-            {isEditing ? t('common.save') : t('workTypes.add')}
-          </button>
-          {isEditing && (
-            <button type="button" className="btn-secondary" onClick={resetForm}>
-              {t('common.cancel')}
-            </button>
-          )}
+        <div className="form-group">
+          <label>{t('workTypes.unit')}</label>
+          <input
+            type="text"
+            value={newWorkType.unit}
+            onChange={(e) => setNewWorkType(prev => ({ ...prev, unit: e.target.value }))}
+            placeholder={t('workTypes.unitPlaceholder')}
+            required
+          />
         </div>
+
+        <button type="submit" className="btn-primary">
+          {t('workTypes.add')}
+        </button>
       </form>
 
       <div className="work-types-list">
         {workTypes.map(workType => (
           <div key={workType.id} className="work-type-item">
             <div className="work-type-info">
-              <span className="name">{workType.name}</span>
+              <h3>{workType.name}</h3>
+              <p>{t('workTypes.unitLabel')}: {workType.unit}</p>
             </div>
-            <div className="work-type-actions">
-              <button
-                className="btn-edit"
-                onClick={() => handleEdit(workType)}
-              >
-                {t('common.edit')}
-              </button>
-              <button
-                className="btn-delete"
-                onClick={() => workType.id && handleDelete(workType.id)}
-              >
-                {t('common.delete')}
-              </button>
-            </div>
+            <button
+              onClick={() => handleDelete(workType.id!)}
+              className="btn-delete"
+            >
+              {t('common.delete')}
+            </button>
           </div>
         ))}
       </div>
