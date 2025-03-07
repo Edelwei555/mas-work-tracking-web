@@ -1,0 +1,28 @@
+.navigation {
+  margin-bottom: 2rem;
+}
+
+.navigation .MuiToolbar-root {
+  padding: 0.5rem 1rem;
+}
+
+.navigation .MuiButton-root {
+  margin: 0 0.5rem;
+  text-transform: none;
+}
+
+.navigation .MuiButton-root.active {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.navigation .MuiIconButton-root {
+  margin-left: 0.5rem;
+}
+
+.navigation .MuiMenu-paper {
+  min-width: 200px;
+}
+
+.navigation .MuiMenuItem-root {
+  padding: 0.75rem 1rem;
+} 
