@@ -7,64 +7,29 @@ service cloud.firestore {
       return request.auth != null;
     }
     
-    function isAdmin(userId) {
-      return isAuthenticated() && 
-        exists(/databases/$(database)/documents/users/$(userId)) &&
-        get(/databases/$(database)/documents/users/$(userId)).data.role == 'admin';
-    }
-    
     function isTeamMember(teamId, userId) {
       return isAuthenticated() && 
         exists(/databases/$(database)/documents/teams/$(teamId)/members/$(userId));
     }
-    
-    function isTeamAdmin(teamId, userId) {
-      return isAuthenticated() && 
-        exists(/databases/$(database)/documents/teams/$(teamId)/members/$(userId)) &&
-        get(/databases/$(database)/documents/teams/$(teamId)/members/$(userId)).data.role == 'admin';
-    }
 
     // Правила для користувачів
     match /users/{userId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.auth.uid == userId;
-      allow update: if isAuthenticated() && request.auth.uid == userId;
-      allow delete: if isAdmin(request.auth.uid);
+      allow read, write: if isAuthenticated();
     }
 
     // Правила для команд
     match /teams/{teamId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && isTeamAdmin(teamId, request.auth.uid);
-      allow delete: if isAuthenticated() && isTeamAdmin(teamId, request.auth.uid);
-    }
-
-    // Правила для учасників команд
-    match /teams/{teamId}/members/{userId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && (
-        // Дозволяємо створювати запис, якщо це перший учасник (творець команди)
-        // або якщо поточний користувач є адміном команди
-        (!exists(/databases/$(database)/documents/teams/$(teamId)/members/**)) ||
-        isTeamAdmin(teamId, request.auth.uid)
-      );
-      allow update: if isAuthenticated() && isTeamAdmin(teamId, request.auth.uid);
-      allow delete: if isAuthenticated() && isTeamAdmin(teamId, request.auth.uid);
+      allow read, write: if isAuthenticated();
+      
+      // Правила для учасників команд
+      match /members/{userId} {
+        allow read, write: if isAuthenticated();
+      }
     }
 
     // Правила для записів часу
     match /timeEntries/{entryId} {
-      allow read: if isAuthenticated() && resource.data.teamId != null && isTeamMember(resource.data.teamId, request.auth.uid);
-      allow create: if isAuthenticated() && request.resource.data.teamId != null && isTeamMember(request.resource.data.teamId, request.auth.uid);
-      allow update: if isAuthenticated() && resource.data.teamId != null && (
-        resource.data.userId == request.auth.uid ||
-        isTeamAdmin(resource.data.teamId, request.auth.uid)
-      );
-      allow delete: if isAuthenticated() && resource.data.teamId != null && (
-        resource.data.userId == request.auth.uid ||
-        isTeamAdmin(resource.data.teamId, request.auth.uid)
-      );
+      allow read, write: if isAuthenticated();
     }
 
     // Правила для типів робіт
@@ -72,10 +37,8 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && 
         request.resource.data.teamId != null && 
-        request.resource.data.createdBy == request.auth.uid &&
-        isTeamMember(request.resource.data.teamId, request.auth.uid);
-      allow update: if isAuthenticated() && resource.data.teamId != null && isTeamMember(resource.data.teamId, request.auth.uid);
-      allow delete: if isAuthenticated() && resource.data.teamId != null && isTeamMember(resource.data.teamId, request.auth.uid);
+        request.resource.data.createdBy == request.auth.uid;
+      allow update, delete: if isAuthenticated();
     }
 
     // Правила для локацій
@@ -83,10 +46,8 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && 
         request.resource.data.teamId != null && 
-        request.resource.data.createdBy == request.auth.uid &&
-        isTeamMember(request.resource.data.teamId, request.auth.uid);
-      allow update: if isAuthenticated() && resource.data.teamId != null && isTeamMember(resource.data.teamId, request.auth.uid);
-      allow delete: if isAuthenticated() && resource.data.teamId != null && isTeamMember(resource.data.teamId, request.auth.uid);
+        request.resource.data.createdBy == request.auth.uid;
+      allow update, delete: if isAuthenticated();
     }
   }
 } 
