@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Team, getUserTeams, addTeam, updateTeam, deleteTeam } from '../../services/teams';
+import { Button } from '@mui/material';
+import { Group } from '@mui/icons-material';
 import './Teams.css';
 
 interface TeamFormData {
@@ -12,6 +15,7 @@ interface TeamFormData {
 const Teams: React.FC = () => {
   const { t } = useTranslation();
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -96,6 +100,10 @@ const Teams: React.FC = () => {
     }
   };
 
+  const handleManageMembers = (teamId: string) => {
+    navigate(`/teams/${teamId}`);
+  };
+
   const resetForm = () => {
     setFormData({ name: '', description: '' });
     setEditingId(null);
@@ -155,6 +163,14 @@ const Teams: React.FC = () => {
               )}
             </div>
             <div className="team-actions">
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<Group />}
+                onClick={() => team.id && handleManageMembers(team.id)}
+              >
+                {t('teams.manageMembers')}
+              </Button>
               <button
                 className="btn-edit"
                 onClick={() => handleEdit(team)}
