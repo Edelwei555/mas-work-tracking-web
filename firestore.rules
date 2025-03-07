@@ -34,7 +34,7 @@ service cloud.firestore {
 
     // Правила для команд
     match /teams/{teamId} {
-      allow read: if isAuthenticated() && isTeamMember(teamId, request.auth.uid);
+      allow read: if isAuthenticated();
       allow create: if isAuthenticated();
       allow update: if isAuthenticated() && isTeamAdmin(teamId, request.auth.uid);
       allow delete: if isAuthenticated() && isTeamAdmin(teamId, request.auth.uid);
@@ -42,8 +42,13 @@ service cloud.firestore {
 
     // Правила для учасників команд
     match /teams/{teamId}/members/{userId} {
-      allow read: if isAuthenticated() && isTeamMember(teamId, request.auth.uid);
-      allow create: if isAuthenticated() && isTeamAdmin(teamId, request.auth.uid);
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && (
+        // Дозволяємо створювати запис, якщо це перший учасник (творець команди)
+        // або якщо поточний користувач є адміном команди
+        (!exists(/databases/$(database)/documents/teams/$(teamId)/members/**)) ||
+        isTeamAdmin(teamId, request.auth.uid)
+      );
       allow update: if isAuthenticated() && isTeamAdmin(teamId, request.auth.uid);
       allow delete: if isAuthenticated() && isTeamAdmin(teamId, request.auth.uid);
     }
