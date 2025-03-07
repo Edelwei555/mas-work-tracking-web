@@ -14,7 +14,8 @@ export interface Location {
   id?: string;
   name: string;
   description?: string;
-  userId: string;
+  teamId: string;
+  createdBy: string;
 }
 
 export const addLocation = async (location: Omit<Location, 'id'>) => {
@@ -27,11 +28,11 @@ export const addLocation = async (location: Omit<Location, 'id'>) => {
   }
 };
 
-export const getUserLocations = async (userId: string) => {
+export const getTeamLocations = async (teamId: string) => {
   try {
     const q = query(
       collection(db, 'locations'),
-      where('userId', '==', userId)
+      where('teamId', '==', teamId)
     );
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({

@@ -14,7 +14,8 @@ export interface WorkType {
   id?: string;
   name: string;
   unit: string;
-  userId: string;
+  teamId: string;
+  createdBy: string;
 }
 
 export const addWorkType = async (workType: Omit<WorkType, 'id'>) => {
@@ -27,11 +28,11 @@ export const addWorkType = async (workType: Omit<WorkType, 'id'>) => {
   }
 };
 
-export const getUserWorkTypes = async (userId: string) => {
+export const getTeamWorkTypes = async (teamId: string) => {
   try {
     const q = query(
       collection(db, 'workTypes'),
-      where('userId', '==', userId)
+      where('teamId', '==', teamId)
     );
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({

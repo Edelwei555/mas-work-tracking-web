@@ -14,6 +14,7 @@ import { db } from '../config/firebase';
 export interface TimeEntry {
   id?: string;
   userId: string;
+  teamId: string;
   workTypeId: string;
   locationId: string;
   startTime: Date;
@@ -140,11 +141,11 @@ export const updateTimeEntry = async (id: string, data: Partial<TimeEntry>) => {
   }
 };
 
-export const getCurrentTimeEntry = async (userId: string): Promise<TimeEntry | null> => {
+export const getCurrentTimeEntry = async (userId: string, teamId: string): Promise<TimeEntry | null> => {
   try {
     // Спочатку перевіряємо локальний стан
     const localState = getTimerState();
-    if (localState && localState.userId === userId && localState.isRunning) {
+    if (localState && localState.userId === userId && localState.teamId === teamId && localState.isRunning) {
       // Перевіряємо, чи не минуло забагато часу з останнього оновлення
       const timeSinceLastUpdate = Date.now() - localState.lastUpdate.getTime();
       if (timeSinceLastUpdate < 24 * 60 * 60 * 1000) { // 24 години
@@ -156,6 +157,7 @@ export const getCurrentTimeEntry = async (userId: string): Promise<TimeEntry | n
     const q = query(
       collection(db, 'timeEntries'),
       where('userId', '==', userId),
+      where('teamId', '==', teamId),
       where('isRunning', '==', true),
       orderBy('startTime', 'desc'),
     );
@@ -191,11 +193,11 @@ export const getCurrentTimeEntry = async (userId: string): Promise<TimeEntry | n
   }
 };
 
-export const getUserTimeEntries = async (userId: string, startDate?: Date, endDate?: Date) => {
+export const getTeamTimeEntries = async (teamId: string, startDate?: Date, endDate?: Date) => {
   try {
     let q = query(
       collection(db, 'timeEntries'),
-      where('userId', '==', userId),
+      where('teamId', '==', teamId),
       orderBy('startTime', 'desc')
     );
 
