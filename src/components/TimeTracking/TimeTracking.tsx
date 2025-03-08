@@ -202,7 +202,9 @@ const TimeTracking: React.FC = () => {
         pausedTime: timeEntry.pausedTime || 0,
         workAmount: parseFloat(workAmount),
         isRunning: false,
-        duration: elapsedTime
+        duration: elapsedTime,
+        createdBy: currentUser.uid,
+        lastPauseTime: timeEntry.lastPauseTime
       };
 
       console.log('Saving time entry:', entryToSave);
