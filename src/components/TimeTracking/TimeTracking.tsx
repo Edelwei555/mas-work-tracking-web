@@ -21,6 +21,7 @@ const TimeTracking: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<string>('');
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   // Перезавантаження перекладів
   useEffect(() => {
@@ -39,6 +40,7 @@ const TimeTracking: React.FC = () => {
       
       setWorkTypes(fetchedWorkTypes);
       setLocations(fetchedLocations);
+      setError('');
     } catch (err) {
       console.error('Error refreshing lists:', err);
     }
@@ -53,19 +55,17 @@ const TimeTracking: React.FC = () => {
         const teams = await getUserTeams(currentUser.uid);
         if (teams.length > 0 && teams[0].id) {
           setTeamId(teams[0].id);
-        } else {
-          setError(t('teams.noTeams'));
         }
       } catch (err) {
-        setError(t('common.error'));
         console.error('Error fetching team:', err);
       } finally {
         setLoading(false);
+        setInitialLoadComplete(true);
       }
     };
 
     fetchTeam();
-  }, [currentUser, t]);
+  }, [currentUser]);
 
   // Завантаження даних після отримання ID команди
   useEffect(() => {
@@ -84,24 +84,19 @@ const TimeTracking: React.FC = () => {
         }
 
         // Отримуємо види робіт та локації
-        const [fetchedWorkTypes, fetchedLocations] = await Promise.all([
-          getTeamWorkTypes(teamId),
-          getTeamLocations(teamId)
-        ]);
-        
-        setWorkTypes(fetchedWorkTypes);
-        setLocations(fetchedLocations);
+        await refreshLists();
         setError('');
       } catch (err) {
-        setError(t('common.error'));
         console.error('Error fetching data:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
-  }, [currentUser, teamId, t]);
+    if (teamId) {
+      fetchData();
+    }
+  }, [currentUser, teamId]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -235,11 +230,11 @@ const TimeTracking: React.FC = () => {
     }
   };
 
-  if (loading) {
+  if (loading && !initialLoadComplete) {
     return <div className="loading">{t('common.loading')}</div>;
   }
 
-  if (!teamId) {
+  if (initialLoadComplete && !teamId) {
     return <div className="error-message">{t('teams.noTeams')}</div>;
   }
 
