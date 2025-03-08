@@ -179,22 +179,34 @@ const TimeTracking: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!timeEntry || !workAmount || !currentUser || !teamId) return;
+    if (!timeEntry || !workAmount || !currentUser || !teamId) {
+      console.error('Missing required fields:', {
+        timeEntry: !!timeEntry,
+        workAmount: !!workAmount,
+        currentUser: !!currentUser,
+        teamId: !!teamId
+      });
+      return;
+    }
 
     try {
       const now = new Date();
-      await saveTimeEntry({
-        ...timeEntry as TimeEntry,
+      const entryToSave = {
         userId: currentUser.uid,
         teamId: teamId,
-        workTypeId: timeEntry.workTypeId || '',
-        locationId: timeEntry.locationId || '',
+        workTypeId: selectedWorkType,
+        locationId: selectedLocation,
         startTime: timeEntry.startTime || now,
         endTime: timeEntry.endTime || now,
         pausedTime: timeEntry.pausedTime || 0,
         workAmount: parseFloat(workAmount),
-        isRunning: false
-      });
+        isRunning: false,
+        duration: elapsedTime
+      };
+
+      console.log('Saving time entry:', entryToSave);
+      await saveTimeEntry(entryToSave);
+      console.log('Time entry saved successfully');
 
       // Скинути стан
       setTimeEntry(null);
@@ -202,9 +214,6 @@ const TimeTracking: React.FC = () => {
       setWorkAmount('');
       setSelectedWorkType('');
       setSelectedLocation('');
-      
-      // Додаємо лог для відлагодження
-      console.log('Time entry saved successfully');
     } catch (err) {
       console.error('Error saving time entry:', err);
       setError(t('common.error'));
