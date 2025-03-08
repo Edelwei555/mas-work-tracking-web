@@ -20,6 +20,7 @@ const TimeTracking: React.FC = () => {
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
+  const [success, setSuccess] = useState<string>('');
 
   // Перезавантаження перекладів
   useEffect(() => {
@@ -186,10 +187,15 @@ const TimeTracking: React.FC = () => {
         currentUser: !!currentUser,
         teamId: !!teamId
       });
+      setError(t('timeTracking.missingFields'));
       return;
     }
 
     try {
+      setLoading(true);
+      setError('');
+      setSuccess('');
+
       const now = new Date();
       const entryToSave = {
         userId: currentUser.uid,
@@ -208,15 +214,24 @@ const TimeTracking: React.FC = () => {
       await saveTimeEntry(entryToSave);
       console.log('Time entry saved successfully');
 
-      // Скинути стан
-      setTimeEntry(null);
-      setElapsedTime(0);
-      setWorkAmount('');
-      setSelectedWorkType('');
-      setSelectedLocation('');
+      // Показуємо повідомлення про успіх
+      setSuccess(t('timeTracking.saveSuccess'));
+
+      // Скидаємо форму через 2 секунди
+      setTimeout(() => {
+        setTimeEntry(null);
+        setElapsedTime(0);
+        setWorkAmount('');
+        setSelectedWorkType('');
+        setSelectedLocation('');
+        setSuccess('');
+      }, 2000);
+
     } catch (err) {
       console.error('Error saving time entry:', err);
-      setError(t('common.error'));
+      setError(t('timeTracking.saveError'));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -231,6 +246,9 @@ const TimeTracking: React.FC = () => {
   return (
     <div className="time-tracking">
       <h2>{t('timeTracking.title')}</h2>
+      
+      {error && <div className="error-message">{error}</div>}
+      {success && <div className="success-message">{success}</div>}
       
       <div className="time-tracking-form">
         <div className="form-group">
