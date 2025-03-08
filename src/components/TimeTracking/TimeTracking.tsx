@@ -158,9 +158,10 @@ const TimeTracking: React.FC = () => {
   const handleResume = () => {
     if (!timeEntry) return;
 
+    const now = new Date();
     setTimeEntry({
       ...timeEntry,
-      startTime: new Date(),
+      startTime: now,
       isRunning: true
     });
   };
