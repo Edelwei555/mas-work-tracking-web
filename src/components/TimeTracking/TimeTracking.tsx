@@ -182,10 +182,18 @@ const TimeTracking: React.FC = () => {
     if (!timeEntry || !workAmount || !currentUser || !teamId) return;
 
     try {
+      const now = new Date();
       await saveTimeEntry({
         ...timeEntry as TimeEntry,
+        userId: currentUser.uid,
         teamId: teamId,
-        workAmount: parseFloat(workAmount)
+        workTypeId: timeEntry.workTypeId || '',
+        locationId: timeEntry.locationId || '',
+        startTime: timeEntry.startTime || now,
+        endTime: timeEntry.endTime || now,
+        pausedTime: timeEntry.pausedTime || 0,
+        workAmount: parseFloat(workAmount),
+        isRunning: false
       });
 
       // Скинути стан
@@ -194,9 +202,12 @@ const TimeTracking: React.FC = () => {
       setWorkAmount('');
       setSelectedWorkType('');
       setSelectedLocation('');
+      
+      // Додаємо лог для відлагодження
+      console.log('Time entry saved successfully');
     } catch (err) {
-      setError(t('common.error'));
       console.error('Error saving time entry:', err);
+      setError(t('common.error'));
     }
   };
 
