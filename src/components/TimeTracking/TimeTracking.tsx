@@ -164,14 +164,23 @@ const TimeTracking: React.FC = () => {
     });
   };
 
-  const handleStop = () => {
+  const handleStop = async () => {
     if (!timeEntry) return;
 
-    setTimeEntry({
+    const now = new Date();
+    const newTimeEntry = {
       ...timeEntry,
       isRunning: false,
-      endTime: new Date()
-    });
+      endTime: now
+    };
+
+    setTimeEntry(newTimeEntry);
+
+    // Розраховуємо фінальний час з урахуванням пауз
+    const start = new Date(timeEntry.startTime || now);
+    const pausedTime = timeEntry.pausedTime || 0;
+    const finalElapsed = now.getTime() - start.getTime() + pausedTime;
+    setElapsedTime(finalElapsed);
   };
 
   const handleSave = async () => {
@@ -194,21 +203,23 @@ const TimeTracking: React.FC = () => {
       const now = new Date();
       const startTime = timeEntry.startTime ? new Date(timeEntry.startTime) : now;
       const endTime = timeEntry.endTime ? new Date(timeEntry.endTime) : now;
-      const lastPauseTime = timeEntry.lastPauseTime ? new Date(timeEntry.lastPauseTime) : undefined;
+      const pausedTime = timeEntry.pausedTime || 0;
       
-      const entryToSave = {
+      // Розраховуємо тривалість в секундах
+      const durationInSeconds = Math.floor(elapsedTime / 1000);
+      
+      const entryToSave: Omit<TimeEntry, 'createdAt' | 'lastUpdate'> = {
         userId: currentUser.uid,
         teamId: teamId,
         workTypeId: selectedWorkType,
         locationId: selectedLocation,
         startTime,
         endTime,
-        pausedTime: timeEntry.pausedTime || 0,
+        pausedTime,
         workAmount: parseFloat(workAmount),
         isRunning: false,
-        duration: elapsedTime,
-        createdBy: currentUser.uid,
-        lastPauseTime
+        duration: durationInSeconds,
+        lastPauseTime: timeEntry.lastPauseTime ? new Date(timeEntry.lastPauseTime) : undefined
       };
 
       console.log('Saving time entry:', entryToSave);
