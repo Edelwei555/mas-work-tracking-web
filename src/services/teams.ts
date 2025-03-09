@@ -31,12 +31,19 @@ export const getUserTeams = async (userId: string): Promise<Team[]> => {
 
 export const getTeamMembers = async (teamId: string): Promise<User[]> => {
   try {
-    const q = query(collection(db, `teams/${teamId}/members`));
+    const q = query(
+      collection(db, 'teamMembers'),
+      where('teamId', '==', teamId)
+    );
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    } as User));
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: data.userId,
+        email: data.email,
+        displayName: data.displayName
+      } as User;
+    });
   } catch (error) {
     console.error('Error getting team members:', error);
     throw error;
