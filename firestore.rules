@@ -2,52 +2,68 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Функції для перевірки ролей
+    // Допоміжні функції
     function isAuthenticated() {
       return request.auth != null;
     }
     
-    function isTeamMember(teamId, userId) {
+    function isAdmin() {
       return isAuthenticated() && 
-        exists(/databases/$(database)/documents/teams/$(teamId)/members/$(userId));
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+    
+    function isTeamMember() {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/teamMembers/$(request.auth.uid));
+    }
+    
+    function isTeamAdmin() {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/teamAdmins/$(request.auth.uid));
     }
 
     // Правила для користувачів
     match /users/{userId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && 
+        request.resource.data.uid == request.auth.uid;
+      allow update: if isAuthenticated() && 
+        request.auth.uid == resource.data.uid;
     }
 
     // Правила для команд
     match /teams/{teamId} {
-      allow read, write: if isAuthenticated();
-      
-      // Правила для учасників команд
-      match /members/{userId} {
-        allow read, write: if isAuthenticated();
-      }
+      allow read: if isAuthenticated();
+      allow write: if isTeamAdmin();
+    }
+
+    // Правила для учасників команд
+    match /teamMembers/{memberId} {
+      allow read: if isAuthenticated();
+      allow write: if isTeamAdmin();
     }
 
     // Правила для записів часу
     match /timeEntries/{entryId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isTeamMember();
+      allow create: if isTeamMember() && 
+        request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isTeamMember() && 
+        resource.data.userId == request.auth.uid;
     }
 
-    // Правила для типів робіт
+    // Правила для видів робіт
     match /workTypes/{typeId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && 
-        request.resource.data.teamId != null && 
-        request.resource.data.createdBy == request.auth.uid;
-      allow update, delete: if isAuthenticated();
+      allow read: if isTeamMember();
+      allow create: if isTeamMember();
+      allow update, delete: if isTeamMember();
     }
 
     // Правила для локацій
     match /locations/{locationId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && 
-        request.resource.data.teamId != null && 
-        request.resource.data.createdBy == request.auth.uid;
-      allow update, delete: if isAuthenticated();
+      allow read: if isTeamMember();
+      allow create: if isTeamMember();
+      allow update, delete: if isTeamMember();
     }
   }
 } 

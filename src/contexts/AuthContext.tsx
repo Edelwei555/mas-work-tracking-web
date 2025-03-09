@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
-  User,
+  User as FirebaseUser,
   Auth,
   GoogleAuthProvider,
   signInWithPopup,
@@ -13,12 +13,13 @@ import {
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { ensureUserExists } from '../services/users';
 
 // Перевіряємо, що auth не undefined і правильного типу
 const firebaseAuth = auth as Auth;
 
 interface AuthContextType {
-  currentUser: User | null;
+  currentUser: FirebaseUser | null;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
@@ -26,54 +27,51 @@ interface AuthContextType {
   signOut: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | null>(null);
+const AuthContext = createContext<AuthContextType>({
+  currentUser: null,
+  loading: true,
+  signInWithGoogle: async () => {},
+  signInWithEmail: async () => {},
+  signUpWithEmail: async () => {},
+  signOut: async () => {}
+});
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
-    const setupAuth = async () => {
+    const initAuth = async () => {
       try {
+        // Встановлюємо локальну персистентність
         await setPersistence(firebaseAuth, browserLocalPersistence);
         console.log('Встановлено локальну персистентність');
       } catch (error) {
-        console.error('Помилка при налаштуванні персистентності:', error);
-      } finally {
-        setLoading(false);
+        console.error('Помилка при встановленні персистентності:', error);
       }
     };
 
-    setupAuth();
-  }, []);
+    initAuth();
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(firebaseAuth, 
-      (user) => {
-        console.log('Зміна стану автентифікації:', {
-          isAuthenticated: !!user,
-          email: user?.email,
-          currentPath: location.pathname,
-          timestamp: new Date().toISOString()
-        });
-
+    const unsubscribe = onAuthStateChanged(firebaseAuth, async (user) => {
+      try {
         if (user) {
+          // Створюємо або отримуємо користувача в базі даних
+          await ensureUserExists(
+            user.uid,
+            user.email || '',
+            user.displayName || user.email || 'Користувач',
+            user.photoURL || undefined
+          );
+          
           console.log('Користувач автентифікований:', {
             uid: user.uid,
             email: user.email,
-            emailVerified: user.emailVerified,
-            displayName: user.displayName,
-            photoURL: user.photoURL
+            displayName: user.displayName
           });
           
           setCurrentUser(user);
@@ -101,16 +99,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
           }
         }
-      },
-      (error) => {
-        console.error('Помилка при зміні стану автентифікації:', error);
+      } catch (error) {
+        console.error('Помилка при обробці зміни стану автентифікації:', error);
+      } finally {
+        setLoading(false);
       }
-    );
+    });
 
-    return () => {
-      console.log('Відписка від слухача автентифікації');
-      unsubscribe();
-    };
+    return unsubscribe;
   }, [navigate, location.pathname]);
 
   const signInWithGoogle = async () => {
