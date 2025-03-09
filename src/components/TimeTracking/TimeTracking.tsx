@@ -192,19 +192,23 @@ const TimeTracking: React.FC = () => {
       setSuccess('');
 
       const now = new Date();
+      const startTime = timeEntry.startTime ? new Date(timeEntry.startTime) : now;
+      const endTime = timeEntry.endTime ? new Date(timeEntry.endTime) : now;
+      const lastPauseTime = timeEntry.lastPauseTime ? new Date(timeEntry.lastPauseTime) : undefined;
+      
       const entryToSave = {
         userId: currentUser.uid,
         teamId: teamId,
         workTypeId: selectedWorkType,
         locationId: selectedLocation,
-        startTime: timeEntry.startTime || now,
-        endTime: timeEntry.endTime || now,
+        startTime,
+        endTime,
         pausedTime: timeEntry.pausedTime || 0,
         workAmount: parseFloat(workAmount),
         isRunning: false,
         duration: elapsedTime,
         createdBy: currentUser.uid,
-        lastPauseTime: timeEntry.lastPauseTime
+        lastPauseTime
       };
 
       console.log('Saving time entry:', entryToSave);
