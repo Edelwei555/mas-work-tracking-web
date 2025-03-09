@@ -124,9 +124,8 @@ export const updateTimeEntry = async (id: string, data: Partial<TimeEntry>) => {
     if (data.endTime) {
       updateData.endTime = Timestamp.fromDate(data.endTime);
     }
-    if (data.lastPauseTime) {
-      updateData.lastPauseTime = Timestamp.fromDate(data.lastPauseTime);
-    }
+    // lastPauseTime завжди null
+    updateData.lastPauseTime = null;
     
     await updateDoc(docRef, updateData);
 
@@ -139,7 +138,8 @@ export const updateTimeEntry = async (id: string, data: Partial<TimeEntry>) => {
         saveTimerState({
           ...currentState,
           ...data,
-          lastUpdate: new Date()
+          lastUpdate: new Date(),
+          lastPauseTime: null
         });
       }
     }
@@ -155,7 +155,8 @@ export const getCurrentTimeEntry = async (userId: string, teamId: string): Promi
     const localState = getTimerState();
     if (localState && localState.userId === userId && localState.teamId === teamId && localState.isRunning) {
       // Перевіряємо, чи не минуло забагато часу з останнього оновлення
-      const timeSinceLastUpdate = Date.now() - localState.lastUpdate?.getTime() || 0;
+      const lastUpdateTime = localState.lastUpdate?.getTime() || Date.now();
+      const timeSinceLastUpdate = Date.now() - lastUpdateTime;
       if (timeSinceLastUpdate < 24 * 60 * 60 * 1000) { // 24 години
         return localState;
       }
@@ -183,10 +184,10 @@ export const getCurrentTimeEntry = async (userId: string, teamId: string): Promi
       id: doc.id,
       ...data,
       startTime: data.startTime.toDate(),
-      endTime: data.endTime?.toDate() || null,
+      endTime: data.endTime.toDate(),
       createdAt: data.createdAt.toDate(),
       lastUpdate: data.lastUpdate.toDate(),
-      lastPauseTime: data.lastPauseTime?.toDate() || null
+      lastPauseTime: null
     };
 
     // Оновлюємо локальний стан

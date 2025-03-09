@@ -146,8 +146,8 @@ const TimeTracking: React.FC = () => {
     setTimeEntry({
       ...timeEntry,
       isRunning: false,
-      lastPauseTime: now,
-      pausedTime: currentElapsed + (timeEntry.pausedTime || 0)
+      pausedTime: currentElapsed + (timeEntry.pausedTime || 0),
+      lastPauseTime: null
     });
   };
 
