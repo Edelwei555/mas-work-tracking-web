@@ -18,22 +18,30 @@ export interface TimeEntry {
   workTypeId: string;
   locationId: string;
   startTime: Date;
-  endTime?: Date | null;
+  endTime: Date;
   pausedTime: number;
-  workAmount?: number;
-  duration?: number;
-  createdAt: Date;
+  workAmount: number;
   isRunning: boolean;
-  lastUpdate: Date;
-  lastPauseTime?: Date;
+  duration: number;
+  lastPauseTime: null;
+  createdAt?: Date;
+  lastUpdate?: Date;
 }
 
-interface FirestoreTimeEntry extends Omit<TimeEntry, 'startTime' | 'endTime' | 'createdAt' | 'lastUpdate' | 'lastPauseTime'> {
+interface FirestoreTimeEntry {
+  userId: string;
+  teamId: string;
+  workTypeId: string;
+  locationId: string;
   startTime: Timestamp;
-  endTime?: Timestamp | null;
+  endTime: Timestamp;
+  pausedTime: number;
+  workAmount: number;
+  isRunning: boolean;
+  duration: number;
+  lastPauseTime: null;
   createdAt: Timestamp;
   lastUpdate: Timestamp;
-  lastPauseTime?: Timestamp;
 }
 
 // Зберігаємо стан таймера в localStorage
@@ -43,10 +51,10 @@ export const saveTimerState = (timeEntry: TimeEntry) => {
   localStorage.setItem(TIMER_STATE_KEY, JSON.stringify({
     ...timeEntry,
     startTime: timeEntry.startTime.toISOString(),
-    endTime: timeEntry.endTime?.toISOString(),
-    createdAt: timeEntry.createdAt.toISOString(),
-    lastUpdate: timeEntry.lastUpdate.toISOString(),
-    lastPauseTime: timeEntry.lastPauseTime?.toISOString()
+    endTime: timeEntry.endTime.toISOString(),
+    createdAt: timeEntry.createdAt?.toISOString(),
+    lastUpdate: timeEntry.lastUpdate?.toISOString(),
+    lastPauseTime: null
   }));
 };
 
@@ -58,10 +66,10 @@ export const getTimerState = (): TimeEntry | null => {
   return {
     ...data,
     startTime: new Date(data.startTime),
-    endTime: data.endTime ? new Date(data.endTime) : null,
-    createdAt: new Date(data.createdAt),
-    lastUpdate: new Date(data.lastUpdate),
-    lastPauseTime: data.lastPauseTime ? new Date(data.lastPauseTime) : undefined
+    endTime: new Date(data.endTime),
+    createdAt: data.createdAt ? new Date(data.createdAt) : undefined,
+    lastUpdate: data.lastUpdate ? new Date(data.lastUpdate) : undefined,
+    lastPauseTime: null
   };
 };
 
@@ -71,26 +79,26 @@ export const clearTimerState = () => {
 
 export const saveTimeEntry = async (timeEntry: Omit<TimeEntry, 'createdAt' | 'lastUpdate'>) => {
   try {
-    const firestoreEntry: Partial<FirestoreTimeEntry> = {
-      ...timeEntry,
+    const timeEntriesRef = collection(db, 'timeEntries');
+    
+    // Конвертуємо дати в Timestamp
+    const firestoreEntry: FirestoreTimeEntry = {
+      userId: timeEntry.userId,
+      teamId: timeEntry.teamId,
+      workTypeId: timeEntry.workTypeId,
+      locationId: timeEntry.locationId,
       startTime: Timestamp.fromDate(timeEntry.startTime),
-      endTime: timeEntry.endTime ? Timestamp.fromDate(timeEntry.endTime) : null,
-      lastPauseTime: timeEntry.lastPauseTime ? Timestamp.fromDate(timeEntry.lastPauseTime) : undefined,
+      endTime: Timestamp.fromDate(timeEntry.endTime),
+      pausedTime: timeEntry.pausedTime,
+      workAmount: timeEntry.workAmount,
+      isRunning: timeEntry.isRunning,
+      duration: timeEntry.duration,
+      lastPauseTime: null,
       createdAt: Timestamp.now(),
       lastUpdate: Timestamp.now()
     };
 
-    const docRef = await addDoc(collection(db, 'timeEntries'), firestoreEntry);
-
-    if (timeEntry.isRunning) {
-      saveTimerState({
-        ...timeEntry,
-        id: docRef.id,
-        createdAt: new Date(),
-        lastUpdate: new Date()
-      });
-    }
-
+    const docRef = await addDoc(timeEntriesRef, firestoreEntry);
     return docRef.id;
   } catch (error) {
     console.error('Error saving time entry:', error);
@@ -147,7 +155,7 @@ export const getCurrentTimeEntry = async (userId: string, teamId: string): Promi
     const localState = getTimerState();
     if (localState && localState.userId === userId && localState.teamId === teamId && localState.isRunning) {
       // Перевіряємо, чи не минуло забагато часу з останнього оновлення
-      const timeSinceLastUpdate = Date.now() - localState.lastUpdate.getTime();
+      const timeSinceLastUpdate = Date.now() - localState.lastUpdate?.getTime() || 0;
       if (timeSinceLastUpdate < 24 * 60 * 60 * 1000) { // 24 години
         return localState;
       }
@@ -178,7 +186,7 @@ export const getCurrentTimeEntry = async (userId: string, teamId: string): Promi
       endTime: data.endTime?.toDate() || null,
       createdAt: data.createdAt.toDate(),
       lastUpdate: data.lastUpdate.toDate(),
-      lastPauseTime: data.lastPauseTime?.toDate()
+      lastPauseTime: data.lastPauseTime?.toDate() || null
     };
 
     // Оновлюємо локальний стан
@@ -219,7 +227,7 @@ export const getTeamTimeEntries = async (teamId: string, startDate?: Date, endDa
         endTime: data.endTime?.toDate() || null,
         createdAt: data.createdAt.toDate(),
         lastUpdate: data.lastUpdate.toDate(),
-        lastPauseTime: data.lastPauseTime?.toDate()
+        lastPauseTime: data.lastPauseTime?.toDate() || null
       } as TimeEntry;
     });
   } catch (error) {

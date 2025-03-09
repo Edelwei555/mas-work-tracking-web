@@ -159,7 +159,8 @@ const TimeTracking: React.FC = () => {
     setTimeEntry({
       ...timeEntry,
       startTime: now,
-      isRunning: true
+      isRunning: true,
+      lastPauseTime: null
     });
   };
 
@@ -170,7 +171,8 @@ const TimeTracking: React.FC = () => {
     const newTimeEntry = {
       ...timeEntry,
       isRunning: false,
-      endTime: now
+      endTime: now,
+      lastPauseTime: null
     };
 
     setTimeEntry(newTimeEntry);
@@ -217,7 +219,8 @@ const TimeTracking: React.FC = () => {
         pausedTime,
         workAmount: parseFloat(workAmount),
         isRunning: false,
-        duration: durationInSeconds
+        duration: durationInSeconds,
+        lastPauseTime: null
       };
 
       console.log('Saving time entry:', entryToSave);
