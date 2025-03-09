@@ -14,9 +14,13 @@ import {
 import { auth } from '../config/firebase';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ensureUserExists } from '../services/users';
+import { ensureTeamMemberExists } from '../services/teamMembers';
 
 // Перевіряємо, що auth не undefined і правильного типу
 const firebaseAuth = auth as Auth;
+
+// ID команди за замовчуванням (замініть на ваш ID)
+const DEFAULT_TEAM_ID = 'default';
 
 interface AuthContextType {
   currentUser: FirebaseUser | null;
@@ -61,14 +65,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         if (user) {
           // Створюємо або отримуємо користувача в базі даних
-          await ensureUserExists(
+          const dbUser = await ensureUserExists(
             user.uid,
             user.email || '',
             user.displayName || user.email || 'Користувач',
             user.photoURL || undefined
           );
           
-          console.log('Користувач автентифікований:', {
+          // Додаємо користувача як працівника команди
+          await ensureTeamMemberExists(dbUser, DEFAULT_TEAM_ID);
+          
+          console.log('Користувач автентифікований та доданий як працівник:', {
             uid: user.uid,
             email: user.email,
             displayName: user.displayName
