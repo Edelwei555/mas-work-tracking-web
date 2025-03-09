@@ -223,13 +223,20 @@ export const getTeamTimeEntries = async (teamId: string, startDate?: Date, endDa
       const data = doc.data() as FirestoreTimeEntry;
       return {
         id: doc.id,
-        ...data,
+        userId: data.userId,
+        teamId: data.teamId,
+        workTypeId: data.workTypeId,
+        locationId: data.locationId,
         startTime: data.startTime.toDate(),
-        endTime: data.endTime?.toDate() || null,
+        endTime: data.endTime.toDate(),
+        pausedTime: data.pausedTime,
+        workAmount: data.workAmount,
+        isRunning: data.isRunning,
+        duration: data.duration,
+        lastPauseTime: null,
         createdAt: data.createdAt.toDate(),
-        lastUpdate: data.lastUpdate.toDate(),
-        lastPauseTime: data.lastPauseTime?.toDate() || null
-      } as TimeEntry;
+        lastUpdate: data.lastUpdate.toDate()
+      } satisfies TimeEntry;
     });
   } catch (error) {
     console.error('Error getting time entries:', error);
