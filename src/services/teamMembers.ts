@@ -4,6 +4,7 @@ import {
   where, 
   getDocs,
   addDoc,
+  updateDoc,
   Timestamp,
   DocumentData
 } from 'firebase/firestore';
@@ -58,6 +59,29 @@ export const findTeamMemberByUserId = async (userId: string): Promise<TeamMember
     };
   } catch (error) {
     console.error('Error finding team member:', error);
+    throw error;
+  }
+};
+
+export const updateTeamMemberDisplayName = async (userId: string, displayName: string): Promise<void> => {
+  try {
+    const q = query(
+      collection(db, 'teamMembers'),
+      where('userId', '==', userId)
+    );
+
+    const querySnapshot = await getDocs(q);
+    const updates = querySnapshot.docs.map(doc => 
+      updateDoc(doc.ref, {
+        displayName,
+        lastUpdate: Timestamp.now()
+      })
+    );
+
+    await Promise.all(updates);
+    console.log('Successfully updated team member display name');
+  } catch (error) {
+    console.error('Error updating team member display name:', error);
     throw error;
   }
 };

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { updateProfile, updatePassword } from 'firebase/auth';
 import { TextField, Button, Paper, Typography, Box, Alert } from '@mui/material';
+import { updateTeamMemberDisplayName } from '../../services/teamMembers';
 import './Profile.css';
 
 const Profile: React.FC = () => {
@@ -28,6 +29,9 @@ const Profile: React.FC = () => {
         await updateProfile(currentUser, {
           displayName: displayName
         });
+        
+        // Оновлюємо ім'я в колекції teamMembers
+        await updateTeamMemberDisplayName(currentUser.uid, displayName);
       }
 
       if (newPassword) {
