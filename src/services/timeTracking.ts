@@ -204,23 +204,30 @@ export const getCurrentTimeEntry = async (userId: string, teamId: string): Promi
 
 export const getTeamTimeEntries = async (teamId: string, startDate?: Date, endDate?: Date) => {
   try {
-    let q = query(
+    let baseQuery = query(
       collection(db, 'timeEntries'),
-      where('teamId', '==', teamId),
-      orderBy('startTime', 'desc')
+      where('teamId', '==', teamId)
     );
 
-    if (startDate) {
-      q = query(q, where('startTime', '>=', Timestamp.fromDate(startDate)));
+    // Додаємо фільтри за датою, якщо вони вказані
+    if (startDate && endDate) {
+      baseQuery = query(
+        baseQuery,
+        where('startTime', '>=', Timestamp.fromDate(startDate)),
+        where('startTime', '<=', Timestamp.fromDate(endDate))
+      );
     }
 
-    if (endDate) {
-      q = query(q, where('startTime', '<=', Timestamp.fromDate(endDate)));
-    }
+    // Додаємо сортування
+    const q = query(baseQuery, orderBy('startTime', 'desc'));
 
     const querySnapshot = await getDocs(q);
+    console.log('Found entries:', querySnapshot.size); // Додаємо лог
+
     return querySnapshot.docs.map(doc => {
       const data = doc.data() as FirestoreTimeEntry;
+      console.log('Entry data:', data); // Додаємо лог для кожного запису
+
       return {
         id: doc.id,
         userId: data.userId,
