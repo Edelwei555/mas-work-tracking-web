@@ -64,6 +64,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = onAuthStateChanged(firebaseAuth, async (user) => {
       try {
         if (user) {
+          console.log('User authenticated:', {
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName
+          });
+          
           // Створюємо або отримуємо користувача в базі даних
           const dbUser = await ensureUserExists(
             user.uid,
@@ -72,42 +78,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             user.photoURL || undefined
           );
           
-          // Додаємо користувача як працівника команди
-          await ensureTeamMemberExists(dbUser, DEFAULT_TEAM_ID);
+          console.log('User created/found in database:', dbUser);
           
-          console.log('Користувач автентифікований та доданий як працівник:', {
-            uid: user.uid,
-            email: user.email,
-            displayName: user.displayName
-          });
+          // Додаємо користувача як працівника команди
+          const teamMember = await ensureTeamMemberExists(dbUser, DEFAULT_TEAM_ID);
+          
+          console.log('Team member created/found:', teamMember);
           
           setCurrentUser(user);
           
           if (location.pathname === '/login') {
-            console.log('Спроба перенаправлення на /time-tracking...');
-            try {
-              navigate('/time-tracking', { replace: true });
-              console.log('Перенаправлення виконано успішно');
-            } catch (error) {
-              console.error('Помилка при перенаправленні:', error);
-            }
+            console.log('Redirecting to /time-tracking...');
+            navigate('/time-tracking', { replace: true });
           }
         } else {
-          console.log('Користувач не автентифікований');
+          console.log('User not authenticated');
           setCurrentUser(null);
           
           if (location.pathname !== '/login') {
-            console.log('Спроба перенаправлення на /login...');
-            try {
-              navigate('/login', { replace: true });
-              console.log('Перенаправлення виконано успішно');
-            } catch (error) {
-              console.error('Помилка при перенаправленні:', error);
-            }
+            navigate('/login', { replace: true });
           }
         }
       } catch (error) {
-        console.error('Помилка при обробці зміни стану автентифікації:', error);
+        console.error('Error handling auth state change:', error);
       } finally {
         setLoading(false);
       }

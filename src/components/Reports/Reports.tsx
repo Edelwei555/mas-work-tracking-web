@@ -63,6 +63,7 @@ const Reports: React.FC = () => {
       
       try {
         setLoading(true);
+        console.log('Fetching data for team:', teamId);
         
         // Отримуємо види робіт, локації та учасників команди
         const [fetchedWorkTypes, fetchedLocations, fetchedMembers] = await Promise.all([
@@ -70,6 +71,8 @@ const Reports: React.FC = () => {
           getTeamLocations(teamId),
           getTeamMembers(teamId)
         ]);
+        
+        console.log('Fetched team members:', fetchedMembers);
         
         setWorkTypes(fetchedWorkTypes);
         setLocations(fetchedLocations);
