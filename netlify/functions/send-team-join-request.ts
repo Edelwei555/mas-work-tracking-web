@@ -57,6 +57,12 @@ const handler: Handler = async (event) => {
     }
 
     const request = requestDoc.data();
+    if (!request) {
+      return {
+        statusCode: 404,
+        body: JSON.stringify({ error: 'Request data is missing' }),
+      };
+    }
     
     // Отримання даних про команду
     const teamDoc = await db.collection('teams').doc(teamId).get();
@@ -68,6 +74,12 @@ const handler: Handler = async (event) => {
     }
 
     const team = teamDoc.data();
+    if (!team) {
+      return {
+        statusCode: 404,
+        body: JSON.stringify({ error: 'Team data is missing' }),
+      };
+    }
 
     // Отримання адміністраторів команди
     const adminSnapshot = await db.collection('teamMembers')
@@ -86,8 +98,8 @@ const handler: Handler = async (event) => {
     const emailPromises = adminSnapshot.docs.map(async (adminDoc) => {
       const admin = adminDoc.data();
       
-      const approveUrl = `${process.env.URL}/team-requests/${requestId}?action=approve`;
-      const rejectUrl = `${process.env.URL}/team-requests/${requestId}?action=reject`;
+      const approveUrl = `${process.env.SITE_URL}/team-requests/${requestId}?action=approve`;
+      const rejectUrl = `${process.env.SITE_URL}/team-requests/${requestId}?action=reject`;
 
       const mailOptions = {
         from: process.env.SMTP_FROM,
@@ -113,7 +125,7 @@ const handler: Handler = async (event) => {
               border-radius: 5px;
             ">Відхилити</a>
           </div>
-          <p>Або перейдіть за посиланням для управління запитами: ${process.env.URL}/team-requests</p>
+          <p>Або перейдіть за посиланням для управління запитами: ${process.env.SITE_URL}/team-requests</p>
         `,
       };
 
