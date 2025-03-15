@@ -24,8 +24,6 @@ const TeamMembersWrapper: React.FC = () => {
   return (
     <TeamMembers
       teamId={teamId}
-      members={[]} // Це буде заповнено в компоненті
-      onUpdate={() => {}} // Це буде заповнено в компоненті
     />
   );
 };
