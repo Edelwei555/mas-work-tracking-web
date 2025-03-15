@@ -19,32 +19,54 @@ export const getUserTeams = async (userId: string): Promise<Team[]> => {
   try {
     console.log('Getting teams for user:', userId);
     
-    // Спочатку перевіряємо чи є команда за замовчуванням
-    const defaultTeamRef = doc(db, 'teams', 'default');
-    const defaultTeamDoc = await getDoc(defaultTeamRef);
+    // Спочатку шукаємо команди користувача
+    const q = query(collection(db, 'teams'), where('createdBy', '==', userId));
+    const querySnapshot = await getDocs(q);
+    const userTeams = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as Team));
+
+    console.log('Found user teams:', userTeams);
     
-    if (!defaultTeamDoc.exists()) {
-      console.log('Creating default team');
-      // Створюємо команду за замовчуванням, якщо її немає
-      await setDoc(defaultTeamRef, {
-        name: 'Default Team',
-        description: 'Default team for all users',
-        createdBy: userId
-      });
-      
-      return [{
-        id: 'default',
-        name: 'Default Team',
-        description: 'Default team for all users',
-        createdBy: userId
-      }];
+    if (userTeams.length > 0) {
+      return userTeams;
     }
+
+    // Якщо у користувача немає команд, перевіряємо чи він є членом якоїсь команди
+    const memberQ = query(
+      collection(db, 'teamMembers'),
+      where('userId', '==', userId)
+    );
+    const memberSnapshot = await getDocs(memberQ);
     
-    // Повертаємо команду за замовчуванням
-    return [{
-      id: defaultTeamDoc.id,
-      ...defaultTeamDoc.data()
-    } as Team];
+    if (!memberSnapshot.empty) {
+      const teamIds = memberSnapshot.docs.map(doc => doc.data().teamId);
+      console.log('User is member of teams:', teamIds);
+      
+      const teams = await Promise.all(
+        teamIds.map(async (teamId) => {
+          const teamDoc = await getDoc(doc(db, 'teams', teamId));
+          if (teamDoc.exists()) {
+            return {
+              id: teamDoc.id,
+              ...teamDoc.data()
+            } as Team;
+          }
+          return null;
+        })
+      );
+      
+      const validTeams = teams.filter((team): team is Team => team !== null);
+      if (validTeams.length > 0) {
+        return validTeams;
+      }
+    }
+
+    // Якщо користувач не має команд і не є членом жодної команди,
+    // повертаємо пустий масив
+    console.log('User has no teams');
+    return [];
     
   } catch (error) {
     console.error('Error getting user teams:', error);
@@ -54,19 +76,25 @@ export const getUserTeams = async (userId: string): Promise<Team[]> => {
 
 export const getTeamMembers = async (teamId: string): Promise<User[]> => {
   try {
+    console.log('Getting members for team:', teamId);
+    
     const q = query(
       collection(db, 'teamMembers'),
       where('teamId', '==', teamId)
     );
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => {
+    
+    const members = querySnapshot.docs.map(doc => {
       const data = doc.data();
       return {
         id: data.userId,
         email: data.email,
-        displayName: data.displayName
+        displayName: data.displayName || data.email
       } as User;
     });
+    
+    console.log('Found team members:', members);
+    return members;
   } catch (error) {
     console.error('Error getting team members:', error);
     throw error;
