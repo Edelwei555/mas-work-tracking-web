@@ -38,18 +38,26 @@ const Reports: React.FC = () => {
   // Завантаження команди користувача
   useEffect(() => {
     const fetchTeam = async () => {
-      if (!currentUser) return;
+      if (!currentUser) {
+        console.log('No current user');
+        return;
+      }
       
       try {
+        console.log('Fetching teams for user:', currentUser.uid);
         const teams = await getUserTeams(currentUser.uid);
+        console.log('Found teams:', teams);
+        
         if (teams.length > 0 && teams[0].id) {
+          console.log('Setting team ID:', teams[0].id);
           setTeamId(teams[0].id);
         } else {
+          console.log('No teams found');
           setError(t('teams.noTeams'));
         }
       } catch (err) {
-        setError(t('common.error'));
         console.error('Error fetching team:', err);
+        setError(t('common.error'));
       }
     };
 
@@ -59,7 +67,15 @@ const Reports: React.FC = () => {
   // Завантаження даних після отримання ID команди
   useEffect(() => {
     const fetchData = async () => {
-      if (!currentUser || !teamId) return;
+      if (!currentUser) {
+        console.log('No current user for data fetch');
+        return;
+      }
+      
+      if (!teamId) {
+        console.log('No team ID for data fetch');
+        return;
+      }
       
       try {
         setLoading(true);
@@ -72,6 +88,8 @@ const Reports: React.FC = () => {
           getTeamMembers(teamId)
         ]);
         
+        console.log('Fetched work types:', fetchedWorkTypes);
+        console.log('Fetched locations:', fetchedLocations);
         console.log('Fetched team members:', fetchedMembers);
         
         setWorkTypes(fetchedWorkTypes);
@@ -79,8 +97,8 @@ const Reports: React.FC = () => {
         setTeamMembers(fetchedMembers);
         setError('');
       } catch (err) {
-        setError(t('common.error'));
         console.error('Error fetching data:', err);
+        setError(t('common.error'));
       } finally {
         setLoading(false);
       }

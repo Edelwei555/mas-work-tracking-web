@@ -17,12 +17,35 @@ export interface User {
 
 export const getUserTeams = async (userId: string): Promise<Team[]> => {
   try {
-    const q = query(collection(db, 'teams'), where('createdBy', '==', userId));
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    } as Team));
+    console.log('Getting teams for user:', userId);
+    
+    // Спочатку перевіряємо чи є команда за замовчуванням
+    const defaultTeamRef = doc(db, 'teams', 'default');
+    const defaultTeamDoc = await getDoc(defaultTeamRef);
+    
+    if (!defaultTeamDoc.exists()) {
+      console.log('Creating default team');
+      // Створюємо команду за замовчуванням, якщо її немає
+      await setDoc(defaultTeamRef, {
+        name: 'Default Team',
+        description: 'Default team for all users',
+        createdBy: userId
+      });
+      
+      return [{
+        id: 'default',
+        name: 'Default Team',
+        description: 'Default team for all users',
+        createdBy: userId
+      }];
+    }
+    
+    // Повертаємо команду за замовчуванням
+    return [{
+      id: defaultTeamDoc.id,
+      ...defaultTeamDoc.data()
+    } as Team];
+    
   } catch (error) {
     console.error('Error getting user teams:', error);
     throw error;
