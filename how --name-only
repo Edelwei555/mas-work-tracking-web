@@ -1,0 +1,16 @@
+[33mcommit b33bbfc965118b9b41d3460f83f1ce7a5c399784[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: Edelwei555 <dima.vasilenko.27@gmail.com>
+Date:   Fri Mar 7 20:31:13 2025 +0200
+
+    fix: видалено одиниці виміру та виправлено помилки в компонентах
+
+ src/components/Locations/Locations.tsx       | 187 [32m++++++++++[m[31m-------------[m
+ src/components/Reports/Reports.css           | 163 [32m+++++++++[m[31m-----------[m
+ src/components/Reports/Reports.tsx           | 220 [32m++++++++++++++++++++++++[m[31m---[m
+ src/components/Teams/Teams.tsx               |   5 [32m+[m[31m-[m
+ src/components/TimeTracking/TimeTracking.tsx |   6 [32m+[m[31m-[m
+ src/components/WorkTypes/WorkTypes.tsx       | 176 [32m++++++++[m[31m-------------[m
+ src/locales/uk/translation.json              |  24 [32m+[m[31m--[m
+ src/services/teams.ts                        |  51 [32m++[m[31m-----[m
+ src/services/workTypes.ts                    |   1 [31m-[m
+ 9 files changed, 447 insertions(+), 386 deletions(-)

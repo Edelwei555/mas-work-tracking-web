@@ -9,7 +9,7 @@ import {
   DocumentData
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import { User } from './users';
+import { User as FirebaseUser } from 'firebase/auth';
 
 export interface TeamMember {
   id?: string;
@@ -87,7 +87,7 @@ export const updateTeamMemberDisplayName = async (userId: string, displayName: s
 };
 
 export const createTeamMember = async (
-  user: User,
+  user: FirebaseUser,
   teamId: string,
   role: 'member' | 'admin' = 'member'
 ): Promise<string> => {
@@ -95,8 +95,8 @@ export const createTeamMember = async (
     const firestoreTeamMember: FirestoreTeamMember = {
       userId: user.uid,
       teamId,
-      displayName: user.displayName,
-      email: user.email,
+      displayName: user.displayName || '',
+      email: user.email || '',
       role,
       createdAt: Timestamp.now(),
       lastUpdate: Timestamp.now()
@@ -111,7 +111,7 @@ export const createTeamMember = async (
 };
 
 export const ensureTeamMemberExists = async (
-  user: User,
+  user: FirebaseUser,
   teamId: string,
   role: 'member' | 'admin' = 'member'
 ): Promise<TeamMember> => {
@@ -126,8 +126,8 @@ export const ensureTeamMemberExists = async (
       id: memberId,
       userId: user.uid,
       teamId,
-      displayName: user.displayName,
-      email: user.email,
+      displayName: user.displayName || '',
+      email: user.email || '',
       role,
       createdAt: new Date(),
       lastUpdate: new Date()

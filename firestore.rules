@@ -40,7 +40,10 @@ service cloud.firestore {
     // Правила для учасників команд
     match /teamMembers/{memberId} {
       allow read: if isAuthenticated();
-      allow write: if isTeamAdmin();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && 
+        (resource.data.userId == request.auth.uid || isTeamAdmin());
+      allow delete: if isTeamAdmin();
     }
 
     // Правила для записів часу

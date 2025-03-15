@@ -1,0 +1,7 @@
+[33mcommit 2328e763d01014ca7dbe8aa3fb17e698e9ccef9f[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: Edelwei555 <dima.vasilenko.27@gmail.com>
+Date:   Sat Mar 8 00:11:40 2025 +0200
+
+    Додано оновлення списків при фокусі на селектах
+
+src/components/TimeTracking/TimeTracking.tsx

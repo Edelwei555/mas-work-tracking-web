@@ -7,6 +7,7 @@ import {
   Timestamp
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { User as FirebaseUser } from 'firebase/auth';
 
 export interface User {
   id?: string;
@@ -76,31 +77,26 @@ export const createUser = async (userData: Omit<User, 'id' | 'createdAt' | 'last
   }
 };
 
-export const ensureUserExists = async (
-  uid: string, 
-  email: string, 
-  displayName: string, 
-  photoURL?: string
-): Promise<User> => {
+export const ensureUserExists = async (user: FirebaseUser): Promise<User> => {
   try {
-    const existingUser = await findUserByUid(uid);
+    const existingUser = await findUserByUid(user.uid);
     if (existingUser) {
       return existingUser;
     }
 
     const userId = await createUser({
-      uid,
-      email,
-      displayName,
-      photoURL
+      uid: user.uid,
+      email: user.email || '',
+      displayName: user.displayName || user.email || 'Користувач',
+      photoURL: user.photoURL || undefined
     });
 
     return {
       id: userId,
-      uid,
-      email,
-      displayName,
-      photoURL,
+      uid: user.uid,
+      email: user.email || '',
+      displayName: user.displayName || user.email || 'Користувач',
+      photoURL: user.photoURL || undefined,
       createdAt: new Date(),
       lastUpdate: new Date()
     };

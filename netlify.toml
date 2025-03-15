@@ -1,6 +1,7 @@
 [build]
 command = "npm run build"
 publish = "build"
+functions = "netlify/functions"
 
 [build.environment]
 CI = ""
@@ -12,4 +13,7 @@ status = 200
 
 # Автоматично скасовувати старі білди при новому коміті
 [build.queue]
-stop_previous_build = true 
+stop_previous_build = true
+
+[functions]
+node_bundler = "esbuild" 

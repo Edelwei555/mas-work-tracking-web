@@ -65,23 +65,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         if (user) {
           console.log('User authenticated:', {
-            uid: user.uid,
             email: user.email,
-            displayName: user.displayName
+            timestamp: new Date().toISOString()
           });
           
-          // Створюємо або отримуємо користувача в базі даних
-          const dbUser = await ensureUserExists(
-            user.uid,
-            user.email || '',
-            user.displayName || user.email || 'Користувач',
-            user.photoURL || undefined
-          );
+          // Створюємо або оновлюємо користувача в базі даних
+          await ensureUserExists(user);
           
-          console.log('User created/found in database:', dbUser);
+          console.log('User created/found in database:', user);
           
           // Додаємо користувача як працівника команди
-          const teamMember = await ensureTeamMemberExists(dbUser, DEFAULT_TEAM_ID);
+          const teamMember = await ensureTeamMemberExists(user, DEFAULT_TEAM_ID);
           
           console.log('Team member created/found:', teamMember);
           
