@@ -169,4 +169,6 @@ export const TeamMembers: React.FC<TeamMembersProps> = ({ teamId }) => {
       </form>
     </div>
   );
-}; 
+};
+
+export default TeamMembers; 
