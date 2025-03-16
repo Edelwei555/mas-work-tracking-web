@@ -1,9 +1,9 @@
 import { Handler } from '@netlify/functions';
 import * as nodemailer from 'nodemailer';
-import { initializeApp, cert, getApps } from 'firebase-admin/app';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 
-// Ініціалізація Firebase Admin
+// Ініціалізуємо Firebase Admin тільки якщо ще не ініціалізовано
 if (!getApps().length) {
   initializeApp({
     credential: cert({
@@ -16,7 +16,7 @@ if (!getApps().length) {
 
 const db = getFirestore();
 
-// Налаштування транспорту для відправки email
+// Налаштування транспорту для nodemailer
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: parseInt(process.env.SMTP_PORT || '587'),
@@ -28,43 +28,26 @@ const transporter = nodemailer.createTransport({
 });
 
 const handler: Handler = async (event) => {
-  try {
-    // Перевірка методу
-    if (event.httpMethod !== 'POST') {
-      return {
-        statusCode: 405,
-        body: JSON.stringify({ error: 'Method not allowed' }),
-      };
-    }
+  // Перевіряємо метод
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      body: JSON.stringify({ error: 'Method not allowed' }),
+    };
+  }
 
-    // Отримання даних з запиту
-    const { requestId, teamId } = JSON.parse(event.body || '{}');
-    
-    if (!requestId || !teamId) {
+  try {
+    const { teamId, email } = JSON.parse(event.body || '{}');
+
+    // Перевіряємо обов'язкові параметри
+    if (!teamId || !email) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: 'Missing required fields' }),
+        body: JSON.stringify({ error: 'Team ID and email are required' }),
       };
     }
 
-    // Отримання даних про запит
-    const requestDoc = await db.collection('teamJoinRequests').doc(requestId).get();
-    if (!requestDoc.exists) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({ error: 'Request not found' }),
-      };
-    }
-
-    const request = requestDoc.data();
-    if (!request) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({ error: 'Request data is missing' }),
-      };
-    }
-    
-    // Отримання даних про команду
+    // Отримуємо інформацію про команду
     const teamDoc = await db.collection('teams').doc(teamId).get();
     if (!teamDoc.exists) {
       return {
@@ -74,75 +57,45 @@ const handler: Handler = async (event) => {
     }
 
     const team = teamDoc.data();
-    if (!team) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({ error: 'Team data is missing' }),
-      };
-    }
 
-    // Отримання адміністраторів команди
-    const adminSnapshot = await db.collection('teamMembers')
+    // Перевіряємо чи користувач вже є членом команди
+    const memberQuery = await db.collection('teamMembers')
       .where('teamId', '==', teamId)
-      .where('role', '==', 'admin')
+      .where('email', '==', email)
       .get();
 
-    if (adminSnapshot.empty) {
+    if (!memberQuery.empty) {
       return {
-        statusCode: 404,
-        body: JSON.stringify({ error: 'No team administrators found' }),
+        statusCode: 400,
+        body: JSON.stringify({ error: 'User is already a team member' }),
       };
     }
 
-    // Відправка email кожному адміністратору
-    const emailPromises = adminSnapshot.docs.map(async (adminDoc) => {
-      const admin = adminDoc.data();
-      
-      const approveUrl = `${process.env.SITE_URL}/team-requests/${requestId}?action=approve`;
-      const rejectUrl = `${process.env.SITE_URL}/team-requests/${requestId}?action=reject`;
+    // Створюємо URL для приєднання до команди
+    const joinUrl = `${process.env.SITE_URL}/teams/${teamId}`;
 
-      const mailOptions = {
-        from: process.env.SMTP_FROM,
-        to: admin.email,
-        subject: `Новий запит на приєднання до команди ${team.name}`,
-        html: `
-          <h2>Новий запит на приєднання до команди</h2>
-          <p>Користувач ${request.userName} (${request.userEmail}) хоче приєднатися до команди ${team.name}.</p>
-          <div style="margin: 20px 0;">
-            <a href="${approveUrl}" style="
-              background-color: #4CAF50;
-              color: white;
-              padding: 10px 20px;
-              text-decoration: none;
-              border-radius: 5px;
-              margin-right: 10px;
-            ">Підтвердити</a>
-            <a href="${rejectUrl}" style="
-              background-color: #f44336;
-              color: white;
-              padding: 10px 20px;
-              text-decoration: none;
-              border-radius: 5px;
-            ">Відхилити</a>
-          </div>
-          <p>Або перейдіть за посиланням для управління запитами: ${process.env.SITE_URL}/team-requests</p>
-        `,
-      };
-
-      await transporter.sendMail(mailOptions);
+    // Відправляємо email
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM,
+      to: email,
+      subject: `Запрошення приєднатися до команди ${team?.name}`,
+      html: `
+        <h2>Вас запрошено приєднатися до команди ${team?.name}</h2>
+        <p>Для приєднання до команди перейдіть за посиланням нижче:</p>
+        <p><a href="${joinUrl}">Приєднатися до команди</a></p>
+        <p>Якщо ви не очікували це запрошення, просто проігноруйте цей лист.</p>
+      `,
     });
-
-    await Promise.all(emailPromises);
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ message: 'Emails sent successfully' }),
+      body: JSON.stringify({ message: 'Invitation sent successfully' }),
     };
   } catch (error) {
-    console.error('Error sending team join request:', error);
+    console.error('Error sending invitation:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Internal server error' }),
+      body: JSON.stringify({ error: 'Failed to send invitation' }),
     };
   }
 };
