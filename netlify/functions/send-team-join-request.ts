@@ -5,13 +5,20 @@ import { getFirestore } from 'firebase-admin/firestore';
 
 // Ініціалізуємо Firebase Admin тільки якщо ще не ініціалізовано
 if (!getApps().length) {
-  initializeApp({
-    credential: cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    }),
-  });
+  try {
+    console.log('Initializing Firebase Admin...');
+    initializeApp({
+      credential: cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      }),
+    });
+    console.log('Firebase Admin initialized successfully');
+  } catch (error) {
+    console.error('Error initializing Firebase Admin:', error);
+    throw error;
+  }
 }
 
 const db = getFirestore();
@@ -28,6 +35,11 @@ const transporter = nodemailer.createTransport({
 });
 
 const handler: Handler = async (event) => {
+  console.log('Function invoked with event:', {
+    method: event.httpMethod,
+    body: event.body,
+  });
+
   // Перевіряємо метод
   if (event.httpMethod !== 'POST') {
     return {
@@ -38,9 +50,11 @@ const handler: Handler = async (event) => {
 
   try {
     const { teamId, email } = JSON.parse(event.body || '{}');
+    console.log('Parsed request data:', { teamId, email });
 
     // Перевіряємо обов'язкові параметри
     if (!teamId || !email) {
+      console.log('Missing required fields');
       return {
         statusCode: 400,
         body: JSON.stringify({ error: 'Team ID and email are required' }),
@@ -48,8 +62,10 @@ const handler: Handler = async (event) => {
     }
 
     // Отримуємо інформацію про команду
+    console.log('Fetching team data for ID:', teamId);
     const teamDoc = await db.collection('teams').doc(teamId).get();
     if (!teamDoc.exists) {
+      console.log('Team not found');
       return {
         statusCode: 404,
         body: JSON.stringify({ error: 'Team not found' }),
@@ -57,14 +73,17 @@ const handler: Handler = async (event) => {
     }
 
     const team = teamDoc.data();
+    console.log('Team data:', team);
 
     // Перевіряємо чи користувач вже є членом команди
+    console.log('Checking if user is already a team member');
     const memberQuery = await db.collection('teamMembers')
       .where('teamId', '==', teamId)
       .where('email', '==', email)
       .get();
 
     if (!memberQuery.empty) {
+      console.log('User is already a team member');
       return {
         statusCode: 400,
         body: JSON.stringify({ error: 'User is already a team member' }),
@@ -73,8 +92,10 @@ const handler: Handler = async (event) => {
 
     // Створюємо URL для приєднання до команди
     const joinUrl = `${process.env.SITE_URL}/teams/${teamId}`;
+    console.log('Join URL:', joinUrl);
 
     // Відправляємо email
+    console.log('Sending email invitation');
     await transporter.sendMail({
       from: process.env.SMTP_FROM,
       to: email,
@@ -86,16 +107,24 @@ const handler: Handler = async (event) => {
         <p>Якщо ви не очікували це запрошення, просто проігноруйте цей лист.</p>
       `,
     });
+    console.log('Email sent successfully');
 
     return {
       statusCode: 200,
       body: JSON.stringify({ message: 'Invitation sent successfully' }),
     };
   } catch (error) {
-    console.error('Error sending invitation:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+    });
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Failed to send invitation' }),
+      body: JSON.stringify({ 
+        error: 'Failed to send invitation',
+        details: error.message 
+      }),
     };
   }
 };
