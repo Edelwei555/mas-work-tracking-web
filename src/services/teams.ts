@@ -142,9 +142,22 @@ export const deleteTeam = async (id: string): Promise<void> => {
 
 export const sendTeamInvitation = async (teamId: string, email: string): Promise<void> => {
   try {
-    const functions = getFunctions();
-    const sendInvitation = httpsCallable(functions, 'sendTeamInvitation');
-    await sendInvitation({ teamId, email });
+    const response = await fetch('/.netlify/functions/send-team-join-request', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ teamId, email }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    if (data.error) {
+      throw new Error(data.error);
+    }
   } catch (error) {
     console.error('Error sending invitation:', error);
     throw error;
