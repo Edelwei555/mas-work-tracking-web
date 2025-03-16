@@ -1,6 +1,8 @@
 import { db } from '../config/firebase';
 import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc, setDoc } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { createTeamMember } from './teamMembers';
+import { getAuth } from 'firebase/auth';
 
 export interface Team {
   id?: string;
@@ -104,6 +106,14 @@ export const getTeamMembers = async (teamId: string): Promise<User[]> => {
 export const addTeam = async (team: Team): Promise<string> => {
   try {
     const docRef = await addDoc(collection(db, 'teams'), team);
+    
+    // Додаємо творця команди як адміністратора
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      await createTeamMember(currentUser, docRef.id, 'admin');
+    }
+    
     return docRef.id;
   } catch (error) {
     console.error('Error adding team:', error);
