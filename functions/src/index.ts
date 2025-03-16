@@ -83,11 +83,10 @@ export const sendTeamJoinRequest = functions.https.onRequest(async (req, res) =>
     await sendEmail({
       to: teamData.adminEmail,
       subject: 'Новий запит на приєднання до команди',
-      text: `
-        Користувач ${userData.displayName} (${userData.email}) хоче приєднатися до команди ${teamData.name}.
-        
-        Щоб переглянути запит, перейдіть за посиланням:
-        ${process.env.APP_URL}/teams/${teamId}/requests/${requestId}
+      html: `
+        <h2>Новий запит на приєднання до команди</h2>
+        <p>Користувач ${userData.displayName} (${userData.email}) хоче приєднатися до команди "${teamData.name}".</p>
+        <p>Щоб переглянути запит, перейдіть за посиланням: <a href="${process.env.SITE_URL}/teams/${teamId}/requests/${requestId}">Переглянути запит</a></p>
       `
     });
 

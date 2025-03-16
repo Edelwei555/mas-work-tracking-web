@@ -1,36 +1,30 @@
-import * as functions from 'firebase-functions';
-import * as nodemailer from 'nodemailer';
+import * as sgMail from '@sendgrid/mail';
 
 interface EmailOptions {
   to: string;
   subject: string;
-  text: string;
+  html: string;
 }
 
 export async function sendEmail(options: EmailOptions): Promise<void> {
-  const transporter = nodemailer.createTransport({
-    host: functions.config().smtp.host,
-    port: functions.config().smtp.port,
-    secure: false,
-    auth: {
-      user: functions.config().smtp.user,
-      pass: functions.config().smtp.pass,
-    },
-  });
-
   try {
-    await transporter.sendMail({
-      from: functions.config().smtp.from,
+    // Initialize SendGrid with API key
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY || '');
+
+    const msg = {
       to: options.to,
+      from: {
+        email: process.env.SENDGRID_FROM_EMAIL || '',
+        name: process.env.SENDGRID_FROM_NAME || ''
+      },
       subject: options.subject,
-      text: options.text,
-    });
-    console.log(`Email sent successfully to ${options.to}`);
+      html: options.html,
+    };
+
+    await sgMail.send(msg);
+    console.log('Email sent successfully');
   } catch (error) {
     console.error('Error sending email:', error);
-    throw new functions.https.HttpsError(
-      'internal',
-      'Помилка при відправці email'
-    );
+    throw new Error('Failed to send email');
   }
 } 

@@ -52,6 +52,20 @@ const handler: Handler = async (event) => {
     const { teamId, email } = JSON.parse(event.body || '{}');
     console.log('Parsed request data:', { teamId, email });
 
+    // Перевіряємо змінні середовища
+    const envVars = {
+      FIREBASE_PROJECT_ID: !!process.env.FIREBASE_PROJECT_ID,
+      FIREBASE_CLIENT_EMAIL: !!process.env.FIREBASE_CLIENT_EMAIL,
+      FIREBASE_PRIVATE_KEY: !!process.env.FIREBASE_PRIVATE_KEY,
+      SMTP_HOST: !!process.env.SMTP_HOST,
+      SMTP_PORT: !!process.env.SMTP_PORT,
+      SMTP_USER: !!process.env.SMTP_USER,
+      SMTP_PASS: !!process.env.SMTP_PASS,
+      SMTP_FROM: !!process.env.SMTP_FROM,
+      SITE_URL: !!process.env.SITE_URL,
+    };
+    console.log('Environment variables present:', envVars);
+
     // Перевіряємо обов'язкові параметри
     if (!teamId || !email) {
       console.log('Missing required fields');
@@ -118,12 +132,26 @@ const handler: Handler = async (event) => {
       message: error.message,
       stack: error.stack,
       code: error.code,
+      name: error.name,
+      envVars: {
+        FIREBASE_PROJECT_ID: !!process.env.FIREBASE_PROJECT_ID,
+        FIREBASE_CLIENT_EMAIL: !!process.env.FIREBASE_CLIENT_EMAIL,
+        FIREBASE_PRIVATE_KEY: !!process.env.FIREBASE_PRIVATE_KEY,
+        SMTP_HOST: !!process.env.SMTP_HOST,
+        SMTP_PORT: !!process.env.SMTP_PORT,
+        SMTP_USER: !!process.env.SMTP_USER,
+        SMTP_PASS: !!process.env.SMTP_PASS,
+        SMTP_FROM: !!process.env.SMTP_FROM,
+        SITE_URL: !!process.env.SITE_URL,
+      }
     });
     return {
       statusCode: 500,
       body: JSON.stringify({ 
         error: 'Failed to send invitation',
-        details: error.message 
+        details: error.message,
+        name: error.name,
+        code: error.code
       }),
     };
   }
