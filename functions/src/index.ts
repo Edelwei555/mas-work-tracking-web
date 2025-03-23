@@ -16,86 +16,64 @@ admin.initializeApp();
 // Start writing functions
 // https://firebase.google.com/docs/functions/typescript
 
-export const sendTeamJoinRequest = functions.https.onRequest(async (req, res) => {
+export const sendTeamJoinRequest = functions.https.onCall(async (data, context) => {
   try {
-    // Перевірка автентифікації
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new functions.https.HttpsError('unauthenticated', 'Необхідна автентифікація');
+    // Check if user is authenticated
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'Користувач не авторизований');
     }
 
-    const idToken = authHeader.split('Bearer ')[1];
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    const userId = decodedToken.uid;
+    const { teamId, userEmail } = data;
 
-    // Отримання даних запиту
-    const { requestId, teamId } = req.body;
-    if (!requestId || !teamId) {
-      throw new functions.https.HttpsError('invalid-argument', 'Відсутні обов\'язкові параметри');
+    if (!teamId || !userEmail) {
+      throw new functions.https.HttpsError('invalid-argument', 'Відсутній ID команди або email користувача');
     }
 
-    // Отримання даних запиту на приєднання
-    const requestDoc = await admin.firestore()
-      .collection('teamJoinRequests')
-      .doc(requestId)
-      .get();
+    // Get team data
+    const teamDoc = await admin.firestore().collection('teams').doc(teamId).get();
+    const teamData = teamDoc.data();
 
-    if (!requestDoc.exists) {
-      throw new functions.https.HttpsError('not-found', 'Запит не знайдено');
-    }
-
-    const requestData = requestDoc.data();
-    if (!requestData) {
-      throw new functions.https.HttpsError('not-found', 'Дані запиту відсутні');
-    }
-
-    // Отримання даних команди
-    const teamDoc = await admin.firestore()
-      .collection('teams')
-      .doc(teamId)
-      .get();
-
-    if (!teamDoc.exists) {
+    if (!teamDoc.exists || !teamData) {
       throw new functions.https.HttpsError('not-found', 'Команду не знайдено');
     }
 
-    const teamData = teamDoc.data();
-    if (!teamData) {
-      throw new functions.https.HttpsError('not-found', 'Дані команди відсутні');
-    }
-
-    // Отримання даних користувача
-    const userDoc = await admin.firestore()
-      .collection('users')
-      .doc(userId)
+    // Get user data
+    const userQuery = await admin.firestore().collection('users')
+      .where('email', '==', userEmail)
+      .limit(1)
       .get();
 
-    if (!userDoc.exists) {
+    if (userQuery.empty) {
       throw new functions.https.HttpsError('not-found', 'Користувача не знайдено');
     }
 
-    const userData = userDoc.data();
-    if (!userData) {
-      throw new functions.https.HttpsError('not-found', 'Дані користувача відсутні');
-    }
+    const userData = userQuery.docs[0].data();
+    const userId = userQuery.docs[0].id;
 
-    // Відправка email адміністратору команди
+    // Create join request
+    const requestRef = await admin.firestore().collection('teamJoinRequests').add({
+      teamId,
+      userId,
+      userEmail: userData.email,
+      userName: userData.displayName,
+      status: 'pending',
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    // Send email to team admin
     await sendEmail({
       to: teamData.adminEmail,
       subject: 'Новий запит на приєднання до команди',
       html: `
         <h2>Новий запит на приєднання до команди</h2>
         <p>Користувач ${userData.displayName} (${userData.email}) хоче приєднатися до команди "${teamData.name}".</p>
-        <p>Щоб переглянути запит, перейдіть за посиланням: <a href="${process.env.SITE_URL}/teams/${teamId}/requests/${requestId}">Переглянути запит</a></p>
+        <p>Щоб переглянути запит, перейдіть за посиланням: <a href="${process.env.SITE_URL}/teams/${teamId}/requests/${requestRef.id}">Переглянути запит</a></p>
       `
     });
 
-    res.status(200).json({ success: true });
-  } catch (error) {
-    console.error('Error sending team join request:', error);
-    if (error instanceof functions.https.HttpsError) {
-      throw error;
-    }
-    throw new functions.https.HttpsError('internal', 'Помилка при обробці запиту');
+    return { success: true, requestId: requestRef.id };
+  } catch (error: any) {
+    console.error('Error in sendTeamJoinRequest:', error);
+    throw new functions.https.HttpsError('internal', error.message);
   }
 });
