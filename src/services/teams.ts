@@ -158,17 +158,12 @@ export const sendTeamInvitation = async (teamId: string, email: string): Promise
       body: JSON.stringify({ teamId, email })
     });
     
-    if (!response.ok) {
-      const error = await response.json();
-      console.error('Function returned error:', error);
-      throw new Error(error.error || 'Failed to send invitation');
-    }
-    
     const result = await response.json();
-    console.log('Function result:', result);
+    console.log('Function response:', result);
     
-    if (!result.message) {
-      throw new Error('Failed to send invitation');
+    if (!response.ok) {
+      console.error('Function returned error:', result);
+      throw new Error(result.error || 'Failed to send invitation');
     }
     
     console.log('Invitation sent successfully');

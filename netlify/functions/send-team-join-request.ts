@@ -71,6 +71,8 @@ const transporter = nodemailer.createTransport({
 });
 
 const handler: Handler = async (event) => {
+  console.log('Function invoked with event method:', event.httpMethod);
+  
   // Додаємо CORS заголовки
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -97,6 +99,7 @@ const handler: Handler = async (event) => {
   }
 
   try {
+    console.log('Request body:', event.body);
     const { teamId, email } = JSON.parse(event.body || '{}');
     console.log('Parsed request data:', { teamId, email });
 
@@ -119,6 +122,7 @@ const handler: Handler = async (event) => {
       console.log('Missing required fields');
       return {
         statusCode: 400,
+        headers,
         body: JSON.stringify({ error: 'Team ID and email are required' }),
       };
     }
@@ -130,6 +134,7 @@ const handler: Handler = async (event) => {
       console.log('Team not found');
       return {
         statusCode: 404,
+        headers,
         body: JSON.stringify({ error: 'Team not found' }),
       };
     }
@@ -148,6 +153,7 @@ const handler: Handler = async (event) => {
       console.log('User is already a team member');
       return {
         statusCode: 400,
+        headers,
         body: JSON.stringify({ error: 'User is already a team member' }),
       };
     }
@@ -177,23 +183,25 @@ const handler: Handler = async (event) => {
       body: JSON.stringify({ message: 'Invitation sent successfully' }),
     };
   } catch (error) {
+    console.error('Error in function:', error);
     console.error('Error details:', {
       message: error.message,
       stack: error.stack,
       code: error.code,
       name: error.name,
-      envVars: {
-        FIREBASE_PROJECT_ID: !!process.env.FIREBASE_PROJECT_ID,
-        FIREBASE_CLIENT_EMAIL: !!process.env.FIREBASE_CLIENT_EMAIL,
-        FIREBASE_PRIVATE_KEY: !!process.env.FIREBASE_PRIVATE_KEY,
-        SMTP_HOST: !!process.env.SMTP_HOST,
-        SMTP_PORT: !!process.env.SMTP_PORT,
-        SMTP_USER: !!process.env.SMTP_USER,
-        SMTP_PASS: !!process.env.SMTP_PASS,
-        SMTP_FROM: !!process.env.SMTP_FROM,
-        SITE_URL: !!process.env.SITE_URL,
-      }
     });
+    console.log('Environment variables status:', {
+      FIREBASE_PROJECT_ID: !!process.env.FIREBASE_PROJECT_ID,
+      FIREBASE_CLIENT_EMAIL: !!process.env.FIREBASE_CLIENT_EMAIL,
+      FIREBASE_PRIVATE_KEY: !!process.env.FIREBASE_PRIVATE_KEY,
+      SMTP_HOST: !!process.env.SMTP_HOST,
+      SMTP_PORT: !!process.env.SMTP_PORT,
+      SMTP_USER: !!process.env.SMTP_USER,
+      SMTP_PASS: !!process.env.SMTP_PASS,
+      SMTP_FROM: !!process.env.SMTP_FROM,
+      SITE_URL: !!process.env.SITE_URL,
+    });
+    
     return {
       statusCode: 500,
       headers,
