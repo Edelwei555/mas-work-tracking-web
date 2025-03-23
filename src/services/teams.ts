@@ -1,6 +1,6 @@
-import { db } from '../config/firebase';
+import { db, functions } from '../config/firebase';
 import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc, setDoc } from 'firebase/firestore';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { httpsCallable } from 'firebase/functions';
 import { createTeamMember } from './teamMembers';
 import { getAuth } from 'firebase/auth';
 
@@ -147,18 +147,39 @@ interface TeamJoinRequestResponse {
 
 export const sendTeamInvitation = async (teamId: string, email: string): Promise<void> => {
   try {
-    const functions = getFunctions();
-    const sendTeamJoinRequest = httpsCallable<{ teamId: string; userEmail: string }, TeamJoinRequestResponse>(
-      functions,
-      'sendTeamJoinRequest'
-    );
-    const result = await sendTeamJoinRequest({ teamId, userEmail: email });
+    console.log('Sending team invitation:', { teamId, email });
     
-    if (!result.data.success) {
+    // Викликаємо Netlify Function
+    const response = await fetch('/.netlify/functions/send-team-join-request', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ teamId, email })
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      console.error('Function returned error:', error);
+      throw new Error(error.error || 'Failed to send invitation');
+    }
+    
+    const result = await response.json();
+    console.log('Function result:', result);
+    
+    if (!result.message) {
       throw new Error('Failed to send invitation');
     }
-  } catch (error) {
+    
+    console.log('Invitation sent successfully');
+  } catch (error: any) {
     console.error('Error sending invitation:', error);
+    if (error.code) {
+      console.error('Error code:', error.code);
+    }
+    if (error.details) {
+      console.error('Error details:', error.details);
+    }
     throw error;
   }
 };

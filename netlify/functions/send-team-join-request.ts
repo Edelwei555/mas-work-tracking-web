@@ -7,16 +7,52 @@ import { getFirestore } from 'firebase-admin/firestore';
 if (!getApps().length) {
   try {
     console.log('Initializing Firebase Admin...');
+    
+    // Логуємо наявність змінних середовища
+    console.log('Environment variables check:', {
+      FIREBASE_PROJECT_ID: !!process.env.FIREBASE_PROJECT_ID,
+      REACT_APP_FIREBASE_PROJECT_ID: !!process.env.REACT_APP_FIREBASE_PROJECT_ID,
+      FIREBASE_CLIENT_EMAIL: !!process.env.FIREBASE_CLIENT_EMAIL,
+      FIREBASE_PRIVATE_KEY: !!process.env.FIREBASE_PRIVATE_KEY,
+    });
+    
+    // Використовуємо React змінні середовища, якщо основні не знайдено
+    const projectId = process.env.FIREBASE_PROJECT_ID || process.env.REACT_APP_FIREBASE_PROJECT_ID;
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+
+    console.log('Credential values:', {
+      projectId,
+      clientEmail: clientEmail ? 'Present' : 'Missing',
+      privateKey: privateKey ? 'Present' : 'Missing'
+    });
+
+    if (!projectId || !clientEmail || !privateKey) {
+      throw new Error('Missing Firebase credentials. Required: projectId, clientEmail, privateKey');
+    }
+
+    const credentials = {
+      projectId,
+      clientEmail,
+      privateKey,
+    };
+
+    console.log('Initializing with credentials:', {
+      ...credentials,
+      privateKey: 'Present'
+    });
+
     initializeApp({
-      credential: cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      }),
+      credential: cert(credentials),
     });
     console.log('Firebase Admin initialized successfully');
   } catch (error) {
     console.error('Error initializing Firebase Admin:', error);
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
     throw error;
   }
 }
@@ -35,15 +71,27 @@ const transporter = nodemailer.createTransport({
 });
 
 const handler: Handler = async (event) => {
-  console.log('Function invoked with event:', {
-    method: event.httpMethod,
-    body: event.body,
-  });
+  // Додаємо CORS заголовки
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  };
+
+  // Обробляємо OPTIONS запит для CORS
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers,
+      body: ''
+    };
+  }
 
   // Перевіряємо метод
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
+      headers,
       body: JSON.stringify({ error: 'Method not allowed' }),
     };
   }
@@ -125,6 +173,7 @@ const handler: Handler = async (event) => {
 
     return {
       statusCode: 200,
+      headers,
       body: JSON.stringify({ message: 'Invitation sent successfully' }),
     };
   } catch (error) {
@@ -147,6 +196,7 @@ const handler: Handler = async (event) => {
     });
     return {
       statusCode: 500,
+      headers,
       body: JSON.stringify({ 
         error: 'Failed to send invitation',
         details: error.message,

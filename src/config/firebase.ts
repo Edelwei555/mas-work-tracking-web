@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, Auth, connectAuthEmulator } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
+import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 
 // Перевіряємо наявність всіх необхідних конфігурацій
 const requiredConfigs = [
@@ -74,9 +75,17 @@ console.log('Ініціалізація Firestore...');
 const db = getFirestore(app);
 console.log('Firestore сервіс ініціалізовано');
 
+console.log('Ініціалізація Functions...');
+const functions = getFunctions(app, 'us-central1');
+console.log('Functions сервіс ініціалізовано');
+
 // Перевіряємо, чи всі сервіси правильно ініціалізовані
 if (!auth) throw new Error('Auth не ініціалізовано');
 if (!db) throw new Error('Firestore не ініціалізовано');
+if (!functions) throw new Error('Functions не ініціалізовано');
 
-export { auth, db };
+// Встановлюємо регіон для функцій (за замовчуванням us-central1)
+// functions.region = 'us-central1';
+
+export { auth, db, functions };
 export default app; 
