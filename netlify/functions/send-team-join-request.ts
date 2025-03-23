@@ -60,15 +60,27 @@ if (!getApps().length) {
 const db = getFirestore();
 
 // Налаштування транспорту для nodemailer
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+const createTransporter = () => {
+  console.log('Creating SendGrid transport with config:', {
+    auth: {
+      user: 'apikey',
+      pass: process.env.SMTP_PASS ? 'Present' : 'Missing'
+    }
+  });
+
+  return nodemailer.createTransport({
+    host: 'smtp.sendgrid.net',
+    port: 587,
+    secure: false,
+    auth: {
+      user: 'apikey',
+      pass: process.env.SMTP_PASS,
+    },
+    tls: {
+      rejectUnauthorized: false
+    }
+  });
+};
 
 const handler: Handler = async (event) => {
   console.log('Function invoked with event method:', event.httpMethod);
@@ -164,7 +176,18 @@ const handler: Handler = async (event) => {
 
     // Відправляємо email
     console.log('Sending email invitation');
-    await transporter.sendMail({
+    const transporter = createTransporter();
+
+    console.log('Attempting to send email:', {
+      from: process.env.SMTP_FROM,
+      to: email,
+      subject: `Запрошення приєднатися до команди ${team?.name}`
+    });
+
+    await transporter.verify();
+    console.log('SMTP connection verified');
+
+    const info = await transporter.sendMail({
       from: process.env.SMTP_FROM,
       to: email,
       subject: `Запрошення приєднатися до команди ${team?.name}`,
@@ -175,7 +198,7 @@ const handler: Handler = async (event) => {
         <p>Якщо ви не очікували це запрошення, просто проігноруйте цей лист.</p>
       `,
     });
-    console.log('Email sent successfully');
+    console.log('Email sent successfully:', info);
 
     return {
       statusCode: 200,
