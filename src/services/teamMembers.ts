@@ -6,7 +6,9 @@ import {
   addDoc,
   updateDoc,
   Timestamp,
-  DocumentData
+  DocumentData,
+  doc,
+  deleteDoc
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { User as FirebaseUser } from 'firebase/auth';
@@ -134,6 +136,30 @@ export const ensureTeamMemberExists = async (
     };
   } catch (error) {
     console.error('Error ensuring team member exists:', error);
+    throw error;
+  }
+};
+
+export const updateTeamMemberRole = async (teamId: string, userId: string, role: 'member' | 'admin') => {
+  try {
+    const memberRef = doc(db, 'teamMembers', `${teamId}_${userId}`);
+    await updateDoc(memberRef, { role });
+    console.log(`Updated user ${userId} role to ${role} in team ${teamId}`);
+    return true;
+  } catch (error) {
+    console.error('Error updating team member role:', error);
+    throw error;
+  }
+};
+
+export const removeTeamMember = async (teamId: string, userId: string) => {
+  try {
+    const memberRef = doc(db, 'teamMembers', `${teamId}_${userId}`);
+    await deleteDoc(memberRef);
+    console.log(`Removed user ${userId} from team ${teamId}`);
+    return true;
+  } catch (error) {
+    console.error('Error removing team member:', error);
     throw error;
   }
 }; 
