@@ -2,6 +2,7 @@ import { Handler } from '@netlify/functions';
 import * as nodemailer from 'nodemailer';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
+import * as crypto from 'crypto';
 
 // Ініціалізуємо Firebase Admin тільки якщо ще не ініціалізовано
 if (!getApps().length) {
@@ -170,8 +171,23 @@ const handler: Handler = async (event) => {
       };
     }
 
-    // Створюємо URL для приєднання до команди
-    const joinUrl = `${process.env.SITE_URL}/teams/${teamId}`;
+    // Генеруємо унікальний токен для запрошення
+    const inviteToken = crypto.randomBytes(32).toString('hex');
+    console.log('Generated invite token');
+
+    // Створюємо запис про запрошення
+    await db.collection('teamJoinRequests').add({
+      teamId,
+      email,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      teamName: team?.name,
+      token: inviteToken
+    });
+    console.log('Created team join request record');
+
+    // Створюємо URL для приєднання до команди з токеном
+    const joinUrl = `${process.env.SITE_URL}/join/${inviteToken}`;
     console.log('Join URL:', joinUrl);
 
     // Відправляємо email
