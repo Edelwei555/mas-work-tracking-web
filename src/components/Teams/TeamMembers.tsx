@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { collection, query, where, getDocs, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -8,6 +8,9 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EmailIcon from '@mui/icons-material/Email';
 import { sendTeamInvitation } from '../../services/teams';
 import './TeamMembers.css';
+import { useParams } from 'react-router-dom';
+import { auth } from '../../config/firebase';
+import { updateTeamMemberRole, removeTeamMember } from '../../services/teamMembers';
 
 interface TeamMember {
   id: string;
@@ -20,11 +23,8 @@ interface TeamMember {
   lastUpdate: Date;
 }
 
-interface TeamMembersProps {
-  teamId: string;
-}
-
-export const TeamMembers: React.FC<TeamMembersProps> = ({ teamId }) => {
+export const TeamMembers = () => {
+  const { teamId } = useParams<{ teamId: string }>();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,6 +32,8 @@ export const TeamMembers: React.FC<TeamMembersProps> = ({ teamId }) => {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [success, setSuccess] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [newMemberEmail, setNewMemberEmail] = useState('');
 
   const fetchMembers = async () => {
     try {
@@ -102,7 +104,45 @@ export const TeamMembers: React.FC<TeamMembersProps> = ({ teamId }) => {
   };
 
   useEffect(() => {
-    fetchMembers();
+    if (!teamId || !currentUser) return;
+
+    // Перевіряємо, чи поточний користувач є адміністратором
+    const checkAdminStatus = async () => {
+      try {
+        const memberDoc = await getDocs(
+          query(
+            collection(db, 'teamMembers'),
+            where('teamId', '==', teamId),
+            where('userId', '==', currentUser.uid)
+          )
+        );
+        
+        if (!memberDoc.empty) {
+          const currentUserRole = memberDoc.docs[0].data().role;
+          console.log('Current user role:', currentUserRole);
+          setIsAdmin(currentUserRole === 'admin');
+        }
+      } catch (err) {
+        console.error('Error checking admin status:', err);
+      }
+    };
+
+    // Підписуємося на оновлення списку учасників
+    const unsubscribe = onSnapshot(
+      query(collection(db, 'teamMembers'), where('teamId', '==', teamId)),
+      (snapshot) => {
+        const membersList = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        } as TeamMember));
+        console.log('Members list:', membersList);
+        setMembers(membersList);
+        setLoading(false);
+      }
+    );
+
+    checkAdminStatus();
+    return () => unsubscribe();
   }, [teamId]);
 
   if (loading) {
@@ -117,22 +157,29 @@ export const TeamMembers: React.FC<TeamMembersProps> = ({ teamId }) => {
       {success && <div className="success-message">{success}</div>}
 
       <List className="members-list">
-        {members.map((member) => (
-          <ListItem key={member.id}>
-            <ListItemText
-              primary={member.displayName}
-              secondary={
-                <>
-                  <div>{member.email}</div>
-                  <div className="member-role">
-                    {member.role === 'admin' ? t('teams.roles.admin') : t('teams.roles.member')}
-                  </div>
-                </>
-              }
-            />
-            {currentUser && (
-              members.find(m => m.userId === currentUser.uid)?.role === 'admin' &&
-              member.userId !== currentUser.uid && (
+        {members.map((member) => {
+          // Додаємо логування для кожного учасника
+          console.log('Rendering member:', {
+            memberId: member.id,
+            memberRole: member.role,
+            isAdmin,
+            currentUserId: currentUser?.uid
+          });
+
+          return (
+            <ListItem key={member.id}>
+              <ListItemText
+                primary={member.displayName}
+                secondary={
+                  <>
+                    <div>{member.email}</div>
+                    <div className="member-role">
+                      {member.role === 'admin' ? t('teams.roles.admin') : t('teams.roles.member')}
+                    </div>
+                  </>
+                }
+              />
+              {isAdmin && currentUser && member.userId !== currentUser.uid && (
                 <ListItemSecondaryAction>
                   <IconButton
                     edge="end"
@@ -142,31 +189,33 @@ export const TeamMembers: React.FC<TeamMembersProps> = ({ teamId }) => {
                     <DeleteIcon />
                   </IconButton>
                 </ListItemSecondaryAction>
-              )
-            )}
-          </ListItem>
-        ))}
+              )}
+            </ListItem>
+          );
+        })}
       </List>
 
-      <form onSubmit={handleInvite} className="invite-form">
-        <TextField
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          label={t('teams.inviteEmail')}
-          variant="outlined"
-          fullWidth
-          required
-        />
-        <Button
-          type="submit"
-          variant="contained"
-          color="primary"
-          startIcon={<EmailIcon />}
-        >
-          {t('teams.invite')}
-        </Button>
-      </form>
+      {isAdmin && (
+        <form onSubmit={handleInvite} className="invite-form">
+          <TextField
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            label={t('teams.inviteEmail')}
+            variant="outlined"
+            fullWidth
+            required
+          />
+          <Button
+            type="submit"
+            variant="contained"
+            color="primary"
+            startIcon={<EmailIcon />}
+          >
+            {t('teams.invite')}
+          </Button>
+        </form>
+      )}
     </div>
   );
 };
