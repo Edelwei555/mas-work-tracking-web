@@ -5,7 +5,7 @@ import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/fire
 import { createTeamMember } from '../services/teamMembers';
 
 export const JoinTeam = () => {
-  const { token } = useParams();
+  const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -13,6 +13,12 @@ export const JoinTeam = () => {
   useEffect(() => {
     const processInvite = async () => {
       try {
+        if (!token) {
+          setError('Токен запрошення не знайдено');
+          setLoading(false);
+          return;
+        }
+
         console.log('Processing invite with token:', token);
         
         // Шукаємо запрошення за токеном
@@ -67,9 +73,7 @@ export const JoinTeam = () => {
       }
     };
 
-    if (token) {
-      processInvite();
-    }
+    processInvite();
   }, [token, navigate]);
 
   if (loading) {
