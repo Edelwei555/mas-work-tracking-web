@@ -142,9 +142,9 @@ export const ensureTeamMemberExists = async (
 
 export const updateTeamMemberRole = async (teamId: string, userId: string, role: 'member' | 'admin') => {
   try {
+    console.log(`Updating role for team ${teamId}, user ${userId} to ${role}`);
     const memberRef = doc(db, 'teamMembers', `${teamId}_${userId}`);
     await updateDoc(memberRef, { role });
-    console.log(`Updated user ${userId} role to ${role} in team ${teamId}`);
     return true;
   } catch (error) {
     console.error('Error updating team member role:', error);
@@ -154,9 +154,9 @@ export const updateTeamMemberRole = async (teamId: string, userId: string, role:
 
 export const removeTeamMember = async (teamId: string, userId: string) => {
   try {
+    console.log(`Removing user ${userId} from team ${teamId}`);
     const memberRef = doc(db, 'teamMembers', `${teamId}_${userId}`);
     await deleteDoc(memberRef);
-    console.log(`Removed user ${userId} from team ${teamId}`);
     return true;
   } catch (error) {
     console.error('Error removing team member:', error);
