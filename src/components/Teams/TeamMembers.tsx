@@ -64,42 +64,50 @@ export const TeamMembers = () => {
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setSuccess('');
+    if (!teamId) {
+      setError('ID команди не знайдено');
+      return;
+    }
 
     try {
-      await sendTeamInvitation(teamId, email);
-      setSuccess(t('teams.inviteSuccess'));
-      setEmail('');
-      await fetchMembers();
+      setError(null);
+      await sendTeamInvitation(teamId, newMemberEmail);
+      setNewMemberEmail('');
     } catch (err) {
-      console.error('Error inviting member:', err);
-      setError(t('teams.inviteError'));
+      console.error('Error sending invitation:', err);
+      setError('Помилка при надсиланні запрошення');
     }
   };
 
-  const handleRemoveMember = async (memberId: string) => {
-    if (!window.confirm(t('teams.confirmRemoveMember'))) return;
-
+  const handleRoleToggle = async (userId: string, currentRole: 'admin' | 'member') => {
+    if (!teamId) {
+      setError('ID команди не знайдено');
+      return;
+    }
+    
     try {
-      // Перевіряємо чи це не останній адмін
-      if (members.length === 1) {
-        throw new Error(t('errors.cantRemoveLastMember'));
-      }
-
-      const member = members.find(m => m.id === memberId);
-      if (member?.role === 'admin') {
-        const adminCount = members.filter(m => m.role === 'admin').length;
-        if (adminCount === 1) {
-          throw new Error(t('errors.cantRemoveLastAdmin'));
-        }
-      }
-
-      await deleteDoc(doc(db, 'teamMembers', memberId));
-      await fetchMembers(); // Оновлюємо список
+      setError(null);
+      const newRole = currentRole === 'admin' ? 'member' : 'admin';
+      console.log(`Changing role for user ${userId} from ${currentRole} to ${newRole}`);
+      await updateTeamMemberRole(teamId, userId, newRole);
     } catch (err) {
-      console.error('Error removing team member:', err);
-      setError(err instanceof Error ? err.message : t('errors.removingMember'));
+      console.error('Error updating role:', err);
+      setError('Помилка при зміні ролі користувача');
+    }
+  };
+
+  const handleRemoveMember = async (userId: string) => {
+    if (!teamId) {
+      setError('ID команди не знайдено');
+      return;
+    }
+    
+    try {
+      setError(null);
+      await removeTeamMember(teamId, userId);
+    } catch (err) {
+      console.error('Error removing member:', err);
+      setError('Помилка при видаленні користувача');
     }
   };
 
@@ -184,7 +192,7 @@ export const TeamMembers = () => {
                   <IconButton
                     edge="end"
                     aria-label="delete"
-                    onClick={() => handleRemoveMember(member.id)}
+                    onClick={() => handleRemoveMember(member.userId)}
                   >
                     <DeleteIcon />
                   </IconButton>
@@ -199,8 +207,8 @@ export const TeamMembers = () => {
         <form onSubmit={handleInvite} className="invite-form">
           <TextField
             type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={newMemberEmail}
+            onChange={(e) => setNewMemberEmail(e.target.value)}
             label={t('teams.inviteEmail')}
             variant="outlined"
             fullWidth

@@ -146,6 +146,10 @@ interface TeamJoinRequestResponse {
 }
 
 export const sendTeamInvitation = async (teamId: string, email: string): Promise<void> => {
+  if (!teamId || !email) {
+    throw new Error('TeamId and email are required');
+  }
+
   try {
     console.log('Sending team invitation:', { teamId, email });
     
@@ -168,7 +172,7 @@ export const sendTeamInvitation = async (teamId: string, email: string): Promise
     
     console.log('Invitation sent successfully');
   } catch (error: any) {
-    console.error('Error sending invitation:', error);
+    console.error('Error sending team invitation:', error);
     if (error.code) {
       console.error('Error code:', error.code);
     }
