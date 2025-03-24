@@ -11,6 +11,7 @@ import WorkTypes from '../components/WorkTypes/WorkTypes';
 import Locations from '../components/Locations/Locations';
 import Reports from '../components/Reports/Reports';
 import Layout from '../components/Layout/Layout';
+import { JoinTeam } from '../components/JoinTeam';
 
 // Компонент-обгортка для TeamMembers
 const TeamMembersWrapper: React.FC = () => {
@@ -56,6 +57,8 @@ const AppRoutes: React.FC = () => {
 
       {/* Перенаправлення невідомих маршрутів */}
       <Route path="*" element={<Navigate to="/" replace />} />
+
+      <Route path="/join/:token" element={<JoinTeam />} />
     </Routes>
   );
 };
