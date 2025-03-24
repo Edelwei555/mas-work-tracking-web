@@ -10,13 +10,14 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px solid #eee;
+  padding: 15px 0;
+  border-bottom: 1px solid #e0e0e0;
 }
 
 .member-info {
   display: flex;
   flex-direction: column;
+  gap: 5px;
 }
 
 .member-name {
@@ -25,14 +26,12 @@
 }
 
 .member-email {
-  color: #666;
   font-size: 14px;
 }
 
 .member-role {
-  color: #888;
-  font-size: 12px;
   font-style: italic;
+  color: #666;
 }
 
 .member-actions {
@@ -40,44 +39,64 @@
   gap: 10px;
 }
 
-.role-button, .remove-button {
-  padding: 6px 12px;
+/* Кнопки */
+.button-success,
+.button-warning,
+.button-danger,
+.button-primary {
+  padding: 8px 16px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
-}
-
-.role-button {
-  background-color: #f0f0f0;
-  color: #333;
-}
-
-.remove-button {
-  background-color: #ff4444;
   color: white;
+  transition: background-color 0.2s;
 }
 
-.invite-section {
+.button-success {
+  background-color: #4CAF50;
+}
+
+.button-success:hover {
+  background-color: #45a049;
+}
+
+.button-warning {
+  background-color: #ff9800;
+}
+
+.button-warning:hover {
+  background-color: #f57c00;
+}
+
+.button-danger {
+  background-color: #f44336;
+}
+
+.button-danger:hover {
+  background-color: #d32f2f;
+}
+
+.button-primary {
+  background-color: #2196F3;
+}
+
+.button-primary:hover {
+  background-color: #1976D2;
+}
+
+/* Форма запрошення */
+.invite-form {
+  margin-top: 20px;
   display: flex;
   gap: 10px;
-  margin-top: 20px;
 }
 
-.invite-input {
+.email-input {
   flex: 1;
   padding: 8px;
   border: 1px solid #ddd;
   border-radius: 4px;
-}
-
-.invite-button {
-  padding: 8px 16px;
-  background-color: #2196f3;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
 }
 
 .error-message {

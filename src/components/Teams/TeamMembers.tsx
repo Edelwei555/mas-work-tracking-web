@@ -117,35 +117,32 @@ export const TeamMembers: React.FC<TeamMembersProps> = (props) => {
   if (loading) return <div>Завантаження...</div>;
 
   return (
-    <div className="team-members-container">
-      <h2 className="section-title">Учасники команди</h2>
+    <div className="team-members">
+      <h2>Учасники команди</h2>
       
       {error && <div className="error-message">{error}</div>}
       
       <div className="members-list">
         {members.map(member => (
-          <div key={member.id} className="member-card">
+          <div key={member.id} className="member-item">
             <div className="member-info">
-              <div className="member-primary">
-                <span className="member-name">{member.name}</span>
-                <span className={`member-role ${member.role}`}>
-                  {member.role === 'admin' ? 'Адміністратор' : 'Учасник'}
-                </span>
+              <div className="member-role">
+                {member.role === 'admin' ? 'Адміністратор' : 'Учасник'}
               </div>
-              <span className="member-email">{member.email}</span>
+              <div className="member-email">{member.email}</div>
             </div>
             
             {isAdmin && auth.currentUser && member.userId !== auth.currentUser.uid && (
               <div className="member-actions">
                 <button
                   onClick={() => handleRoleToggle(member.userId, member.role)}
-                  className={`button ${member.role === 'admin' ? 'secondary' : 'primary'}`}
+                  className={member.role === 'admin' ? 'button-warning' : 'button-success'}
                 >
                   {member.role === 'admin' ? 'Зняти права адміністратора' : 'Надати права адміністратора'}
                 </button>
                 <button
                   onClick={() => handleRemoveMember(member.userId)}
-                  className="button danger"
+                  className="button-danger"
                 >
                   Видалити
                 </button>
@@ -156,19 +153,18 @@ export const TeamMembers: React.FC<TeamMembersProps> = (props) => {
       </div>
 
       {isAdmin && (
-        <form onSubmit={handleInvite} className="invite-form">
+        <div className="invite-form">
           <input
             type="email"
             value={newMemberEmail}
             onChange={(e) => setNewMemberEmail(e.target.value)}
             placeholder="Email учасника"
-            className="input"
-            required
+            className="email-input"
           />
-          <button type="submit" className="button primary">
+          <button onClick={handleInvite} className="button-primary">
             Запросити
           </button>
-        </form>
+        </div>
       )}
     </div>
   );
