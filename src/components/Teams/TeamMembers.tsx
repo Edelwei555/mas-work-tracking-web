@@ -15,113 +15,29 @@ import { updateTeamMemberRole, removeTeamMember } from '../../services/teamMembe
 interface TeamMember {
   id: string;
   userId: string;
-  teamId: string;
-  displayName: string;
   email: string;
-  role: 'member' | 'admin';
-  createdAt: Date;
-  lastUpdate: Date;
+  name: string;
+  role: 'admin' | 'member';
 }
 
-export const TeamMembers = () => {
+export const TeamMembers: React.FC = () => {
   const { teamId } = useParams<{ teamId: string }>();
   const [members, setMembers] = useState<TeamMember[]>([]);
+  const [newMemberEmail, setNewMemberEmail] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { currentUser } = useAuth();
-  const { t } = useTranslation();
-  const [email, setEmail] = useState('');
-  const [success, setSuccess] = useState('');
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [newMemberEmail, setNewMemberEmail] = useState('');
-
-  const fetchMembers = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const q = query(
-        collection(db, 'teamMembers'),
-        where('teamId', '==', teamId)
-      );
-
-      const querySnapshot = await getDocs(q);
-      const membersData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt.toDate(),
-        lastUpdate: doc.data().lastUpdate.toDate()
-      })) as TeamMember[];
-
-      setMembers(membersData);
-    } catch (err) {
-      console.error('Error fetching team members:', err);
-      setError(t('errors.loadingMembers'));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleInvite = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!teamId) {
-      setError('ID команди не знайдено');
-      return;
-    }
-
-    try {
-      setError(null);
-      await sendTeamInvitation(teamId, newMemberEmail);
-      setNewMemberEmail('');
-    } catch (err) {
-      console.error('Error sending invitation:', err);
-      setError('Помилка при надсиланні запрошення');
-    }
-  };
-
-  const handleRoleToggle = async (userId: string, currentRole: 'admin' | 'member') => {
-    if (!teamId) {
-      setError('ID команди не знайдено');
-      return;
-    }
-    
-    try {
-      setError(null);
-      const newRole = currentRole === 'admin' ? 'member' : 'admin';
-      console.log(`Changing role for user ${userId} from ${currentRole} to ${newRole}`);
-      await updateTeamMemberRole(teamId, userId, newRole);
-    } catch (err) {
-      console.error('Error updating role:', err);
-      setError('Помилка при зміні ролі користувача');
-    }
-  };
-
-  const handleRemoveMember = async (userId: string) => {
-    if (!teamId) {
-      setError('ID команди не знайдено');
-      return;
-    }
-    
-    try {
-      setError(null);
-      await removeTeamMember(teamId, userId);
-    } catch (err) {
-      console.error('Error removing member:', err);
-      setError('Помилка при видаленні користувача');
-    }
-  };
 
   useEffect(() => {
-    if (!teamId || !currentUser) return;
+    if (!teamId || !auth.currentUser) return;
 
-    // Перевіряємо, чи поточний користувач є адміністратором
     const checkAdminStatus = async () => {
       try {
         const memberDoc = await getDocs(
           query(
             collection(db, 'teamMembers'),
             where('teamId', '==', teamId),
-            where('userId', '==', currentUser.uid)
+            where('userId', '==', auth.currentUser!.uid)
           )
         );
         
@@ -135,7 +51,8 @@ export const TeamMembers = () => {
       }
     };
 
-    // Підписуємося на оновлення списку учасників
+    checkAdminStatus();
+
     const unsubscribe = onSnapshot(
       query(collection(db, 'teamMembers'), where('teamId', '==', teamId)),
       (snapshot) => {
@@ -149,79 +66,97 @@ export const TeamMembers = () => {
       }
     );
 
-    checkAdminStatus();
     return () => unsubscribe();
   }, [teamId]);
 
-  if (loading) {
-    return <div>{t('common.loading')}</div>;
-  }
+  const handleInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!teamId) return;
+
+    try {
+      setError(null);
+      await sendTeamInvitation(teamId, newMemberEmail);
+      setNewMemberEmail('');
+    } catch (err) {
+      console.error('Error sending invitation:', err);
+      setError('Помилка при надсиланні запрошення');
+    }
+  };
+
+  const handleRoleToggle = async (userId: string, currentRole: 'admin' | 'member') => {
+    if (!teamId) return;
+    
+    try {
+      setError(null);
+      const newRole = currentRole === 'admin' ? 'member' : 'admin';
+      await updateTeamMemberRole(teamId, userId, newRole);
+    } catch (err) {
+      console.error('Error updating role:', err);
+      setError('Помилка при зміні ролі користувача');
+    }
+  };
+
+  const handleRemoveMember = async (userId: string) => {
+    if (!teamId) return;
+    
+    try {
+      setError(null);
+      await removeTeamMember(teamId, userId);
+    } catch (err) {
+      console.error('Error removing member:', err);
+      setError('Помилка при видаленні користувача');
+    }
+  };
+
+  if (loading) return <div>Завантаження...</div>;
 
   return (
     <div className="team-members">
-      <h3>{t('teams.members')}</h3>
-
-      {error && <div className="error-message">{error}</div>}
-      {success && <div className="success-message">{success}</div>}
-
-      <List className="members-list">
-        {members.map((member) => {
-          // Додаємо логування для кожного учасника
-          console.log('Rendering member:', {
-            memberId: member.id,
-            memberRole: member.role,
-            isAdmin,
-            currentUserId: currentUser?.uid
-          });
-
-          return (
-            <ListItem key={member.id}>
-              <ListItemText
-                primary={member.displayName}
-                secondary={
-                  <>
-                    <div>{member.email}</div>
-                    <div className="member-role">
-                      {member.role === 'admin' ? t('teams.roles.admin') : t('teams.roles.member')}
-                    </div>
-                  </>
-                }
-              />
-              {isAdmin && currentUser && member.userId !== currentUser.uid && (
-                <ListItemSecondaryAction>
-                  <IconButton
-                    edge="end"
-                    aria-label="delete"
-                    onClick={() => handleRemoveMember(member.userId)}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </ListItemSecondaryAction>
-              )}
-            </ListItem>
-          );
-        })}
-      </List>
+      <h2>Учасники команди</h2>
+      
+      {error && <div className="error">{error}</div>}
+      
+      <div className="members-list">
+        {members.map(member => (
+          <div key={member.id} className="member-item">
+            <div className="member-info">
+              <span className="member-name">{member.name}</span>
+              <span className="member-email">{member.email}</span>
+              <span className="member-role">
+                {member.role === 'admin' ? 'Адміністратор' : 'Учасник'}
+              </span>
+            </div>
+            
+            {isAdmin && auth.currentUser && member.userId !== auth.currentUser.uid && (
+              <div className="member-actions">
+                <button
+                  onClick={() => handleRoleToggle(member.userId, member.role)}
+                  className={`role-toggle-btn ${member.role === 'admin' ? 'demote' : 'promote'}`}
+                >
+                  {member.role === 'admin' ? 'Зняти права адміністратора' : 'Надати права адміністратора'}
+                </button>
+                <button
+                  onClick={() => handleRemoveMember(member.userId)}
+                  className="remove-btn"
+                >
+                  Видалити
+                </button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
 
       {isAdmin && (
         <form onSubmit={handleInvite} className="invite-form">
-          <TextField
+          <input
             type="email"
             value={newMemberEmail}
             onChange={(e) => setNewMemberEmail(e.target.value)}
-            label={t('teams.inviteEmail')}
-            variant="outlined"
-            fullWidth
+            placeholder="Email учасника"
             required
           />
-          <Button
-            type="submit"
-            variant="contained"
-            color="primary"
-            startIcon={<EmailIcon />}
-          >
-            {t('teams.invite')}
-          </Button>
+          <button type="submit" className="invite-btn">Запросити</button>
         </form>
       )}
     </div>
