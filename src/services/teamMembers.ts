@@ -141,16 +141,20 @@ export const ensureTeamMemberExists = async (
 };
 
 export const updateTeamMemberRole = async (teamId: string, userId: string, role: 'admin' | 'member'): Promise<void> => {
-  if (!teamId || !userId) {
-    throw new Error('TeamId and userId are required');
-  }
-
   try {
-    const memberRef = doc(db, 'teamMembers', `${teamId}_${userId}`);
-    await updateDoc(memberRef, { role });
+    console.log(`Updating role for user ${userId} in team ${teamId} to ${role}`);
+    const memberDocId = `${teamId}_${userId}`;
+    const memberRef = doc(db, 'teamMembers', memberDocId);
+    
+    await updateDoc(memberRef, {
+      role: role,
+      updatedAt: new Date().toISOString()
+    });
+    
+    console.log('Role updated successfully');
   } catch (error) {
-    console.error('Error updating team member role:', error);
-    throw error;
+    console.error('Error updating role:', error);
+    throw new Error('Не вдалося змінити роль користувача');
   }
 };
 
