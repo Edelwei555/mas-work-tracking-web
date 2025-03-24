@@ -12,6 +12,10 @@ import { useParams } from 'react-router-dom';
 import { auth } from '../../config/firebase';
 import { updateTeamMemberRole, removeTeamMember } from '../../services/teamMembers';
 
+interface TeamMembersProps {
+  teamId?: string;
+}
+
 interface TeamMember {
   id: string;
   userId: string;
@@ -20,8 +24,10 @@ interface TeamMember {
   role: 'admin' | 'member';
 }
 
-export const TeamMembers: React.FC = () => {
-  const { teamId } = useParams<{ teamId: string }>();
+export const TeamMembers: React.FC<TeamMembersProps> = (props) => {
+  const { teamId: urlTeamId } = useParams<{ teamId: string }>();
+  const teamId = props.teamId || urlTeamId;
+  
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [newMemberEmail, setNewMemberEmail] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
