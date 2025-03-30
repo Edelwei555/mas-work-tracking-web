@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { db } from '../config/firebase';
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp, DocumentData } from 'firebase/firestore';
 
 interface TimerState {
   isRunning: boolean;
@@ -27,7 +27,7 @@ export const useTimer = (userId: string) => {
       const savedState = localStorage.getItem(`timerState_${userId}`);
       if (savedState) {
         const parsed = JSON.parse(savedState);
-        setTimerState(parsed);
+        setTimerState(parsed as TimerState);
       }
 
       // Перевіряємо стан на сервері
@@ -35,8 +35,19 @@ export const useTimer = (userId: string) => {
       if (timerDoc.exists()) {
         const serverState = timerDoc.data();
         if (serverState.isRunning) {
-          setTimerState(serverState);
-          startTimer(serverState.startTime, serverState.workTypeId, serverState.locationId);
+          // Конвертуємо дані з серверу в TimerState
+          const convertedState: TimerState = {
+            isRunning: serverState.isRunning || false,
+            startTime: serverState.startTime || null,
+            elapsed: serverState.elapsed || 0,
+            workTypeId: serverState.workTypeId || null,
+            locationId: serverState.locationId || null
+          };
+          setTimerState(convertedState);
+          
+          if (convertedState.startTime && convertedState.workTypeId && convertedState.locationId) {
+            startTimer(convertedState.workTypeId, convertedState.locationId);
+          }
         }
       }
     };
@@ -62,7 +73,7 @@ export const useTimer = (userId: string) => {
 
   const startTimer = async (workTypeId: string, locationId: string) => {
     const startTime = Date.now();
-    const newState = {
+    const newState: TimerState = {
       isRunning: true,
       startTime,
       elapsed: 0,
@@ -95,7 +106,7 @@ export const useTimer = (userId: string) => {
     worker?.postMessage({ command: 'stop' });
 
     // Очищаємо локальний стан
-    const newState = {
+    const newState: TimerState = {
       isRunning: false,
       startTime: null,
       elapsed: 0,
