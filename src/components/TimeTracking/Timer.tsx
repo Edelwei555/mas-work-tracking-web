@@ -3,8 +3,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTimer } from '../../hooks/useTimer';
 
 export const Timer = () => {
-  const { user } = useAuth();
-  const { isRunning, elapsed, startTimer, stopTimer } = useTimer(user?.uid || '');
+  const { currentUser } = useAuth();
+  const { isRunning, elapsed, startTimer, stopTimer } = useTimer(currentUser?.uid || '');
   const [selectedWorkType, setSelectedWorkType] = useState<string>('');
   const [selectedLocation, setSelectedLocation] = useState<string>('');
 
