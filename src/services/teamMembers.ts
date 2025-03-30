@@ -145,16 +145,22 @@ export const ensureTeamMemberExists = async (
 export const updateTeamMemberRole = async (teamId: string, userId: string, role: 'admin' | 'member'): Promise<void> => {
   try {
     console.log(`Updating role for user ${userId} in team ${teamId} to ${role}`);
-    const memberId = `${teamId}_${userId}`;
-    const memberRef = doc(db, 'teamMembers', memberId);
     
-    // Спочатку перевіряємо чи існує документ
-    const memberDoc = await getDoc(memberRef);
-    if (!memberDoc.exists()) {
+    // Спочатку знайдемо документ по запиту
+    const membersRef = collection(db, 'teamMembers');
+    const q = query(membersRef, 
+      where('teamId', '==', teamId),
+      where('userId', '==', userId)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) {
       throw new Error('Учасника не знайдено');
     }
 
-    await updateDoc(memberRef, {
+    // Оновлюємо перший знайдений документ
+    const memberDoc = querySnapshot.docs[0];
+    await updateDoc(memberDoc.ref, {
       role: role,
       updatedAt: serverTimestamp()
     });
@@ -169,16 +175,21 @@ export const updateTeamMemberRole = async (teamId: string, userId: string, role:
 export const removeTeamMember = async (teamId: string, userId: string): Promise<void> => {
   try {
     console.log(`Removing user ${userId} from team ${teamId}`);
-    const memberId = `${teamId}_${userId}`;
-    const memberRef = doc(db, 'teamMembers', memberId);
     
-    // Спочатку перевіряємо чи існує документ
-    const memberDoc = await getDoc(memberRef);
-    if (!memberDoc.exists()) {
+    // Так само шукаємо документ по запиту
+    const membersRef = collection(db, 'teamMembers');
+    const q = query(membersRef, 
+      where('teamId', '==', teamId),
+      where('userId', '==', userId)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) {
       throw new Error('Учасника не знайдено');
     }
 
-    await deleteDoc(memberRef);
+    // Видаляємо знайдений документ
+    await deleteDoc(querySnapshot.docs[0].ref);
     console.log('Member removed successfully');
   } catch (error) {
     console.error('Error removing member:', error);
