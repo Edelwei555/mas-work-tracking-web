@@ -5,7 +5,6 @@ export const TimeTrackingForm = () => {
         <h2>Види робіт</h2>
         <select 
           className="form-select"
-          placeholder="Вибрати вид роботи"
           defaultValue=""
         >
           <option value="" disabled>Вибрати вид роботи</option>
@@ -17,7 +16,6 @@ export const TimeTrackingForm = () => {
         <h2>Локації</h2>
         <select 
           className="form-select"
-          placeholder="Вибрати локацію"
           defaultValue=""
         >
           <option value="" disabled>Вибрати локацію</option>
