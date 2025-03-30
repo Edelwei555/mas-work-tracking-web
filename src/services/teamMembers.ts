@@ -8,7 +8,9 @@ import {
   Timestamp,
   DocumentData,
   doc,
-  deleteDoc
+  deleteDoc,
+  getDoc,
+  serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { User as FirebaseUser } from 'firebase/auth';
@@ -143,12 +145,18 @@ export const ensureTeamMemberExists = async (
 export const updateTeamMemberRole = async (teamId: string, userId: string, role: 'admin' | 'member'): Promise<void> => {
   try {
     console.log(`Updating role for user ${userId} in team ${teamId} to ${role}`);
-    const memberDocId = `${teamId}_${userId}`;
-    const memberRef = doc(db, 'teamMembers', memberDocId);
+    const memberId = `${teamId}_${userId}`;
+    const memberRef = doc(db, 'teamMembers', memberId);
     
+    // Спочатку перевіряємо чи існує документ
+    const memberDoc = await getDoc(memberRef);
+    if (!memberDoc.exists()) {
+      throw new Error('Учасника не знайдено');
+    }
+
     await updateDoc(memberRef, {
       role: role,
-      updatedAt: new Date().toISOString()
+      updatedAt: serverTimestamp()
     });
     
     console.log('Role updated successfully');
@@ -159,15 +167,21 @@ export const updateTeamMemberRole = async (teamId: string, userId: string, role:
 };
 
 export const removeTeamMember = async (teamId: string, userId: string): Promise<void> => {
-  if (!teamId || !userId) {
-    throw new Error('TeamId and userId are required');
-  }
-
   try {
-    const memberRef = doc(db, 'teamMembers', `${teamId}_${userId}`);
+    console.log(`Removing user ${userId} from team ${teamId}`);
+    const memberId = `${teamId}_${userId}`;
+    const memberRef = doc(db, 'teamMembers', memberId);
+    
+    // Спочатку перевіряємо чи існує документ
+    const memberDoc = await getDoc(memberRef);
+    if (!memberDoc.exists()) {
+      throw new Error('Учасника не знайдено');
+    }
+
     await deleteDoc(memberRef);
+    console.log('Member removed successfully');
   } catch (error) {
-    console.error('Error removing team member:', error);
-    throw error;
+    console.error('Error removing member:', error);
+    throw new Error('Не вдалося видалити учасника');
   }
 }; 

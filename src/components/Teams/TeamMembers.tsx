@@ -1,4 +1,3 @@
-import React, { useEffect, useState } from 'react';
 import { collection, query, where, getDocs, doc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -22,6 +21,7 @@ interface TeamMember {
   email: string;
   name: string;
   role: 'admin' | 'member';
+  displayName?: string;
 }
 
 export const TeamMembers: React.FC<TeamMembersProps> = (props) => {
@@ -90,27 +90,27 @@ export const TeamMembers: React.FC<TeamMembersProps> = (props) => {
   };
 
   const handleRoleToggle = async (userId: string, currentRole: 'admin' | 'member') => {
-    if (!teamId) return;
-    
     try {
+      if (!teamId) return;
       setError(null);
       const newRole = currentRole === 'admin' ? 'member' : 'admin';
+      console.log(`Changing role for user ${userId} from ${currentRole} to ${newRole}`);
       await updateTeamMemberRole(teamId, userId, newRole);
     } catch (err) {
-      console.error('Error updating role:', err);
-      setError('Помилка при зміні ролі користувача');
+      console.error('Error in handleRoleToggle:', err);
+      setError(err instanceof Error ? err.message : 'Помилка при зміні ролі користувача');
     }
   };
 
   const handleRemoveMember = async (userId: string) => {
-    if (!teamId) return;
-    
     try {
+      if (!teamId) return;
       setError(null);
+      console.log(`Removing user ${userId} from team ${teamId}`);
       await removeTeamMember(teamId, userId);
     } catch (err) {
-      console.error('Error removing member:', err);
-      setError('Помилка при видаленні користувача');
+      console.error('Error in handleRemoveMember:', err);
+      setError(err instanceof Error ? err.message : 'Помилка при видаленні учасника');
     }
   };
 
@@ -129,6 +129,7 @@ export const TeamMembers: React.FC<TeamMembersProps> = (props) => {
               <div className="member-role">
                 {member.role === 'admin' ? 'Адміністратор' : 'Учасник'}
               </div>
+              <div className="member-name">{member.displayName || member.name}</div>
               <div className="member-email">{member.email}</div>
             </div>
             
