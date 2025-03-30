@@ -89,7 +89,8 @@
     "addSuccess": "Локацію додано",
     "editSuccess": "Локацію оновлено",
     "deleteSuccess": "Локацію видалено",
-    "error": "Помилка при роботі з локаціями"
+    "error": "Помилка при роботі з локаціями",
+    "namePlaceholder": "Локація"
   },
   "timeTracking": {
     "title": "Облік часу",
