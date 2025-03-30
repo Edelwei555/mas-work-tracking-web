@@ -34,6 +34,7 @@ export const TeamMembers: React.FC<TeamMembersProps> = (props) => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!teamId || !auth.currentUser) return;
@@ -76,6 +77,16 @@ export const TeamMembers: React.FC<TeamMembersProps> = (props) => {
     return () => unsubscribe();
   }, [teamId]);
 
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage(null);
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!teamId) return;
@@ -84,9 +95,10 @@ export const TeamMembers: React.FC<TeamMembersProps> = (props) => {
       setError(null);
       await sendTeamInvitation(teamId, newMemberEmail);
       setNewMemberEmail('');
+      setSuccessMessage('Запрошення успішно відправлено');
     } catch (err) {
       console.error('Error sending invitation:', err);
-      setError('Помилка при надсиланні запрошення');
+      setError(err instanceof Error ? err.message : 'Помилка при надсиланні запрошення');
     }
   };
 
@@ -122,6 +134,7 @@ export const TeamMembers: React.FC<TeamMembersProps> = (props) => {
       <h2>Учасники команди</h2>
       
       {error && <div className="error-message">{error}</div>}
+      {successMessage && <div className="success-message">{successMessage}</div>}
       
       <div className="members-list">
         {members.map(member => (
