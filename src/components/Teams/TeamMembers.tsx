@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import { collection, query, where, getDocs, doc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -19,9 +20,9 @@ interface TeamMember {
   id: string;
   userId: string;
   email: string;
-  name: string;
-  role: 'admin' | 'member';
   displayName?: string;
+  name?: string;
+  role: 'admin' | 'member';
 }
 
 export const TeamMembers: React.FC<TeamMembersProps> = (props) => {
