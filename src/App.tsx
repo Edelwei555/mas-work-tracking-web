@@ -5,6 +5,7 @@ import AppRoutes from './routes/AppRoutes';
 import ErrorBoundary from './components/ErrorBoundary';
 import './App.css';
 import { CircularProgress } from '@mui/material';
+import { TimerProvider } from './contexts/TimerContext';
 
 const App: React.FC = () => {
   return (
@@ -24,9 +25,11 @@ const App: React.FC = () => {
           </div>
         }>
           <AuthProvider>
-            <div className="app">
-              <AppRoutes />
-            </div>
+            <TimerProvider>
+              <div className="app">
+                <AppRoutes />
+              </div>
+            </TimerProvider>
           </AuthProvider>
         </Suspense>
       </Router>

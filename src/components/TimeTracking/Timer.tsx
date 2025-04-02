@@ -1,10 +1,8 @@
-import { useEffect, useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import { useTimer } from '../../hooks/useTimer';
+import { useState } from 'react';
+import { useTimer } from '../../contexts/TimerContext';
 
 export const Timer = () => {
-  const { currentUser } = useAuth();
-  const { isRunning, elapsed, startTimer, stopTimer } = useTimer(currentUser?.uid || '');
+  const { isRunning, elapsed, startTimer, stopTimer } = useTimer();
   const [selectedWorkType, setSelectedWorkType] = useState<string>('');
   const [selectedLocation, setSelectedLocation] = useState<string>('');
 
