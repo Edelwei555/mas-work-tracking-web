@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { BrowserRouter as Router } from 'react-router-dom';
+import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import AppRoutes from './routes/AppRoutes';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -10,7 +10,7 @@ import { TimerProvider } from './contexts/TimerContext';
 const App: React.FC = () => {
   return (
     <ErrorBoundary>
-      <Router>
+      <BrowserRouter>
         <Suspense fallback={
           <div style={{ 
             display: 'flex', 
@@ -32,7 +32,7 @@ const App: React.FC = () => {
             </TimerProvider>
           </AuthProvider>
         </Suspense>
-      </Router>
+      </BrowserRouter>
     </ErrorBoundary>
   );
 };
