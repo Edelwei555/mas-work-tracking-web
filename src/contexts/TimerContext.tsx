@@ -11,6 +11,15 @@ interface TimerState {
   locationId: string | null;
 }
 
+interface TimerData {
+  isRunning: boolean;
+  startTime: number;
+  elapsed: number;
+  workTypeId: string;
+  locationId: string;
+  updatedAt: any; // для serverTimestamp
+}
+
 interface TimerContextType {
   isRunning: boolean;
   elapsed: number;
@@ -39,8 +48,8 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       doc(db, 'timers', currentUser.uid),
       (doc) => {
         if (doc.exists()) {
-          const serverState = doc.data();
-          if (serverState.isRunning) {
+          const serverState = doc.data() as TimerData;
+          if (serverState.isRunning && serverState.startTime) {
             const currentElapsed = Date.now() - serverState.startTime;
             setTimerState({
               isRunning: true,
@@ -70,22 +79,24 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (!timerState.isRunning || !timerState.startTime) return;
 
     const interval = setInterval(() => {
-      const currentElapsed = Date.now() - timerState.startTime;
-      setTimerState(prev => ({
-        ...prev,
-        elapsed: currentElapsed
-      }));
+      if (timerState.startTime) {
+        const currentElapsed = Date.now() - timerState.startTime;
+        setTimerState(prev => ({
+          ...prev,
+          elapsed: currentElapsed
+        }));
 
-      // Оновлюємо elapsed на сервері кожні 5 секунд
-      if (currentUser && currentElapsed % 5000 < 1000) {
-        setDoc(doc(db, 'timers', currentUser.uid), {
-          isRunning: true,
-          startTime: timerState.startTime,
-          elapsed: currentElapsed,
-          workTypeId: timerState.workTypeId,
-          locationId: timerState.locationId,
-          updatedAt: serverTimestamp()
-        }, { merge: true });
+        // Оновлюємо elapsed на сервері кожні 5 секунд
+        if (currentUser && currentElapsed % 5000 < 1000) {
+          setDoc(doc(db, 'timers', currentUser.uid), {
+            isRunning: true,
+            startTime: timerState.startTime,
+            elapsed: currentElapsed,
+            workTypeId: timerState.workTypeId,
+            locationId: timerState.locationId,
+            updatedAt: serverTimestamp()
+          }, { merge: true });
+        }
       }
     }, 1000);
 
