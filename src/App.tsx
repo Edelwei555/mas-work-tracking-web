@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import AppRoutes from './routes/AppRoutes';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -9,8 +9,12 @@ import { TimerProvider } from './contexts/TimerContext';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { store, persistor } from './store/store';
+import { useTimerSync } from './hooks/useTimerSync';
+import { Navigation } from './components/Navigation';
 
 const App: React.FC = () => {
+  useTimerSync(); // Хук для синхронізації таймера
+
   return (
     <ErrorBoundary>
       <Provider store={store}>
@@ -32,7 +36,10 @@ const App: React.FC = () => {
               <AuthProvider>
                 <TimerProvider>
                   <div className="app">
-                    <AppRoutes />
+                    <Navigation />
+                    <Routes>
+                      <Route path="/" element={<AppRoutes />} />
+                    </Routes>
                   </div>
                 </TimerProvider>
               </AuthProvider>

@@ -21,11 +21,11 @@ export default function Login() {
   };
 
   return (
-    <div>
+    <div className="login-container">
       <h2>Login</h2>
-      {error && <div style={{ color: 'red' }}>{error}</div>}
+      {error && <div className="error-message">{error}</div>}
       <form onSubmit={handleSubmit}>
-        <div>
+        <div className="form-group">
           <label>Email:</label>
           <input
             type="email"
@@ -34,7 +34,7 @@ export default function Login() {
             required
           />
         </div>
-        <div>
+        <div className="form-group">
           <label>Password:</label>
           <input
             type="password"
