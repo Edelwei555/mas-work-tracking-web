@@ -15,6 +15,7 @@ import { auth } from '../config/firebase';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ensureUserExists } from '../services/users';
 import { ensureTeamMemberExists } from '../services/teamMembers';
+import { User } from 'firebase/auth';
 
 // Перевіряємо, що auth не undefined і правильного типу
 const firebaseAuth = auth as Auth;
@@ -23,7 +24,7 @@ const firebaseAuth = auth as Auth;
 const DEFAULT_TEAM_ID = 'default';
 
 interface AuthContextType {
-  currentUser: FirebaseUser | null;
+  currentUser: User | null;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
@@ -31,7 +32,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType>({
+export const AuthContext = createContext<AuthContextType>({
   currentUser: null,
   loading: true,
   signInWithGoogle: async () => {},
