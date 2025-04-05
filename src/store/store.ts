@@ -1,24 +1,29 @@
-import { configureStore } from '@reduxjs/toolkit';
-import { persistStore, persistReducer } from 'redux-persist';
+import { combineReducers, configureStore } from '@reduxjs/toolkit';
+import { persistStore, persistReducer, FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import timerReducer from './timerSlice';
 
+const rootReducer = combineReducers({
+  timer: timerReducer,
+});
+
 const persistConfig = {
   key: 'root',
+  version: 1,
   storage,
-  whitelist: ['timer'] // зберігаємо тільки стан таймера
+  whitelist: ['timer']
 };
 
-const persistedReducer = persistReducer(persistConfig, timerReducer);
+const persistedReducer = persistReducer(persistConfig, rootReducer);
 
 export const store = configureStore({
-  reducer: {
-    timer: persistedReducer,
-  },
+  reducer: persistedReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: false // для роботи з Timestamp
-    })
+      serializableCheck: {
+        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+      },
+    }),
 });
 
 export const persistor = persistStore(store);
