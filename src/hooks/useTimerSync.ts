@@ -1,22 +1,35 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { syncTimerState, updateElapsed } from '../store/timerSlice';
 import { RootState } from '../store/store';
-import { Timestamp } from 'firebase/firestore';
 
 export const useTimerSync = () => {
   const dispatch = useDispatch();
   const { currentUser } = useAuth();
   const timerState = useSelector((state: RootState) => state.timer);
+  const unsubscribeRef = useRef<(() => void) | null>(null);
+  const intervalIdRef = useRef<NodeJS.Timeout | null>(null);
+  const syncIntervalIdRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!currentUser) return;
 
+    // Очищаємо попередні підписки
+    if (unsubscribeRef.current) {
+      unsubscribeRef.current();
+    }
+    if (intervalIdRef.current) {
+      clearInterval(intervalIdRef.current);
+    }
+    if (syncIntervalIdRef.current) {
+      clearInterval(syncIntervalIdRef.current);
+    }
+
     // Підписка на зміни в Firestore
-    const unsubscribe = onSnapshot(
+    unsubscribeRef.current = onSnapshot(
       doc(db, 'users', currentUser.uid, 'timer', 'current'),
       (doc) => {
         if (doc.exists()) {
@@ -34,12 +47,12 @@ export const useTimerSync = () => {
     );
 
     // Оновлення elapsed кожну секунду
-    const intervalId = setInterval(() => {
+    intervalIdRef.current = setInterval(() => {
       dispatch(updateElapsed());
     }, 1000);
 
     // Синхронізація з Firestore кожні 5 секунд
-    const syncIntervalId = setInterval(async () => {
+    syncIntervalIdRef.current = setInterval(async () => {
       if (timerState.isRunning) {
         const docRef = doc(db, 'users', currentUser.uid, 'timer', 'current');
         await setDoc(docRef, {
@@ -54,9 +67,17 @@ export const useTimerSync = () => {
     }, 5000);
 
     return () => {
-      unsubscribe();
-      clearInterval(intervalId);
-      clearInterval(syncIntervalId);
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+      }
+      if (intervalIdRef.current) {
+        clearInterval(intervalIdRef.current);
+      }
+      if (syncIntervalIdRef.current) {
+        clearInterval(syncIntervalIdRef.current);
+      }
     };
-  }, [currentUser, dispatch, timerState]);
+  }, [currentUser, dispatch]);
+
+  return null;
 }; 
