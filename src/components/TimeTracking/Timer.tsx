@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAuth } from '../../contexts/AuthContext';
 import { startTimer, stopTimer } from '../../store/timerSlice';
@@ -10,7 +10,7 @@ import { RootState } from '../../store/store';
 export const Timer = () => {
   const dispatch = useDispatch();
   const { currentUser } = useAuth();
-  const { isRunning, elapsed } = useSelector((state: RootState) => state.timer);
+  const timerState = useSelector((state: RootState) => state.timer);
   const [selectedWorkType, setSelectedWorkType] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('');
 
@@ -18,61 +18,30 @@ export const Timer = () => {
   useTimerSync();
 
   const formatTime = (ms: number) => {
-    const seconds = Math.floor((ms / 1000) % 60);
-    const minutes = Math.floor((ms / 1000 / 60) % 60);
-    const hours = Math.floor(ms / 1000 / 60 / 60);
-
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    const seconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    return `${hours.toString().padStart(2, '0')}:${(minutes % 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
   };
 
-  const handleStart = async () => {
-    if (!currentUser || !selectedWorkType || !selectedLocation) return;
-
-    dispatch(startTimer({ workTypeId: selectedWorkType, locationId: selectedLocation }));
-
-    await setDoc(doc(db, 'timers', currentUser.uid), {
-      isRunning: true,
-      startTime: Date.now(),
-      workTypeId: selectedWorkType,
-      locationId: selectedLocation,
-      updatedAt: serverTimestamp()
-    });
+  const handleStart = (workTypeId: string, locationId: string) => {
+    dispatch(startTimer({ workTypeId, locationId }));
   };
 
-  const handleStop = async () => {
-    if (!currentUser) return;
-
+  const handleStop = () => {
     dispatch(stopTimer());
-
-    await setDoc(doc(db, 'timeEntries', `${currentUser.uid}_${Date.now()}`), {
-      userId: currentUser.uid,
-      workTypeId: selectedWorkType,
-      locationId: selectedLocation,
-      startTime: Date.now(),
-      endTime: Date.now(),
-      duration: elapsed,
-      createdAt: serverTimestamp()
-    });
-
-    await setDoc(doc(db, 'timers', currentUser.uid), {
-      isRunning: false,
-      updatedAt: serverTimestamp()
-    });
-
-    setSelectedWorkType('');
-    setSelectedLocation('');
   };
 
   return (
     <div className="timer">
-      <div className="timer-display">{formatTime(elapsed)}</div>
+      <div className="timer-display">{formatTime(timerState.elapsed)}</div>
       
-      {!isRunning ? (
+      {!timerState.isRunning ? (
         <>
           <select
             value={selectedWorkType}
             onChange={(e) => setSelectedWorkType(e.target.value)}
-            disabled={isRunning}
+            disabled={timerState.isRunning}
           >
             <option value="">Вибрати вид роботи</option>
             {/* options */}
@@ -81,14 +50,14 @@ export const Timer = () => {
           <select
             value={selectedLocation}
             onChange={(e) => setSelectedLocation(e.target.value)}
-            disabled={isRunning}
+            disabled={timerState.isRunning}
           >
             <option value="">Вибрати локацію</option>
             {/* options */}
           </select>
           
           <button
-            onClick={handleStart}
+            onClick={() => handleStart(selectedWorkType, selectedLocation)}
             disabled={!selectedWorkType || !selectedLocation}
             className="start-button"
           >
