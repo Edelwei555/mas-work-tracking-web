@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAuth } from '../../contexts/AuthContext';
 import { startTimer, stopTimer } from '../../store/timerSlice';
@@ -24,8 +24,10 @@ export const Timer = () => {
     return `${hours.toString().padStart(2, '0')}:${(minutes % 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
   };
 
-  const handleStart = (workTypeId: string, locationId: string) => {
-    dispatch(startTimer({ workTypeId, locationId }));
+  const handleStart = () => {
+    if (selectedWorkType && selectedLocation) {
+      dispatch(startTimer({ workTypeId: selectedWorkType, locationId: selectedLocation }));
+    }
   };
 
   const handleStop = () => {
@@ -37,14 +39,15 @@ export const Timer = () => {
       <div className="timer-display">{formatTime(timerState.elapsed)}</div>
       
       {!timerState.isRunning ? (
-        <>
+        <div>
           <select
             value={selectedWorkType}
             onChange={(e) => setSelectedWorkType(e.target.value)}
             disabled={timerState.isRunning}
           >
-            <option value="">Вибрати вид роботи</option>
-            {/* options */}
+            <option value="">Виберіть тип роботи</option>
+            <option value="type1">Тип роботи 1</option>
+            <option value="type2">Тип роботи 2</option>
           </select>
           
           <select
@@ -52,18 +55,19 @@ export const Timer = () => {
             onChange={(e) => setSelectedLocation(e.target.value)}
             disabled={timerState.isRunning}
           >
-            <option value="">Вибрати локацію</option>
-            {/* options */}
+            <option value="">Виберіть локацію</option>
+            <option value="loc1">Локація 1</option>
+            <option value="loc2">Локація 2</option>
           </select>
           
           <button
-            onClick={() => handleStart(selectedWorkType, selectedLocation)}
+            onClick={handleStart}
             disabled={!selectedWorkType || !selectedLocation}
             className="start-button"
           >
             Почати
           </button>
-        </>
+        </div>
       ) : (
         <button onClick={handleStop} className="stop-button">
           Зупинити
