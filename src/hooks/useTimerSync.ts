@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { syncTimerState, updateElapsed } from '../store/timerSlice';
@@ -39,10 +39,10 @@ export const useTimerSync = () => {
     }, 1000);
 
     // Синхронізація з Firestore кожні 5 секунд
-    const syncIntervalId = setInterval(() => {
+    const syncIntervalId = setInterval(async () => {
       if (timerState.isRunning) {
         const docRef = doc(db, 'users', currentUser.uid, 'timer', 'current');
-        docRef.set({
+        await setDoc(docRef, {
           isRunning: timerState.isRunning,
           startTime: timerState.startTime ? new Timestamp(Math.floor(timerState.startTime / 1000), 0) : null,
           elapsed: timerState.elapsed,
