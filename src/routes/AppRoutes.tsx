@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate, useParams } from 'react-router-dom';
+import { Route, Navigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import LoginForm from '../components/Auth/LoginForm';
 import ForgotPassword from '../components/Auth/ForgotPassword';
@@ -10,7 +10,6 @@ import TeamMembers from '../components/Teams/TeamMembers';
 import WorkTypes from '../components/WorkTypes/WorkTypes';
 import Locations from '../components/Locations/Locations';
 import Reports from '../components/Reports/Reports';
-import Layout from '../components/Layout';
 import { JoinTeam } from '../components/JoinTeam';
 
 // Компонент-обгортка для TeamMembers
@@ -34,26 +33,26 @@ const AppRoutes: React.FC = () => {
 
   if (!currentUser) {
     return (
-      <Routes>
+      <>
         <Route path="/login" element={<LoginForm onSuccess={() => {}} />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
+      </>
     );
   }
 
   return (
-    <Routes>
-      <Route element={<Layout />}>
-        <Route path="/" element={<TimeTracking />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/teams" element={<Teams />} />
-        <Route path="/teams/:teamId" element={<TeamMembersWrapper />} />
-        <Route path="/reports" element={<Reports />} />
-      </Route>
+    <>
+      <Route path="/" element={<TimeTracking />} />
+      <Route path="/profile" element={<Profile />} />
+      <Route path="/teams" element={<Teams />} />
+      <Route path="/teams/:teamId" element={<TeamMembersWrapper />} />
+      <Route path="/work-types" element={<WorkTypes />} />
+      <Route path="/locations" element={<Locations />} />
+      <Route path="/reports" element={<Reports />} />
       <Route path="/join/:token" element={<JoinTeam />} />
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    </>
   );
 };
 
