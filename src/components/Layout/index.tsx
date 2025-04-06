@@ -17,6 +17,18 @@ const Layout: React.FC = () => {
       console.error('Failed to logout', error);
     }
   };
+
+  return (
+    <div className="layout">
+      <nav>
+        {currentUser && (
+          <button onClick={handleLogout}>
+            Logout
+          </button>
+        )}
+      </nav>
+    </div>
+  );
 };
 
 export default Layout; 
