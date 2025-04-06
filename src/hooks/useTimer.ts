@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { db } from '../config/firebase';
-import { doc, setDoc, getDoc, serverTimestamp, DocumentData } from 'firebase/firestore';
+import { doc, updateDoc, onSnapshot } from 'firebase/firestore';
+import { db } from '../firebase';
+import { useAuth } from '../contexts/AuthContext';
 
 interface TimerState {
   isRunning: boolean;
@@ -10,7 +11,8 @@ interface TimerState {
   locationId: string | null;
 }
 
-export const useTimer = (userId: string) => {
+export const useTimer = () => {
+  const { currentUser } = useAuth();
   const [timerState, setTimerState] = useState<TimerState>({
     isRunning: false,
     startTime: null,
@@ -18,125 +20,97 @@ export const useTimer = (userId: string) => {
     workTypeId: null,
     locationId: null
   });
-  const [worker, setWorker] = useState<Worker | null>(null);
 
-  // Ініціалізація при завантаженні
+  // Підписка на зміни в Firestore
   useEffect(() => {
-    const initTimer = async () => {
-      // Перевіряємо localStorage
-      const savedState = localStorage.getItem(`timerState_${userId}`);
-      if (savedState) {
-        const parsed = JSON.parse(savedState);
-        setTimerState(parsed as TimerState);
+    if (!currentUser) return;
+
+    const timerRef = doc(db, 'timers', currentUser.uid);
+    const unsubscribe = onSnapshot(timerRef, (doc) => {
+      if (doc.exists()) {
+        const data = doc.data();
+        setTimerState({
+          isRunning: data.isRunning,
+          startTime: data.startTime?.toMillis() || null,
+          elapsed: data.elapsed || 0,
+          workTypeId: data.workTypeId,
+          locationId: data.locationId
+        });
       }
+    });
 
-      // Перевіряємо стан на сервері
-      const timerDoc = await getDoc(doc(db, 'timers', userId));
-      if (timerDoc.exists()) {
-        const serverState = timerDoc.data();
-        if (serverState.isRunning) {
-          // Конвертуємо дані з серверу в TimerState
-          const convertedState: TimerState = {
-            isRunning: serverState.isRunning || false,
-            startTime: serverState.startTime || null,
-            elapsed: serverState.elapsed || 0,
-            workTypeId: serverState.workTypeId || null,
-            locationId: serverState.locationId || null
-          };
-          setTimerState(convertedState);
-          
-          if (convertedState.startTime && convertedState.workTypeId && convertedState.locationId) {
-            startTimer(convertedState.workTypeId, convertedState.locationId);
-          }
-        }
-      }
-    };
+    return () => unsubscribe();
+  }, [currentUser]);
 
-    initTimer();
+  // Оновлення elapsed кожну секунду
+  useEffect(() => {
+    if (!timerState.isRunning || !timerState.startTime) return;
 
-    // Створюємо Web Worker
-    const timerWorker = new Worker('/timerWorker.js');
-    timerWorker.onmessage = (e) => {
-      if (e.data.type === 'tick') {
-        setTimerState(prev => ({
-          ...prev,
-          elapsed: e.data.elapsed
-        }));
-      }
-    };
-    setWorker(timerWorker);
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const newElapsed = timerState.elapsed + (now - timerState.startTime);
+      setTimerState(prev => ({
+        ...prev,
+        startTime: now,
+        elapsed: newElapsed
+      }));
+    }, 1000);
 
-    return () => {
-      timerWorker.terminate();
-    };
-  }, [userId]);
+    return () => clearInterval(interval);
+  }, [timerState.isRunning, timerState.startTime]);
+
+  // Синхронізація з сервером
+  useEffect(() => {
+    if (!timerState.isRunning || !currentUser) return;
+
+    const interval = setInterval(async () => {
+      const timerRef = doc(db, 'timers', currentUser.uid);
+      await updateDoc(timerRef, {
+        elapsed: timerState.elapsed,
+        startTime: new Date()
+      });
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [timerState.isRunning, timerState.elapsed, currentUser]);
 
   const startTimer = async (workTypeId: string, locationId: string) => {
-    const startTime = Date.now();
-    const newState: TimerState = {
+    if (!currentUser) return;
+
+    const newState = {
       isRunning: true,
-      startTime,
-      elapsed: 0,
+      startTime: Date.now(),
+      elapsed: timerState.elapsed,
       workTypeId,
       locationId
     };
 
-    // Оновлюємо локальний стан
-    setTimerState(newState);
-    localStorage.setItem(`timerState_${userId}`, JSON.stringify(newState));
-
-    // Оновлюємо стан на сервері
-    await setDoc(doc(db, 'timers', userId), {
+    const timerRef = doc(db, 'timers', currentUser.uid);
+    await updateDoc(timerRef, {
       ...newState,
-      updatedAt: serverTimestamp()
+      startTime: new Date()
     });
 
-    // Запускаємо Web Worker
-    worker?.postMessage({ 
-      command: 'start', 
-      startTime 
-    });
+    setTimerState(newState);
   };
 
   const stopTimer = async () => {
-    const endTime = Date.now();
-    const duration = endTime - (timerState.startTime || 0);
+    if (!currentUser) return;
 
-    // Зупиняємо Web Worker
-    worker?.postMessage({ command: 'stop' });
-
-    // Очищаємо локальний стан
-    const newState: TimerState = {
+    const newState = {
+      ...timerState,
       isRunning: false,
-      startTime: null,
-      elapsed: 0,
-      workTypeId: null,
-      locationId: null
+      startTime: null
     };
+
+    const timerRef = doc(db, 'timers', currentUser.uid);
+    await updateDoc(timerRef, newState);
+
     setTimerState(newState);
-    localStorage.setItem(`timerState_${userId}`, JSON.stringify(newState));
-
-    // Зберігаємо запис про час
-    await setDoc(doc(db, 'timeEntries', `${userId}_${endTime}`), {
-      userId,
-      workTypeId: timerState.workTypeId,
-      locationId: timerState.locationId,
-      startTime: timerState.startTime,
-      endTime,
-      duration,
-      createdAt: serverTimestamp()
-    });
-
-    // Очищаємо активний таймер на сервері
-    await setDoc(doc(db, 'timers', userId), {
-      isRunning: false,
-      updatedAt: serverTimestamp()
-    });
   };
 
   return {
-    isRunning: timerState.isRunning,
-    elapsed: timerState.elapsed,
+    timerState,
     startTimer,
     stopTimer
   };
