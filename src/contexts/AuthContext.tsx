@@ -25,15 +25,15 @@ const DEFAULT_TEAM_ID = 'default';
 interface AuthContextType {
   currentUser: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<any>;
-  logout: () => Promise<void>;
+  signOut: () => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
 }
 
 const defaultValue: AuthContextType = {
   currentUser: null,
   loading: true,
-  login: async () => {},
-  logout: async () => {}
+  signOut: async () => {},
+  signIn: async () => {}
 };
 
 const AuthContext = createContext<AuthContextType>(defaultValue);
@@ -107,19 +107,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, [navigate, location.pathname]);
 
-  const login = (email: string, password: string) => {
-    return signInWithEmailAndPassword(firebaseAuth, email, password);
-  };
-
-  const logout = () => {
-    return signOut(firebaseAuth);
-  };
-
   const value = {
     currentUser,
     loading,
-    login,
-    logout
+    signOut: () => signOut(firebaseAuth),
+    signIn: (email: string, password: string) => signInWithEmailAndPassword(firebaseAuth, email, password)
   };
 
   return (
