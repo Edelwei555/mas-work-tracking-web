@@ -5,7 +5,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import './App.css';
 import { CircularProgress } from '@mui/material';
 import { useTimerSync } from './hooks/useTimerSync';
-import { Navigation } from './components/Navigation';
+import Layout from './components/Layout/Layout';
 
 const App: React.FC = () => {
   useTimerSync(); // Хук для синхронізації таймера
@@ -26,9 +26,10 @@ const App: React.FC = () => {
         </div>
       }>
         <div className="app">
-          <Navigation />
           <Routes>
-            <Route path="/" element={<AppRoutes />} />
+            <Route path="/*" element={<Layout />}>
+              <Route path="*" element={<AppRoutes />} />
+            </Route>
           </Routes>
         </div>
       </Suspense>
