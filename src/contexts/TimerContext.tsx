@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { doc, setDoc, getDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { createContext, useContext, useState, useEffect } from 'react';
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 import { useAuth } from './AuthContext';
 
 interface TimerState {
@@ -11,25 +11,23 @@ interface TimerState {
   locationId: string | null;
 }
 
-interface TimerData {
-  isRunning: boolean;
-  startTime: number;
-  elapsed: number;
-  workTypeId: string;
-  locationId: string;
-  updatedAt: any; // для serverTimestamp
-}
-
 interface TimerContextType {
-  isRunning: boolean;
-  elapsed: number;
+  timerState: TimerState;
   startTimer: (workTypeId: string, locationId: string) => Promise<void>;
   stopTimer: () => Promise<void>;
 }
 
 const TimerContext = createContext<TimerContextType | null>(null);
 
-export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const useTimer = () => {
+  const context = useContext(TimerContext);
+  if (!context) {
+    throw new Error('useTimer must be used within TimerProvider');
+  }
+  return context;
+};
+
+export const TimerProvider = ({ children }: { children: React.ReactNode }) => {
   const { currentUser } = useAuth();
   const [timerState, setTimerState] = useState<TimerState>({
     isRunning: false,
@@ -39,164 +37,96 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     locationId: null
   });
 
-  // Підписка на зміни таймера в Firestore
   useEffect(() => {
     if (!currentUser) return;
 
-    // Підписуємося на зміни документа таймера
-    const unsubscribe = onSnapshot(
-      doc(db, 'timers', currentUser.uid),
-      (doc) => {
-        if (doc.exists()) {
-          const serverState = doc.data() as TimerData;
-          if (serverState.isRunning && serverState.startTime) {
-            const currentElapsed = Date.now() - serverState.startTime;
-            setTimerState({
-              isRunning: true,
-              startTime: serverState.startTime,
-              elapsed: currentElapsed,
-              workTypeId: serverState.workTypeId,
-              locationId: serverState.locationId
-            });
-          } else {
-            setTimerState({
-              isRunning: false,
-              startTime: null,
-              elapsed: 0,
-              workTypeId: null,
-              locationId: null
-            });
-          }
-        }
+    const timerRef = doc(db, 'timers', currentUser.uid);
+    const unsubscribe = onSnapshot(timerRef, (doc) => {
+      if (doc.exists()) {
+        const data = doc.data();
+        setTimerState({
+          isRunning: data.isRunning,
+          startTime: data.startTime?.toMillis() || null,
+          elapsed: data.elapsed || 0,
+          workTypeId: data.workTypeId,
+          locationId: data.locationId
+        });
       }
-    );
+    });
 
     return () => unsubscribe();
   }, [currentUser]);
 
-  // Оновлення elapsed кожну секунду для активного таймера
+  // Оновлюємо elapsed кожну секунду, якщо таймер запущений
   useEffect(() => {
     if (!timerState.isRunning || !timerState.startTime) return;
 
     const interval = setInterval(() => {
-      if (timerState.startTime) {
-        const currentElapsed = Date.now() - timerState.startTime;
-        setTimerState(prev => ({
-          ...prev,
-          elapsed: currentElapsed
-        }));
-
-        // Оновлюємо elapsed на сервері кожні 5 секунд
-        if (currentUser && currentElapsed % 5000 < 1000) {
-          setDoc(doc(db, 'timers', currentUser.uid), {
-            isRunning: true,
-            startTime: timerState.startTime,
-            elapsed: currentElapsed,
-            workTypeId: timerState.workTypeId,
-            locationId: timerState.locationId,
-            updatedAt: serverTimestamp()
-          }, { merge: true });
-        }
-      }
+      const now = Date.now();
+      const newElapsed = timerState.elapsed + (now - timerState.startTime);
+      setTimerState(prev => ({
+        ...prev,
+        startTime: now,
+        elapsed: newElapsed
+      }));
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [timerState.isRunning, timerState.startTime, currentUser]);
+  }, [timerState.isRunning, timerState.startTime]);
 
-  // Відновлення стану при завантаженні
+  // Синхронізуємо з сервером кожні 5 секунд
   useEffect(() => {
-    if (!currentUser) return;
+    if (!timerState.isRunning || !currentUser) return;
 
-    const initTimer = async () => {
-      const timerDoc = await getDoc(doc(db, 'timers', currentUser.uid));
-      if (timerDoc.exists()) {
-        const serverState = timerDoc.data();
-        if (serverState.isRunning) {
-          const currentElapsed = Date.now() - serverState.startTime;
-          setTimerState({
-            isRunning: true,
-            startTime: serverState.startTime,
-            elapsed: currentElapsed,
-            workTypeId: serverState.workTypeId,
-            locationId: serverState.locationId
-          });
-        }
-      }
-    };
+    const interval = setInterval(async () => {
+      const timerRef = doc(db, 'timers', currentUser.uid);
+      await updateDoc(timerRef, {
+        elapsed: timerState.elapsed,
+        startTime: new Date()
+      });
+    }, 5000);
 
-    initTimer();
-  }, [currentUser]);
+    return () => clearInterval(interval);
+  }, [timerState.isRunning, timerState.elapsed, currentUser]);
 
   const startTimer = async (workTypeId: string, locationId: string) => {
     if (!currentUser) return;
 
-    const startTime = Date.now();
-    const newState: TimerState = {
+    const newState = {
       isRunning: true,
-      startTime,
-      elapsed: 0,
+      startTime: Date.now(),
+      elapsed: timerState.elapsed,
       workTypeId,
       locationId
     };
 
-    setTimerState(newState);
-
-    await setDoc(doc(db, 'timers', currentUser.uid), {
+    const timerRef = doc(db, 'timers', currentUser.uid);
+    await updateDoc(timerRef, {
       ...newState,
-      updatedAt: serverTimestamp()
+      startTime: new Date()
     });
+
+    setTimerState(newState);
   };
 
   const stopTimer = async () => {
-    if (!currentUser || !timerState.startTime) return;
+    if (!currentUser) return;
 
-    const endTime = Date.now();
-    const duration = endTime - timerState.startTime;
-
-    const newState: TimerState = {
+    const newState = {
+      ...timerState,
       isRunning: false,
-      startTime: null,
-      elapsed: 0,
-      workTypeId: null,
-      locationId: null
+      startTime: null
     };
 
+    const timerRef = doc(db, 'timers', currentUser.uid);
+    await updateDoc(timerRef, newState);
+
     setTimerState(newState);
-
-    // Зберігаємо запис про час
-    await setDoc(doc(db, 'timeEntries', `${currentUser.uid}_${endTime}`), {
-      userId: currentUser.uid,
-      workTypeId: timerState.workTypeId,
-      locationId: timerState.locationId,
-      startTime: timerState.startTime,
-      endTime,
-      duration,
-      createdAt: serverTimestamp()
-    });
-
-    // Скидаємо активний таймер
-    await setDoc(doc(db, 'timers', currentUser.uid), {
-      isRunning: false,
-      updatedAt: serverTimestamp()
-    });
   };
 
   return (
-    <TimerContext.Provider value={{
-      isRunning: timerState.isRunning,
-      elapsed: timerState.elapsed,
-      startTimer,
-      stopTimer
-    }}>
+    <TimerContext.Provider value={{ timerState, startTimer, stopTimer }}>
       {children}
     </TimerContext.Provider>
   );
-};
-
-export const useTimer = () => {
-  const context = useContext(TimerContext);
-  if (!context) {
-    throw new Error('useTimer must be used within a TimerProvider');
-  }
-  return context;
 }; 
