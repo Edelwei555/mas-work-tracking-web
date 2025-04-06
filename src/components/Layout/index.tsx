@@ -5,13 +5,13 @@ import { useAuth } from '../../contexts/AuthContext';
 
 const Layout: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const { currentUser, logout } = useAuth();
+  const { currentUser, signOut } = useAuth();
   const location = useLocation();
   const [languageAnchor, setLanguageAnchor] = React.useState<null | HTMLElement>(null);
 
   const handleLogout = async () => {
     try {
-      await logout();
+      await signOut();
     } catch (error) {
       console.error('Failed to logout', error);
     }
