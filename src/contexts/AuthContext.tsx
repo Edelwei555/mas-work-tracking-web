@@ -32,7 +32,16 @@ interface AuthContextType {
   signOut: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | null>(null);
+const defaultValue: AuthContextType = {
+  currentUser: null,
+  loading: true,
+  signInWithGoogle: async () => {},
+  signInWithEmail: async () => {},
+  signUpWithEmail: async () => {},
+  signOut: async () => {}
+};
+
+const AuthContext = createContext<AuthContextType>(defaultValue);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
