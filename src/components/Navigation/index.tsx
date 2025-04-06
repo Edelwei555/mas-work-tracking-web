@@ -3,15 +3,15 @@ import { useAuth } from '../../contexts/AuthContext';
 import './styles.css';
 
 export const Navigation = () => {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, signOut } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     try {
-      await logout();
+      await signOut();
       navigate('/login');
     } catch (error) {
-      console.error('Failed to log out', error);
+      console.error('Failed to logout', error);
     }
   };
 
