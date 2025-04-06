@@ -16,23 +16,39 @@ export const Navigation = () => {
   };
 
   return (
-    <nav className="navigation">
-      <ul>
-        <li>
-          <Link to="/">{t('nav.timeTracking')}</Link>
-        </li>
-        <li>
-          <Link to="/teams">{t('nav.teams')}</Link>
-        </li>
-        <li>
-          <Link to="/reports">{t('reports.title')}</Link>
-        </li>
-        {currentUser && (
-          <li>
-            <button onClick={handleLogout}>{t('nav.logout')}</button>
-          </li>
-        )}
-      </ul>
+    <nav className="main-navigation">
+      <div className="nav-left">
+        <Link to="/" className="logo">Work Tracking</Link>
+        <Link to="/" className="nav-item active">
+          <i className="nav-icon timer-icon"></i>
+          {t('nav.timeTracking')}
+        </Link>
+        <Link to="/work-types" className="nav-item">
+          <i className="nav-icon work-icon"></i>
+          {t('nav.workTypes')}
+        </Link>
+        <Link to="/locations" className="nav-item">
+          <i className="nav-icon location-icon"></i>
+          {t('nav.locations')}
+        </Link>
+        <Link to="/teams" className="nav-item">
+          <i className="nav-icon team-icon"></i>
+          {t('nav.teams')}
+        </Link>
+        <Link to="/reports" className="nav-item">
+          <i className="nav-icon report-icon"></i>
+          {t('nav.reports')}
+        </Link>
+      </div>
+      <div className="nav-right">
+        <span className="user-email">
+          <i className="nav-icon globe-icon"></i>
+          {currentUser?.email}
+        </span>
+        <button onClick={handleLogout} className="logout-button">
+          {t('nav.logout')}
+        </button>
+      </div>
     </nav>
   );
 };
