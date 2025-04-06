@@ -6,14 +6,14 @@ export const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { login } = useAuth();
+  const { signIn } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       setError('');
-      await login(email, password);
+      await signIn(email, password);
       navigate('/dashboard');
     } catch (err) {
       setError('Failed to sign in');
