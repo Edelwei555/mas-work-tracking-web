@@ -1,12 +1,12 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { User, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
+import { User, signInWithEmailAndPassword, signOut, onAuthStateChanged, UserCredential } from 'firebase/auth';
 import { auth } from '../firebase';
 
 type AuthContextType = {
   currentUser: User | null;
   loading: boolean;
   signOut: () => Promise<void>;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<UserCredential>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
