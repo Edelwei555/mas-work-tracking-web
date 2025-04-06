@@ -44,22 +44,19 @@ export const useTimer = () => {
 
   // Оновлення elapsed кожну секунду
   useEffect(() => {
-    if (!timerState.isRunning || !timerState.startTime) return;
+    if (!timerState.isRunning) return;
 
     const interval = setInterval(() => {
-      const now = Date.now();
-      const newElapsed = timerState.elapsed + (now - timerState.startTime);
       setTimerState(prev => ({
         ...prev,
-        startTime: now,
-        elapsed: newElapsed
+        elapsed: prev.elapsed + 1000
       }));
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [timerState.isRunning, timerState.startTime]);
+  }, [timerState.isRunning]);
 
-  // Синхронізація з сервером
+  // Синхронізація з сервером кожні 5 секунд
   useEffect(() => {
     if (!timerState.isRunning || !currentUser) return;
 
@@ -67,12 +64,14 @@ export const useTimer = () => {
       const timerRef = doc(db, 'timers', currentUser.uid);
       await updateDoc(timerRef, {
         elapsed: timerState.elapsed,
-        startTime: new Date()
+        isRunning: timerState.isRunning,
+        workTypeId: timerState.workTypeId,
+        locationId: timerState.locationId
       });
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [timerState.isRunning, timerState.elapsed, currentUser]);
+  }, [timerState, currentUser]);
 
   const startTimer = async (workTypeId: string, locationId: string) => {
     if (!currentUser) return;
@@ -86,11 +85,7 @@ export const useTimer = () => {
     };
 
     const timerRef = doc(db, 'timers', currentUser.uid);
-    await updateDoc(timerRef, {
-      ...newState,
-      startTime: new Date()
-    });
-
+    await updateDoc(timerRef, newState);
     setTimerState(newState);
   };
 
@@ -105,7 +100,6 @@ export const useTimer = () => {
 
     const timerRef = doc(db, 'timers', currentUser.uid);
     await updateDoc(timerRef, newState);
-
     setTimerState(newState);
   };
 
