@@ -10,6 +10,7 @@ import TeamMembers from '../components/Teams/TeamMembers';
 import WorkTypes from '../components/WorkTypes/WorkTypes';
 import Locations from '../components/Locations/Locations';
 import Reports from '../components/Reports/Reports';
+import Layout from '../components/Layout';
 import { JoinTeam } from '../components/JoinTeam';
 
 // Компонент-обгортка для TeamMembers
@@ -43,11 +44,13 @@ const AppRoutes: React.FC = () => {
 
   return (
     <Routes>
-      <Route path="/" element={<TimeTracking />} />
-      <Route path="/profile" element={<Profile />} />
-      <Route path="/teams" element={<Teams />} />
-      <Route path="/teams/:teamId" element={<TeamMembersWrapper />} />
-      <Route path="/reports" element={<Reports />} />
+      <Route element={<Layout />}>
+        <Route path="/" element={<TimeTracking />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/teams" element={<Teams />} />
+        <Route path="/teams/:teamId" element={<TeamMembersWrapper />} />
+        <Route path="/reports" element={<Reports />} />
+      </Route>
       <Route path="/join/:token" element={<JoinTeam />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

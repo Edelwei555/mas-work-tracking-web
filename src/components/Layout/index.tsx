@@ -1,13 +1,12 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useLocation } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import './styles.css';
 
 const Layout: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { currentUser, signOut } = useAuth();
-  const location = useLocation();
-  const [languageAnchor, setLanguageAnchor] = React.useState<null | HTMLElement>(null);
 
   const handleLogout = async () => {
     try {
@@ -19,13 +18,34 @@ const Layout: React.FC = () => {
 
   return (
     <div className="layout">
-      <nav>
-        {currentUser && (
-          <button onClick={handleLogout}>
-            Logout
-          </button>
-        )}
-      </nav>
+      <header className="header">
+        <div className="logo">
+          <h1>Work Tracking</h1>
+        </div>
+        <nav className="main-nav">
+          <ul>
+            <li>
+              <span>{t('nav.timeTracking')}</span>
+            </li>
+            <li>
+              <span>{t('nav.teams')}</span>
+            </li>
+            <li>
+              <span>{t('reports.title')}</span>
+            </li>
+            {currentUser && (
+              <li>
+                <button onClick={handleLogout} className="logout-button">
+                  {t('nav.logout')}
+                </button>
+              </li>
+            )}
+          </ul>
+        </nav>
+      </header>
+      <main className="main-content">
+        <Outlet />
+      </main>
     </div>
   );
 };
