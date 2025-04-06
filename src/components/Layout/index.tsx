@@ -12,7 +12,6 @@ const Layout: React.FC = () => {
   const handleLogout = async () => {
     try {
       await signOut();
-      // додаткова логіка після виходу
     } catch (error) {
       console.error('Failed to logout', error);
     }
