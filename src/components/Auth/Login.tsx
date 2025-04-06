@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
-export default function Login() {
+export const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -16,7 +16,8 @@ export default function Login() {
       await login(email, password);
       navigate('/dashboard');
     } catch (err) {
-      setError('Failed to log in');
+      setError('Failed to sign in');
+      console.error(err);
     }
   };
 
@@ -43,8 +44,10 @@ export default function Login() {
             required
           />
         </div>
-        <button type="submit">Log In</button>
+        <button type="submit">Login</button>
       </form>
     </div>
   );
-} 
+};
+
+export default Login; 
