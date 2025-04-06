@@ -63,12 +63,14 @@ export const TimerProvider = ({ children }: { children: React.ReactNode }) => {
 
     const interval = setInterval(() => {
       const now = Date.now();
-      const newElapsed = timerState.elapsed + (now - timerState.startTime);
-      setTimerState(prev => ({
-        ...prev,
-        startTime: now,
-        elapsed: newElapsed
-      }));
+      if (timerState.startTime) {  // Додана перевірка на null
+        const newElapsed = timerState.elapsed + (now - timerState.startTime);
+        setTimerState(prev => ({
+          ...prev,
+          startTime: now,
+          elapsed: newElapsed
+        }));
+      }
     }, 1000);
 
     return () => clearInterval(interval);
