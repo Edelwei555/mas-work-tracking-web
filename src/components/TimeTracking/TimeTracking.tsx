@@ -23,11 +23,6 @@ const TimeTracking: React.FC = () => {
   const [success, setSuccess] = useState<string>('');
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
-  // Перезавантаження перекладів
-  useEffect(() => {
-    i18n.reloadResources();
-  }, [i18n]);
-
   // Функція оновлення списків
   const refreshLists = async () => {
     if (!teamId) return;
