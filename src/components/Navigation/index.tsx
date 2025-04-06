@@ -1,15 +1,15 @@
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 import './styles.css';
 
 export const Navigation = () => {
   const { currentUser, signOut } = useAuth();
-  const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleLogout = async () => {
     try {
       await signOut();
-      navigate('/login');
     } catch (error) {
       console.error('Failed to logout', error);
     }
@@ -19,17 +19,17 @@ export const Navigation = () => {
     <nav className="navigation">
       <ul>
         <li>
-          <a href="/dashboard">Dashboard</a>
+          <Link to="/">{t('nav.timeTracking')}</Link>
         </li>
         <li>
-          <a href="/teams">Teams</a>
+          <Link to="/teams">{t('nav.teams')}</Link>
         </li>
         <li>
-          <a href="/reports">Reports</a>
+          <Link to="/reports">{t('reports.title')}</Link>
         </li>
         {currentUser && (
           <li>
-            <button onClick={handleLogout}>Logout</button>
+            <button onClick={handleLogout}>{t('nav.logout')}</button>
           </li>
         )}
       </ul>

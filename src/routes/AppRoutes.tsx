@@ -10,7 +10,6 @@ import TeamMembers from '../components/Teams/TeamMembers';
 import WorkTypes from '../components/WorkTypes/WorkTypes';
 import Locations from '../components/Locations/Locations';
 import Reports from '../components/Reports/Reports';
-import Layout from '../components/Layout/Layout';
 import { JoinTeam } from '../components/JoinTeam';
 
 // Компонент-обгортка для TeamMembers
@@ -32,33 +31,25 @@ const TeamMembersWrapper: React.FC = () => {
 const AppRoutes: React.FC = () => {
   const { currentUser } = useAuth();
 
+  if (!currentUser) {
+    return (
+      <Routes>
+        <Route path="/login" element={<LoginForm onSuccess={() => {}} />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
+  }
+
   return (
     <Routes>
-      {/* Публічні маршрути */}
-      <Route path="/login" element={
-        currentUser ? <Navigate to="/" replace /> : <LoginForm onSuccess={() => {}} />
-      } />
-      <Route path="/forgot-password" element={
-        currentUser ? <Navigate to="/" replace /> : <ForgotPassword />
-      } />
-
-      {/* Захищені маршрути */}
-      <Route path="/" element={
-        currentUser ? <Layout /> : <Navigate to="/login" replace />
-      }>
-        <Route index element={<TimeTracking />} />
-        <Route path="profile" element={<Profile />} />
-        <Route path="work-types" element={<WorkTypes />} />
-        <Route path="locations" element={<Locations />} />
-        <Route path="teams" element={<Teams />} />
-        <Route path="teams/:teamId" element={<TeamMembersWrapper />} />
-        <Route path="reports" element={<Reports />} />
-      </Route>
-
-      {/* Перенаправлення невідомих маршрутів */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-
+      <Route path="/" element={<TimeTracking />} />
+      <Route path="/profile" element={<Profile />} />
+      <Route path="/teams" element={<Teams />} />
+      <Route path="/teams/:teamId" element={<TeamMembersWrapper />} />
+      <Route path="/reports" element={<Reports />} />
       <Route path="/join/:token" element={<JoinTeam />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 };
