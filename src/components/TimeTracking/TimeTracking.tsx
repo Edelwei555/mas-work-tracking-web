@@ -108,17 +108,11 @@ const TimeTracking: React.FC = () => {
   useEffect(() => {
     let syncInterval: NodeJS.Timeout;
 
-    if (currentUser && teamId) {
-      // Синхронізуємо кожні 5 секунд якщо таймер активний
-      // і кожні 10 секунд якщо не активний
-      const interval = currentEntry?.isRunning ? 5000 : 10000;
-      
+    if (currentUser && teamId && currentEntry?.isRunning) {
+      // Синхронізуємо кожні 30 секунд тільки якщо таймер активний
       syncInterval = setInterval(() => {
         dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId }));
-      }, interval);
-
-      // Початкова синхронізація при монтуванні
-      dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId }));
+      }, 30000);
     }
 
     return () => clearInterval(syncInterval);
@@ -389,7 +383,7 @@ const TimeTracking: React.FC = () => {
             )}
           </div>
 
-          {currentEntry && !currentEntry.isRunning && currentEntry.endTime && (
+          {currentEntry && !currentEntry.isRunning && currentEntry.endTime && !success && (
             <div className="work-amount-form">
               <div className="form-group">
                 <label>{t('timeTracking.workAmount')}</label>
@@ -402,15 +396,13 @@ const TimeTracking: React.FC = () => {
                   disabled={isLoading}
                 />
               </div>
-              <div className="timer-controls">
-                <button 
-                  onClick={handleSave} 
-                  disabled={!workAmount || isLoading}
-                  className="btn-success"
-                >
-                  {t('timeTracking.save')}
-                </button>
-              </div>
+              <button
+                onClick={handleSave}
+                disabled={!workAmount || isLoading}
+                className="btn-primary"
+              >
+                {t('common.save')}
+              </button>
             </div>
           )}
         </div>
