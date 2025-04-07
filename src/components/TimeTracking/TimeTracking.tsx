@@ -126,13 +126,21 @@ const TimeTracking: React.FC = () => {
   useEffect(() => {
     let interval: NodeJS.Timeout;
 
-    if (currentEntry?.isRunning) {
+    if (currentEntry?.isRunning && currentEntry?.startTime) {
       interval = setInterval(() => {
-        const now = new Date();
-        const start = currentEntry.startTime ? new Date(currentEntry.startTime) : new Date();
-        const pausedTime = currentEntry.pausedTime || 0;
-        const elapsed = Math.max(0, now.getTime() - start.getTime() + pausedTime);
-        dispatch(updateElapsedTime(elapsed));
+        try {
+          const now = new Date();
+          const start = new Date(currentEntry.startTime);
+          const pausedTime = currentEntry.pausedTime || 0;
+          const elapsed = Math.max(0, now.getTime() - start.getTime() + pausedTime);
+          
+          // Перевіряємо чи обчислений час є коректним числом
+          if (!isNaN(elapsed)) {
+            dispatch(updateElapsedTime(elapsed));
+          }
+        } catch (error) {
+          console.error('Error updating elapsed time:', error);
+        }
       }, 1000);
     }
 
@@ -185,6 +193,11 @@ const TimeTracking: React.FC = () => {
   }, [currentUser, dispatch]);
 
   const formatTime = (ms: number): string => {
+    // Перевіряємо чи ms є коректним числом
+    if (!ms || isNaN(ms)) {
+      return '00:00:00';
+    }
+
     const seconds = Math.floor((ms / 1000) % 60);
     const minutes = Math.floor((ms / 1000 / 60) % 60);
     const hours = Math.floor(ms / 1000 / 60 / 60);

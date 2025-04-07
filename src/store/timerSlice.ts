@@ -179,11 +179,17 @@ const timerSlice = createSlice({
           }
         }
 
-        if (action.payload.isRunning) {
+        if (action.payload.isRunning && action.payload.startTime) {
           const now = new Date();
           const start = new Date(action.payload.startTime);
           const pausedTime = action.payload.pausedTime || 0;
-          state.elapsedTime = now.getTime() - start.getTime() + pausedTime;
+          const elapsed = now.getTime() - start.getTime() + pausedTime;
+          
+          if (!isNaN(elapsed) && elapsed >= 0) {
+            state.elapsedTime = elapsed;
+          } else {
+            state.elapsedTime = 0;
+          }
         }
       });
   },
