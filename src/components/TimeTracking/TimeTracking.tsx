@@ -12,7 +12,8 @@ import {
   resumeTimer, 
   stopTimer, 
   fetchCurrentTimer,
-  updateElapsedTime 
+  updateElapsedTime,
+  resetTimer
 } from '../../store/timerSlice';
 import { RootState } from '../../store/types';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
@@ -230,13 +231,18 @@ const TimeTracking: React.FC = () => {
       // Показуємо повідомлення про успіх
       setSuccess(t('timeTracking.saveSuccess'));
 
-      // Скидаємо форму через 2 секунди
+      // Скидаємо стан таймера
+      dispatch(resetTimer());
+
+      // Скидаємо форму
+      setWorkAmount('');
+      setSelectedWorkType('');
+      setSelectedLocation('');
+      setSuccess('');
+
+      // Оновлюємо стан через 2 секунди
       setTimeout(() => {
         dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId }));
-        setWorkAmount('');
-        setSelectedWorkType('');
-        setSelectedLocation('');
-        setSuccess('');
       }, 2000);
 
     } catch (err) {
