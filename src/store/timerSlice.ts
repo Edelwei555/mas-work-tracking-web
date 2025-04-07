@@ -74,10 +74,6 @@ export const fetchCurrentTimer = createAsyncThunk(
   'timer/fetchCurrent',
   async ({ userId, teamId }: { userId: string; teamId: string }) => {
     const entry = await getCurrentTimeEntry(userId, teamId);
-    // Якщо запис існує але не активний, повертаємо null
-    if (entry && !entry.isRunning) {
-      return null;
-    }
     return entry;
   }
 );
@@ -137,6 +133,9 @@ const timerSlice = createSlice({
       .addCase(stopTimer.fulfilled, (state, action) => {
         state.isLoading = false;
         state.currentEntry = action.payload;
+        if (!action.payload.isRunning) {
+          state.elapsedTime = state.elapsedTime || 0;
+        }
       })
       .addCase(stopTimer.rejected, (state, action) => {
         state.isLoading = false;
@@ -144,26 +143,12 @@ const timerSlice = createSlice({
       })
       .addCase(fetchCurrentTimer.fulfilled, (state, action) => {
         const prevEntry = state.currentEntry;
-        state.currentEntry = action.payload;
         
-        // Якщо немає активного запису, скидаємо стан
-        if (!action.payload) {
-          state.currentEntry = null;
-          state.elapsedTime = 0;
-          return;
+        if (!prevEntry || prevEntry.id !== action.payload?.id) {
+          state.currentEntry = action.payload;
         }
 
-        // Якщо запис не активний, скидаємо стан
-        if (!action.payload.isRunning) {
-          state.currentEntry = null;
-          state.elapsedTime = 0;
-          return;
-        }
-
-        // Оновлюємо час тільки якщо це новий запис або змінився стан
-        if (!prevEntry || 
-            prevEntry.id !== action.payload.id || 
-            prevEntry.isRunning !== action.payload.isRunning) {
+        if (action.payload?.isRunning) {
           const now = new Date();
           const start = new Date(action.payload.startTime);
           const pausedTime = action.payload.pausedTime || 0;
