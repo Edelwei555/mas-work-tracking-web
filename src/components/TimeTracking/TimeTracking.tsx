@@ -109,10 +109,13 @@ const TimeTracking: React.FC = () => {
     let syncInterval: NodeJS.Timeout;
 
     if (currentUser && teamId) {
-      // Синхронізуємо кожні 10 секунд
+      // Синхронізуємо кожні 3 секунди
       syncInterval = setInterval(() => {
         dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId }));
-      }, 10000);
+      }, 3000);
+
+      // Початкова синхронізація
+      dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId }));
     }
 
     return () => clearInterval(syncInterval);
@@ -130,13 +133,14 @@ const TimeTracking: React.FC = () => {
         const elapsed = Math.max(0, now.getTime() - start.getTime() + pausedTime);
         dispatch(updateElapsedTime(elapsed));
       }, 1000);
-    } else {
-      // Якщо таймер не запущений, скидаємо elapsed time
+    } else if (currentUser && teamId) {
+      // Якщо таймер не запущений, скидаємо elapsed time і перевіряємо стан
       dispatch(updateElapsedTime(0));
+      dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId }));
     }
 
     return () => clearInterval(interval);
-  }, [currentEntry, dispatch]);
+  }, [currentEntry, dispatch, currentUser, teamId]);
 
   const formatTime = (ms: number): string => {
     const seconds = Math.floor((ms / 1000) % 60);
@@ -192,10 +196,12 @@ const TimeTracking: React.FC = () => {
   };
 
   const handleStop = async () => {
-    if (!currentEntry) return;
+    if (!currentEntry || !currentUser || !teamId) return;
 
     try {
       await dispatch(stopTimer(currentEntry)).unwrap();
+      // Відразу після зупинки перевіряємо стан
+      dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId }));
     } catch (err) {
       console.error('Error stopping timer:', err);
       setError(t('timeTracking.error'));
