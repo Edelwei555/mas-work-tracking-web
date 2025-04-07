@@ -139,17 +139,25 @@ const timerSlice = createSlice({
         state.error = action.error.message || 'Failed to stop timer';
       })
       .addCase(fetchCurrentTimer.fulfilled, (state, action) => {
-        if (state.currentEntry?.endTime && !state.currentEntry.isRunning) {
+        if (!action.payload) {
+          state.currentEntry = null;
+          state.elapsedTime = 0;
           return;
         }
 
-        if (!state.currentEntry || state.currentEntry.id !== action.payload?.id) {
+        const prevEntry = state.currentEntry;
+        
+        if (!prevEntry || 
+            prevEntry.id !== action.payload.id || 
+            prevEntry.isRunning !== action.payload.isRunning) {
           state.currentEntry = action.payload;
-        } else if (action.payload) {
-          state.currentEntry.isRunning = action.payload.isRunning;
+          
+          if (!action.payload.isRunning) {
+            state.elapsedTime = 0;
+          }
         }
 
-        if (action.payload?.isRunning) {
+        if (action.payload.isRunning) {
           const now = new Date();
           const start = new Date(action.payload.startTime);
           const pausedTime = action.payload.pausedTime || 0;
