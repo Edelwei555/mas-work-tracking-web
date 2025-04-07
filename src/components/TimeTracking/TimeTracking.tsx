@@ -257,17 +257,19 @@ const TimeTracking: React.FC = () => {
 
   return (
     <div className="time-tracking">
+      <h2>{t('timeTracking.title')}</h2>
+      
       {loading && !initialLoadComplete ? (
         <div className="loading">{t('common.loading')}</div>
       ) : (
-        <>
-          <div className="timer-display">
-            <div className="time">{formatTime(elapsedTime)}</div>
-          </div>
+        <div className="time-tracking-form">
+          {(error || timerError) && <div className="error-message">{error || timerError}</div>}
+          {success && <div className="success-message">{success}</div>}
 
           {!currentEntry?.isRunning && !currentEntry?.endTime && (
-            <div className="controls">
-              <div className="selectors">
+            <>
+              <div className="form-group">
+                <label>{t('workTypes.title')}</label>
                 <select 
                   value={selectedWorkType} 
                   onChange={(e) => setSelectedWorkType(e.target.value)}
@@ -280,7 +282,10 @@ const TimeTracking: React.FC = () => {
                     </option>
                   ))}
                 </select>
+              </div>
 
+              <div className="form-group">
+                <label>{t('locations.title')}</label>
                 <select 
                   value={selectedLocation} 
                   onChange={(e) => setSelectedLocation(e.target.value)}
@@ -294,58 +299,88 @@ const TimeTracking: React.FC = () => {
                   ))}
                 </select>
               </div>
+            </>
+          )}
 
+          <div className="timer-display">
+            {formatTime(elapsedTime)}
+          </div>
+
+          <div className="timer-controls">
+            {!currentEntry?.isRunning && !currentEntry?.endTime && (
               <button 
                 onClick={handleStart}
                 disabled={!selectedWorkType || !selectedLocation || isLoading}
-                className="start-button"
+                className="btn-primary"
               >
                 {t('timeTracking.start')}
               </button>
-            </div>
-          )}
+            )}
 
-          {currentEntry?.isRunning && (
-            <div className="controls">
-              <button onClick={handlePause} disabled={isLoading}>
-                {t('timeTracking.pause')}
-              </button>
-              <button onClick={handleStop} disabled={isLoading}>
-                {t('timeTracking.stop')}
-              </button>
-            </div>
-          )}
+            {currentEntry?.isRunning && (
+              <>
+                <button 
+                  onClick={handlePause} 
+                  disabled={isLoading}
+                  className="btn-warning"
+                >
+                  {t('timeTracking.pause')}
+                </button>
+                <button 
+                  onClick={handleStop} 
+                  disabled={isLoading}
+                  className="btn-danger"
+                >
+                  {t('timeTracking.stop')}
+                </button>
+              </>
+            )}
 
-          {currentEntry && !currentEntry.isRunning && currentEntry.lastPauseTime && (
-            <div className="controls">
-              <button onClick={handleResume} disabled={isLoading}>
-                {t('timeTracking.resume')}
-              </button>
-              <button onClick={handleStop} disabled={isLoading}>
-                {t('timeTracking.stop')}
-              </button>
-            </div>
-          )}
+            {currentEntry && !currentEntry.isRunning && !currentEntry.endTime && (
+              <>
+                <button 
+                  onClick={handleResume} 
+                  disabled={isLoading}
+                  className="btn-primary"
+                >
+                  {t('timeTracking.resume')}
+                </button>
+                <button 
+                  onClick={handleStop} 
+                  disabled={isLoading}
+                  className="btn-danger"
+                >
+                  {t('timeTracking.stop')}
+                </button>
+              </>
+            )}
+          </div>
 
           {currentEntry && !currentEntry.isRunning && currentEntry.endTime && (
-            <div className="work-amount">
-              <input
-                type="number"
-                value={workAmount}
-                onChange={(e) => setWorkAmount(e.target.value)}
-                placeholder={t('timeTracking.enterWorkAmount')}
-                disabled={isLoading}
-              />
-              <button onClick={handleSave} disabled={!workAmount || isLoading}>
-                {t('timeTracking.save')}
-              </button>
+            <div className="work-amount-form">
+              <div className="form-group">
+                <label>{t('timeTracking.workAmount')}</label>
+                <input
+                  type="number"
+                  value={workAmount}
+                  onChange={(e) => setWorkAmount(e.target.value)}
+                  min="0"
+                  step="0.01"
+                  disabled={isLoading}
+                />
+              </div>
+              <div className="timer-controls">
+                <button 
+                  onClick={handleSave} 
+                  disabled={!workAmount || isLoading}
+                  className="btn-success"
+                >
+                  {t('timeTracking.save')}
+                </button>
+              </div>
             </div>
           )}
-
-          {error && <div className="error">{error}</div>}
-          {success && <div className="success">{success}</div>}
-          {timerError && <div className="error">{timerError}</div>}
-        </>
+        </div>
       )}
     </div>
   );
