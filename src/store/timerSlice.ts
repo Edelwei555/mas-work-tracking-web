@@ -65,15 +65,10 @@ export const stopTimer = createAsyncThunk(
       isRunning: false,
       endTime: now
     };
+    
+    // Оновлюємо запис в базі даних
     await updateTimeEntry(entry.id!, updatedEntry);
-    
-    const currentEntry = await getCurrentTimeEntry(entry.userId, entry.teamId);
-    
-    if (currentEntry && currentEntry.id === entry.id) {
-      return updatedEntry;
-    }
-    
-    return null;
+    return updatedEntry;
   }
 );
 
@@ -152,17 +147,24 @@ const timerSlice = createSlice({
         state.error = action.error.message || 'Failed to stop timer';
       })
       .addCase(fetchCurrentTimer.fulfilled, (state, action) => {
-        if (!action.payload || !action.payload.isRunning) {
+        if (!action.payload) {
           state.currentEntry = null;
           state.elapsedTime = 0;
           return;
         }
 
         const prevEntry = state.currentEntry;
+        
         if (!prevEntry || 
             prevEntry.id !== action.payload.id || 
             prevEntry.isRunning !== action.payload.isRunning) {
+          
           state.currentEntry = action.payload;
+
+          if (!action.payload.isRunning) {
+            state.elapsedTime = 0;
+            return;
+          }
         }
 
         if (action.payload.isRunning) {

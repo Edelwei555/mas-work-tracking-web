@@ -108,15 +108,18 @@ const TimeTracking: React.FC = () => {
   useEffect(() => {
     let syncInterval: NodeJS.Timeout;
 
-    if (currentUser && teamId && currentEntry?.isRunning) {
-      // Синхронізуємо кожні 30 секунд тільки якщо таймер активний
+    if (currentUser && teamId) {
+      // Синхронізуємо кожні 10 секунд
       syncInterval = setInterval(() => {
         dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId }));
-      }, 30000);
+      }, 10000);
+
+      // Початкова синхронізація при монтуванні
+      dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId }));
     }
 
     return () => clearInterval(syncInterval);
-  }, [currentUser, teamId, dispatch, currentEntry?.isRunning]);
+  }, [currentUser, teamId, dispatch]);
 
   // Оновлення таймера
   useEffect(() => {
