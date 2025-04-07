@@ -1,32 +1,54 @@
 import { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '../../store/store';
-import { startTimer, stopTimer, updateElapsed } from '../../store/timerSlice';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store/types';
+import { startTimer, stopTimer, updateElapsedTime } from '../../store/timerSlice';
+import { useAuth } from '../../contexts/AuthContext';
+import { useAppDispatch } from '../../hooks/useAppDispatch';
 
 export const Timer = () => {
-  const dispatch = useDispatch();
-  const timerState = useSelector((state: RootState) => state.timer);
+  const dispatch = useAppDispatch();
+  const { currentUser } = useAuth();
+  const { currentEntry, elapsedTime, isLoading } = useSelector((state: RootState) => state.timer);
   const [selectedWorkType, setSelectedWorkType] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('');
+  const teamId = localStorage.getItem('currentTeamId') || '';
 
   useEffect(() => {
     const intervalId = setInterval(() => {
-      if (timerState.isRunning) {
-        dispatch(updateElapsed());
+      if (currentEntry?.isRunning) {
+        const now = new Date();
+        const start = currentEntry.startTime ? new Date(currentEntry.startTime) : now;
+        const pausedTime = currentEntry.pausedTime || 0;
+        const elapsed = now.getTime() - start.getTime() + pausedTime;
+        dispatch(updateElapsedTime(elapsed));
       }
     }, 1000);
 
     return () => clearInterval(intervalId);
-  }, [dispatch, timerState.isRunning]);
+  }, [dispatch, currentEntry]);
 
   const handleStart = () => {
-    if (selectedWorkType && selectedLocation) {
-      dispatch(startTimer({ workTypeId: selectedWorkType, locationId: selectedLocation }));
+    if (selectedWorkType && selectedLocation && currentUser && teamId) {
+      dispatch(startTimer({
+        userId: currentUser.uid,
+        teamId,
+        workTypeId: selectedWorkType,
+        locationId: selectedLocation,
+        startTime: new Date(),
+        endTime: new Date(),
+        pausedTime: 0,
+        workAmount: 0,
+        isRunning: true,
+        duration: 0,
+        lastPauseTime: null
+      }));
     }
   };
 
   const handleStop = () => {
-    dispatch(stopTimer());
+    if (currentEntry) {
+      dispatch(stopTimer(currentEntry));
+    }
   };
 
   const formatTime = (ms: number) => {
@@ -38,8 +60,8 @@ export const Timer = () => {
 
   return (
     <div>
-      <div>{formatTime(timerState.elapsed)}</div>
-      {!timerState.isRunning ? (
+      <div>{formatTime(elapsedTime)}</div>
+      {!currentEntry?.isRunning ? (
         <div>
           <select 
             value={selectedWorkType} 
@@ -59,13 +81,13 @@ export const Timer = () => {
           </select>
           <button 
             onClick={handleStart}
-            disabled={!selectedWorkType || !selectedLocation}
+            disabled={!selectedWorkType || !selectedLocation || isLoading}
           >
             Start
           </button>
         </div>
       ) : (
-        <button onClick={handleStop}>Stop</button>
+        <button onClick={handleStop} disabled={isLoading}>Stop</button>
       )}
     </div>
   );
