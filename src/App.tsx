@@ -6,6 +6,7 @@ import './App.css';
 import { CircularProgress } from '@mui/material';
 import { useTimerSync } from './hooks/useTimerSync';
 import Layout from './components/Layout/Layout';
+import './i18n';
 
 const App: React.FC = () => {
   useTimerSync(); // Хук для синхронізації таймера

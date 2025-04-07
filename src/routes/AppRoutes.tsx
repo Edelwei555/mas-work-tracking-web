@@ -1,5 +1,5 @@
 import React from 'react';
-import { Route, Navigate, useParams } from 'react-router-dom';
+import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import LoginForm from '../components/Auth/LoginForm';
 import ForgotPassword from '../components/Auth/ForgotPassword';
@@ -33,16 +33,16 @@ const AppRoutes: React.FC = () => {
 
   if (!currentUser) {
     return (
-      <>
+      <Routes>
         <Route path="/login" element={<LoginForm onSuccess={() => {}} />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
-      </>
+      </Routes>
     );
   }
 
   return (
-    <>
+    <Routes>
       <Route path="/" element={<TimeTracking />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/teams" element={<Teams />} />
@@ -52,7 +52,7 @@ const AppRoutes: React.FC = () => {
       <Route path="/reports" element={<Reports />} />
       <Route path="/join/:token" element={<JoinTeam />} />
       <Route path="*" element={<Navigate to="/" replace />} />
-    </>
+    </Routes>
   );
 };
 
