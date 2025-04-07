@@ -29,9 +29,9 @@ export const pauseTimer = createAsyncThunk(
     await updateTimeEntry(timeEntry.id!, {
       ...timeEntry,
       isRunning: false,
-      lastPauseTime: new Date()
+      lastPauseTime: null
     });
-    return timeEntry;
+    return { ...timeEntry, lastPauseTime: null, isRunning: false };
   }
 );
 
