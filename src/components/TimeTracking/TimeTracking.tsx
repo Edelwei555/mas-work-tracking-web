@@ -360,7 +360,7 @@ const TimeTracking: React.FC = () => {
           {(error || timerError) && <div className="error-message">{error || timerError}</div>}
           {success && <div className="success-message">{success}</div>}
 
-          {!currentEntry && (
+          {!currentEntry?.isRunning && !currentEntry?.endTime && (
             <>
               <div className="form-group">
                 <label>{t('workTypes.title')}</label>
@@ -401,7 +401,7 @@ const TimeTracking: React.FC = () => {
           </div>
 
           <div className="timer-controls">
-            {!currentEntry && (
+            {!currentEntry?.isRunning && !currentEntry?.endTime && (
               <button 
                 onClick={handleStart}
                 disabled={!selectedWorkType || !selectedLocation || isLoading}
