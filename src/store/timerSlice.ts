@@ -133,19 +133,20 @@ const timerSlice = createSlice({
       .addCase(stopTimer.fulfilled, (state, action) => {
         state.isLoading = false;
         state.currentEntry = action.payload;
-        if (!action.payload.isRunning) {
-          state.elapsedTime = state.elapsedTime || 0;
-        }
       })
       .addCase(stopTimer.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.error.message || 'Failed to stop timer';
       })
       .addCase(fetchCurrentTimer.fulfilled, (state, action) => {
-        const prevEntry = state.currentEntry;
-        
-        if (!prevEntry || prevEntry.id !== action.payload?.id) {
+        if (state.currentEntry?.endTime && !state.currentEntry.isRunning) {
+          return;
+        }
+
+        if (!state.currentEntry || state.currentEntry.id !== action.payload?.id) {
           state.currentEntry = action.payload;
+        } else if (action.payload) {
+          state.currentEntry.isRunning = action.payload.isRunning;
         }
 
         if (action.payload?.isRunning) {

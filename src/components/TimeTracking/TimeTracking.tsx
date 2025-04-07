@@ -109,10 +109,10 @@ const TimeTracking: React.FC = () => {
     let syncInterval: NodeJS.Timeout;
 
     if (currentUser && teamId && currentEntry?.isRunning) {
-      // Синхронізуємо кожні 10 секунд тільки якщо таймер активний
+      // Синхронізуємо кожні 30 секунд тільки якщо таймер активний
       syncInterval = setInterval(() => {
         dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId }));
-      }, 10000);
+      }, 30000);
     }
 
     return () => clearInterval(syncInterval);
@@ -193,10 +193,6 @@ const TimeTracking: React.FC = () => {
 
     try {
       await dispatch(stopTimer(currentEntry)).unwrap();
-      // Перевіряємо стан один раз після зупинки
-      setTimeout(() => {
-        dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId }));
-      }, 1000);
     } catch (err) {
       console.error('Error stopping timer:', err);
       setError(t('timeTracking.error'));
@@ -229,6 +225,7 @@ const TimeTracking: React.FC = () => {
       const durationInSeconds = Math.floor(elapsedTime / 1000);
       
       const entryToSave: Omit<TimeEntry, 'createdAt' | 'lastUpdate'> = {
+        id: currentEntry.id, // Додаємо ID для оновлення
         userId: currentUser.uid,
         teamId: teamId,
         workTypeId: currentEntry.workTypeId,
@@ -256,11 +253,6 @@ const TimeTracking: React.FC = () => {
       setWorkAmount('');
       setSelectedWorkType('');
       setSelectedLocation('');
-
-      // Оновлюємо стан через 2 секунди
-      setTimeout(() => {
-        dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId }));
-      }, 2000);
 
     } catch (err) {
       console.error('Error saving time entry:', err);
