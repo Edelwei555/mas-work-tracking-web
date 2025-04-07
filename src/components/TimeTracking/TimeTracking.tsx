@@ -236,6 +236,10 @@ const TimeTracking: React.FC = () => {
       // Розраховуємо тривалість в секундах
       const durationInSeconds = Math.floor(elapsedTime / 1000);
       
+      // Спочатку оновлюємо поточний запис як неактивний
+      await dispatch(stopTimer(currentEntry)).unwrap();
+      
+      // Потім зберігаємо остаточний запис з обсягом робіт
       const entryToSave: Omit<TimeEntry, 'createdAt' | 'lastUpdate'> = {
         id: currentEntry.id,
         userId: currentUser.uid,

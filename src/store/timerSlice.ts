@@ -66,7 +66,14 @@ export const stopTimer = createAsyncThunk(
       endTime: now
     };
     await updateTimeEntry(entry.id!, updatedEntry);
-    return updatedEntry;
+    
+    const currentEntry = await getCurrentTimeEntry(entry.userId, entry.teamId);
+    
+    if (currentEntry && currentEntry.id === entry.id) {
+      return updatedEntry;
+    }
+    
+    return null;
   }
 );
 
@@ -132,32 +139,30 @@ const timerSlice = createSlice({
       })
       .addCase(stopTimer.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.currentEntry = action.payload;
+        if (action.payload === null) {
+          state.currentEntry = null;
+          state.elapsedTime = 0;
+        } else {
+          state.currentEntry = action.payload;
+          state.elapsedTime = 0;
+        }
       })
       .addCase(stopTimer.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.error.message || 'Failed to stop timer';
       })
       .addCase(fetchCurrentTimer.fulfilled, (state, action) => {
-        if (!action.payload) {
+        if (!action.payload || !action.payload.isRunning) {
           state.currentEntry = null;
           state.elapsedTime = 0;
           return;
         }
 
         const prevEntry = state.currentEntry;
-        
         if (!prevEntry || 
             prevEntry.id !== action.payload.id || 
-            prevEntry.isRunning !== action.payload.isRunning ||
-            prevEntry.endTime !== action.payload.endTime) {
-          
+            prevEntry.isRunning !== action.payload.isRunning) {
           state.currentEntry = action.payload;
-          
-          if (!action.payload.isRunning || action.payload.endTime) {
-            state.elapsedTime = 0;
-            return;
-          }
         }
 
         if (action.payload.isRunning) {
