@@ -3,15 +3,30 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { WorkType, getTeamWorkTypes } from '../../services/workTypes';
 import { Location, getTeamLocations } from '../../services/locations';
-import { TimeEntry, saveTimeEntry, getCurrentTimeEntry } from '../../services/timeTracking';
+import { TimeEntry } from '../../services/timeTracking';
 import { getUserTeams } from '../../services/teams';
+import { useSelector } from 'react-redux';
+import { 
+  startTimer, 
+  pauseTimer, 
+  resumeTimer, 
+  stopTimer, 
+  fetchCurrentTimer,
+  updateElapsedTime 
+} from '../../store/timerSlice';
+import { RootState } from '../../store/types';
+import { useAppDispatch } from '../../hooks/useAppDispatch';
 import './TimeTracking.css';
 
 const TimeTracking: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { currentUser } = useAuth();
-  const [timeEntry, setTimeEntry] = useState<Partial<TimeEntry> | null>(null);
-  const [elapsedTime, setElapsedTime] = useState<number>(0);
+  const dispatch = useAppDispatch();
+  
+  const { currentEntry, elapsedTime, isLoading, error: timerError } = useSelector(
+    (state: RootState) => state.timer
+  );
+
   const [selectedWorkType, setSelectedWorkType] = useState<string>('');
   const [selectedLocation, setSelectedLocation] = useState<string>('');
   const [teamId, setTeamId] = useState<string>('');
@@ -71,12 +86,7 @@ const TimeTracking: React.FC = () => {
         setLoading(true);
         
         // Отримуємо поточний запис часу
-        const currentEntry = await getCurrentTimeEntry(currentUser.uid, teamId);
-        if (currentEntry) {
-          setTimeEntry(currentEntry);
-          setSelectedWorkType(currentEntry.workTypeId);
-          setSelectedLocation(currentEntry.locationId);
-        }
+        await dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId })).unwrap();
 
         // Отримуємо види робіт та локації
         await refreshLists();
@@ -91,23 +101,24 @@ const TimeTracking: React.FC = () => {
     if (teamId) {
       fetchData();
     }
-  }, [currentUser, teamId]);
+  }, [currentUser, teamId, dispatch]);
 
+  // Оновлення таймера
   useEffect(() => {
     let interval: NodeJS.Timeout;
 
-    if (timeEntry?.isRunning) {
+    if (currentEntry?.isRunning) {
       interval = setInterval(() => {
         const now = new Date();
-        const start = timeEntry.startTime ? new Date(timeEntry.startTime) : new Date();
-        const pausedTime = timeEntry.pausedTime || 0;
+        const start = currentEntry.startTime ? new Date(currentEntry.startTime) : new Date();
+        const pausedTime = currentEntry.pausedTime || 0;
         const elapsed = Math.max(0, now.getTime() - start.getTime() + pausedTime);
-        setElapsedTime(elapsed);
+        dispatch(updateElapsedTime(elapsed));
       }, 1000);
     }
 
     return () => clearInterval(interval);
-  }, [timeEntry]);
+  }, [currentEntry, dispatch]);
 
   const formatTime = (ms: number): string => {
     const seconds = Math.floor((ms / 1000) % 60);
@@ -117,72 +128,66 @@ const TimeTracking: React.FC = () => {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  const handleStart = () => {
+  const handleStart = async () => {
     if (!selectedWorkType || !selectedLocation || !currentUser || !teamId) return;
 
-    setTimeEntry({
-      userId: currentUser.uid,
-      teamId: teamId,
-      workTypeId: selectedWorkType,
-      locationId: selectedLocation,
-      startTime: new Date(),
-      pausedTime: 0,
-      isRunning: true
-    });
+    try {
+      await dispatch(startTimer({
+        userId: currentUser.uid,
+        teamId: teamId,
+        workTypeId: selectedWorkType,
+        locationId: selectedLocation,
+        startTime: new Date(),
+        endTime: new Date(),
+        pausedTime: 0,
+        workAmount: 0,
+        isRunning: true,
+        duration: 0,
+        lastPauseTime: null
+      })).unwrap();
+    } catch (err) {
+      console.error('Error starting timer:', err);
+      setError(t('timeTracking.error'));
+    }
   };
 
-  const handlePause = () => {
-    if (!timeEntry || !timeEntry.startTime) return;
+  const handlePause = async () => {
+    if (!currentEntry) return;
 
-    const now = new Date();
-    const start = new Date(timeEntry.startTime);
-    const currentElapsed = now.getTime() - start.getTime();
-
-    setTimeEntry({
-      ...timeEntry,
-      isRunning: false,
-      pausedTime: currentElapsed + (timeEntry.pausedTime || 0),
-      lastPauseTime: null
-    });
+    try {
+      await dispatch(pauseTimer(currentEntry)).unwrap();
+    } catch (err) {
+      console.error('Error pausing timer:', err);
+      setError(t('timeTracking.error'));
+    }
   };
 
-  const handleResume = () => {
-    if (!timeEntry) return;
+  const handleResume = async () => {
+    if (!currentEntry) return;
 
-    const now = new Date();
-    
-    setTimeEntry({
-      ...timeEntry,
-      startTime: now,
-      isRunning: true,
-      lastPauseTime: null
-    });
+    try {
+      await dispatch(resumeTimer(currentEntry)).unwrap();
+    } catch (err) {
+      console.error('Error resuming timer:', err);
+      setError(t('timeTracking.error'));
+    }
   };
 
   const handleStop = async () => {
-    if (!timeEntry) return;
+    if (!currentEntry) return;
 
-    const now = new Date();
-    const newTimeEntry = {
-      ...timeEntry,
-      isRunning: false,
-      endTime: now,
-      lastPauseTime: null
-    };
-
-    setTimeEntry(newTimeEntry);
-
-    // Розраховуємо фінальний час з урахуванням пауз
-    const start = new Date(timeEntry.startTime || now);
-    const pausedTime = timeEntry.pausedTime || 0;
-    const finalElapsed = now.getTime() - start.getTime() + pausedTime;
-    setElapsedTime(finalElapsed);
+    try {
+      await dispatch(stopTimer(currentEntry)).unwrap();
+    } catch (err) {
+      console.error('Error stopping timer:', err);
+      setError(t('timeTracking.error'));
+    }
   };
 
   const handleSave = async () => {
-    if (!timeEntry || !workAmount || !currentUser || !teamId) {
+    if (!currentEntry || !workAmount || !currentUser || !teamId) {
       console.error('Missing required fields:', {
-        timeEntry: !!timeEntry,
+        timeEntry: !!currentEntry,
         workAmount: !!workAmount,
         currentUser: !!currentUser,
         teamId: !!teamId
@@ -197,9 +202,9 @@ const TimeTracking: React.FC = () => {
       setSuccess('');
 
       const now = new Date();
-      const startTime = timeEntry.startTime ? new Date(timeEntry.startTime) : now;
-      const endTime = timeEntry.endTime ? new Date(timeEntry.endTime) : now;
-      const pausedTime = timeEntry.pausedTime || 0;
+      const startTime = currentEntry.startTime ? new Date(currentEntry.startTime) : now;
+      const endTime = currentEntry.endTime ? new Date(currentEntry.endTime) : now;
+      const pausedTime = currentEntry.pausedTime || 0;
       
       // Розраховуємо тривалість в секундах
       const durationInSeconds = Math.floor(elapsedTime / 1000);
@@ -227,8 +232,7 @@ const TimeTracking: React.FC = () => {
 
       // Скидаємо форму через 2 секунди
       setTimeout(() => {
-        setTimeEntry(null);
-        setElapsedTime(0);
+        dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId }));
         setWorkAmount('');
         setSelectedWorkType('');
         setSelectedLocation('');
@@ -255,7 +259,7 @@ const TimeTracking: React.FC = () => {
     <div className="time-tracking">
       <h2>{t('timeTracking.title')}</h2>
       
-      {error && <div className="error-message">{error}</div>}
+      {(error || timerError) && <div className="error-message">{error || timerError}</div>}
       {success && <div className="success-message">{success}</div>}
       
       <div className="time-tracking-form">
@@ -265,6 +269,7 @@ const TimeTracking: React.FC = () => {
             value={selectedWorkType}
             onChange={(e) => setSelectedWorkType(e.target.value)}
             onFocus={refreshLists}
+            disabled={currentEntry?.isRunning}
             required
           >
             <option value="">{t('timeTracking.selectWorkType')}</option>
@@ -282,6 +287,7 @@ const TimeTracking: React.FC = () => {
             value={selectedLocation}
             onChange={(e) => setSelectedLocation(e.target.value)}
             onFocus={refreshLists}
+            disabled={currentEntry?.isRunning}
             required
           >
             <option value="">{t('timeTracking.selectLocation')}</option>
@@ -298,35 +304,46 @@ const TimeTracking: React.FC = () => {
         </div>
 
         <div className="timer-controls">
-          {!timeEntry && (
+          {!currentEntry?.isRunning ? (
+            currentEntry ? (
+              <button 
+                onClick={handleResume}
+                disabled={isLoading}
+                className="btn-resume"
+              >
+                {t('timeTracking.resume')}
+              </button>
+            ) : (
+              <button 
+                onClick={handleStart}
+                disabled={isLoading || !selectedWorkType || !selectedLocation}
+                className="btn-start"
+              >
+                {t('timeTracking.start')}
+              </button>
+            )
+          ) : (
             <button 
-              className="btn-primary"
-              onClick={handleStart}
-              disabled={!selectedWorkType || !selectedLocation}
+              onClick={handlePause}
+              disabled={isLoading}
+              className="btn-pause"
             >
-              {t('timeTracking.start')}
+              {t('timeTracking.pause')}
             </button>
           )}
 
-          {timeEntry && !timeEntry.endTime && (
-            <>
-              {timeEntry.isRunning ? (
-                <button className="btn-warning" onClick={handlePause}>
-                  {t('timeTracking.pause')}
-                </button>
-              ) : (
-                <button className="btn-primary" onClick={handleResume}>
-                  {t('timeTracking.resume')}
-                </button>
-              )}
-              <button className="btn-danger" onClick={handleStop}>
-                {t('timeTracking.stop')}
-              </button>
-            </>
+          {currentEntry?.isRunning && (
+            <button 
+              onClick={handleStop}
+              disabled={isLoading}
+              className="btn-stop"
+            >
+              {t('timeTracking.stop')}
+            </button>
           )}
         </div>
 
-        {timeEntry?.endTime && (
+        {currentEntry?.endTime && (
           <div className="work-amount-form">
             <div className="form-group">
               <label>{t('timeTracking.workAmount')}</label>

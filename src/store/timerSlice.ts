@@ -1,49 +1,118 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Timestamp } from 'firebase/firestore';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { TimeEntry, saveTimeEntry, updateTimeEntry, getCurrentTimeEntry } from '../services/timeTracking';
 
 interface TimerState {
-  isRunning: boolean;
-  startTime: number | null;
-  elapsed: number;
-  workTypeId: string | null;
-  locationId: string | null;
-  lastSyncTime: number;
+  currentEntry: TimeEntry | null;
+  elapsedTime: number;
+  isLoading: boolean;
+  error: string | null;
 }
 
 const initialState: TimerState = {
-  isRunning: false,
-  startTime: null,
-  elapsed: 0,
-  workTypeId: null,
-  locationId: null,
-  lastSyncTime: Date.now(),
+  currentEntry: null,
+  elapsedTime: 0,
+  isLoading: false,
+  error: null,
 };
+
+export const startTimer = createAsyncThunk(
+  'timer/start',
+  async (timeEntry: Omit<TimeEntry, 'createdAt' | 'lastUpdate' | 'id'>) => {
+    const id = await saveTimeEntry(timeEntry);
+    return { ...timeEntry, id };
+  }
+);
+
+export const pauseTimer = createAsyncThunk(
+  'timer/pause',
+  async (timeEntry: TimeEntry) => {
+    await updateTimeEntry(timeEntry.id!, {
+      ...timeEntry,
+      isRunning: false,
+      lastPauseTime: new Date()
+    });
+    return timeEntry;
+  }
+);
+
+export const resumeTimer = createAsyncThunk(
+  'timer/resume',
+  async (timeEntry: TimeEntry) => {
+    const now = new Date();
+    await updateTimeEntry(timeEntry.id!, {
+      ...timeEntry,
+      isRunning: true,
+      startTime: now,
+      lastPauseTime: null
+    });
+    return { ...timeEntry, startTime: now };
+  }
+);
+
+export const stopTimer = createAsyncThunk(
+  'timer/stop',
+  async (timeEntry: TimeEntry) => {
+    const now = new Date();
+    await updateTimeEntry(timeEntry.id!, {
+      ...timeEntry,
+      isRunning: false,
+      endTime: now,
+      lastPauseTime: null
+    });
+    return { ...timeEntry, endTime: now };
+  }
+);
+
+export const fetchCurrentTimer = createAsyncThunk(
+  'timer/fetchCurrent',
+  async ({ userId, teamId }: { userId: string; teamId: string }) => {
+    return await getCurrentTimeEntry(userId, teamId);
+  }
+);
 
 const timerSlice = createSlice({
   name: 'timer',
   initialState,
   reducers: {
-    startTimer: (state, action: PayloadAction<{ workTypeId: string; locationId: string }>) => {
-      state.isRunning = true;
-      state.startTime = Date.now();
-      state.workTypeId = action.payload.workTypeId;
-      state.locationId = action.payload.locationId;
+    updateElapsedTime: (state, action) => {
+      state.elapsedTime = action.payload;
     },
-    stopTimer: (state) => {
-      state.isRunning = false;
-      state.elapsed = state.startTime ? Date.now() - state.startTime : state.elapsed;
-      state.startTime = null;
-    },
-    updateElapsed: (state) => {
-      if (state.isRunning && state.startTime) {
-        state.elapsed = Date.now() - state.startTime;
-      }
-    },
-    syncTimerState: (state, action: PayloadAction<TimerState>) => {
-      return { ...action.payload, lastSyncTime: Date.now() };
-    },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(startTimer.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(startTimer.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.currentEntry = action.payload;
+        state.elapsedTime = 0;
+      })
+      .addCase(startTimer.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message || 'Failed to start timer';
+      })
+      .addCase(pauseTimer.fulfilled, (state, action) => {
+        state.currentEntry = action.payload;
+      })
+      .addCase(resumeTimer.fulfilled, (state, action) => {
+        state.currentEntry = action.payload;
+      })
+      .addCase(stopTimer.fulfilled, (state, action) => {
+        state.currentEntry = action.payload;
+      })
+      .addCase(fetchCurrentTimer.fulfilled, (state, action) => {
+        state.currentEntry = action.payload;
+        if (action.payload) {
+          const now = new Date();
+          const start = action.payload.startTime;
+          const pausedTime = action.payload.pausedTime || 0;
+          state.elapsedTime = now.getTime() - start.getTime() + pausedTime;
+        }
+      });
   },
 });
 
-export const { startTimer, stopTimer, updateElapsed, syncTimerState } = timerSlice.actions;
+export const { updateElapsedTime } = timerSlice.actions;
 export default timerSlice.reducer; 

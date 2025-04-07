@@ -1,83 +1,37 @@
-import { useEffect, useRef } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { doc, onSnapshot, setDoc, Timestamp } from 'firebase/firestore';
-import { db } from '../firebase';
+import { useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { syncTimerState, updateElapsed } from '../store/timerSlice';
-import { RootState } from '../store/store';
+import { fetchCurrentTimer } from '../store/timerSlice';
+import { useAppDispatch } from './useAppDispatch';
 
 export const useTimerSync = () => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const { currentUser } = useAuth();
-  const timerState = useSelector((state: RootState) => state.timer);
-  const unsubscribeRef = useRef<(() => void) | null>(null);
-  const intervalIdRef = useRef<NodeJS.Timeout | null>(null);
-  const syncIntervalIdRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (!currentUser) return;
+    let syncInterval: NodeJS.Timeout;
 
-    // Очищаємо попередні підписки
-    if (unsubscribeRef.current) {
-      unsubscribeRef.current();
-    }
-    if (intervalIdRef.current) {
-      clearInterval(intervalIdRef.current);
-    }
-    if (syncIntervalIdRef.current) {
-      clearInterval(syncIntervalIdRef.current);
-    }
+    const syncTimer = async () => {
+      if (!currentUser) return;
 
-    // Підписка на зміни в Firestore
-    unsubscribeRef.current = onSnapshot(
-      doc(db, 'users', currentUser.uid, 'timer', 'current'),
-      (doc) => {
-        if (doc.exists()) {
-          const data = doc.data();
-          dispatch(syncTimerState({
-            isRunning: data.isRunning,
-            startTime: data.startTime?.toMillis() || null,
-            elapsed: data.elapsed || 0,
-            workTypeId: data.workTypeId || null,
-            locationId: data.locationId || null,
-            lastSyncTime: Date.now(),
-          }));
-        }
-      }
-    );
+      try {
+        // Отримуємо ID команди з localStorage або іншого джерела
+        const teamId = localStorage.getItem('currentTeamId');
+        if (!teamId) return;
 
-    // Оновлення elapsed кожну секунду
-    intervalIdRef.current = setInterval(() => {
-      dispatch(updateElapsed());
-    }, 1000);
-
-    // Синхронізація з Firestore кожні 5 секунд
-    syncIntervalIdRef.current = setInterval(async () => {
-      if (timerState.isRunning) {
-        const docRef = doc(db, 'users', currentUser.uid, 'timer', 'current');
-        await setDoc(docRef, {
-          isRunning: timerState.isRunning,
-          startTime: timerState.startTime ? new Timestamp(Math.floor(timerState.startTime / 1000), 0) : null,
-          elapsed: timerState.elapsed,
-          workTypeId: timerState.workTypeId,
-          locationId: timerState.locationId,
-          updatedAt: Timestamp.now(),
-        });
-      }
-    }, 5000);
-
-    return () => {
-      if (unsubscribeRef.current) {
-        unsubscribeRef.current();
-      }
-      if (intervalIdRef.current) {
-        clearInterval(intervalIdRef.current);
-      }
-      if (syncIntervalIdRef.current) {
-        clearInterval(syncIntervalIdRef.current);
+        await dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId }));
+      } catch (error) {
+        console.error('Error syncing timer:', error);
       }
     };
-  }, [currentUser, dispatch]);
 
-  return null;
+    // Синхронізуємо кожні 30 секунд
+    syncInterval = setInterval(syncTimer, 30000);
+    
+    // Початкова синхронізація
+    syncTimer();
+
+    return () => {
+      clearInterval(syncInterval);
+    };
+  }, [currentUser, dispatch]);
 }; 
