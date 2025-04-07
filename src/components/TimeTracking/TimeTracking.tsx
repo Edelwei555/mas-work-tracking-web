@@ -266,6 +266,15 @@ const TimeTracking: React.FC = () => {
       setSelectedWorkType('');
       setSelectedLocation('');
 
+      // Запускаємо синхронізацію для всіх пристроїв
+      // Робимо це декілька разів з інтервалом, щоб гарантувати оновлення на всіх пристроях
+      const syncTimes = [0, 1000, 3000, 5000]; // Синхронізуємо відразу, через 1с, 3с і 5с
+      syncTimes.forEach(delay => {
+        setTimeout(() => {
+          dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId }));
+        }, delay);
+      });
+
     } catch (err) {
       console.error('Error saving time entry:', err);
       setError(t('timeTracking.saveError'));

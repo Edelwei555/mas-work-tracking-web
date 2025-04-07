@@ -145,17 +145,27 @@ const timerSlice = createSlice({
           return;
         }
 
-        state.currentEntry = action.payload;
-
-        if (!action.payload.isRunning) {
-          state.elapsedTime = 0;
-          return;
+        const prevEntry = state.currentEntry;
+        
+        if (!prevEntry || 
+            prevEntry.id !== action.payload.id || 
+            prevEntry.isRunning !== action.payload.isRunning ||
+            prevEntry.endTime !== action.payload.endTime) {
+          
+          state.currentEntry = action.payload;
+          
+          if (!action.payload.isRunning || action.payload.endTime) {
+            state.elapsedTime = 0;
+            return;
+          }
         }
 
-        const now = new Date();
-        const start = new Date(action.payload.startTime);
-        const pausedTime = action.payload.pausedTime || 0;
-        state.elapsedTime = now.getTime() - start.getTime() + pausedTime;
+        if (action.payload.isRunning) {
+          const now = new Date();
+          const start = new Date(action.payload.startTime);
+          const pausedTime = action.payload.pausedTime || 0;
+          state.elapsedTime = now.getTime() - start.getTime() + pausedTime;
+        }
       });
   },
 });
