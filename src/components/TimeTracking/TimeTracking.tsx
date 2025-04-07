@@ -104,6 +104,20 @@ const TimeTracking: React.FC = () => {
     }
   }, [currentUser, teamId, dispatch]);
 
+  // Періодична синхронізація стану таймера
+  useEffect(() => {
+    let syncInterval: NodeJS.Timeout;
+
+    if (currentUser && teamId) {
+      // Синхронізуємо кожні 10 секунд
+      syncInterval = setInterval(() => {
+        dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId }));
+      }, 10000);
+    }
+
+    return () => clearInterval(syncInterval);
+  }, [currentUser, teamId, dispatch]);
+
   // Оновлення таймера
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -116,6 +130,9 @@ const TimeTracking: React.FC = () => {
         const elapsed = Math.max(0, now.getTime() - start.getTime() + pausedTime);
         dispatch(updateElapsedTime(elapsed));
       }, 1000);
+    } else {
+      // Якщо таймер не запущений, скидаємо elapsed time
+      dispatch(updateElapsedTime(0));
     }
 
     return () => clearInterval(interval);

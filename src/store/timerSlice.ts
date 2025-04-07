@@ -129,17 +129,25 @@ const timerSlice = createSlice({
             ...action.payload,
             isRunning: false
           };
+          state.elapsedTime = 0;
         }
       })
       .addCase(fetchCurrentTimer.fulfilled, (state, action) => {
+        const prevEntry = state.currentEntry;
         state.currentEntry = action.payload;
-        if (action.payload && action.payload.isRunning) {
+        
+        if (!action.payload || !action.payload.isRunning) {
+          state.elapsedTime = 0;
+          return;
+        }
+
+        if (!prevEntry || 
+            prevEntry.id !== action.payload.id || 
+            prevEntry.isRunning !== action.payload.isRunning) {
           const now = new Date();
           const start = new Date(action.payload.startTime);
           const pausedTime = action.payload.pausedTime || 0;
           state.elapsedTime = now.getTime() - start.getTime() + pausedTime;
-        } else if (!action.payload) {
-          state.elapsedTime = 0;
         }
       });
   },
