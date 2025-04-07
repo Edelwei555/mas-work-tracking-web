@@ -45,16 +45,21 @@ const TimeTracking: React.FC = () => {
     if (!teamId) return;
     
     try {
+      console.log('Fetching lists for teamId:', teamId);
       const [fetchedWorkTypes, fetchedLocations] = await Promise.all([
         getTeamWorkTypes(teamId),
         getTeamLocations(teamId)
       ]);
+      
+      console.log('Fetched work types:', fetchedWorkTypes);
+      console.log('Fetched locations:', fetchedLocations);
       
       setWorkTypes(fetchedWorkTypes);
       setLocations(fetchedLocations);
       setError('');
     } catch (err) {
       console.error('Error refreshing lists:', err);
+      setError(t('timeTracking.error'));
     }
   };
 
@@ -355,7 +360,7 @@ const TimeTracking: React.FC = () => {
           {(error || timerError) && <div className="error-message">{error || timerError}</div>}
           {success && <div className="success-message">{success}</div>}
 
-          {!currentEntry?.isRunning && !currentEntry?.endTime && (
+          {!currentEntry && (
             <>
               <div className="form-group">
                 <label>{t('workTypes.title')}</label>
@@ -396,7 +401,7 @@ const TimeTracking: React.FC = () => {
           </div>
 
           <div className="timer-controls">
-            {!currentEntry?.isRunning && !currentEntry?.endTime && (
+            {!currentEntry && (
               <button 
                 onClick={handleStart}
                 disabled={!selectedWorkType || !selectedLocation || isLoading}
