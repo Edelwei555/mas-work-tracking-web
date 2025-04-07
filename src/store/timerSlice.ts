@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { TimeEntry, saveTimeEntry, updateTimeEntry, getCurrentTimeEntry } from '../services/timeTracking';
+import { PayloadAction } from '@reduxjs/toolkit';
 
 interface TimerState {
   currentEntry: TimeEntry | null;
@@ -56,23 +57,28 @@ export const resumeTimer = createAsyncThunk(
 );
 
 export const stopTimer = createAsyncThunk(
-  'timer/stop',
-  async (timeEntry: TimeEntry) => {
+  'timer/stopTimer',
+  async (entry: TimeEntry) => {
     const now = new Date();
-    await updateTimeEntry(timeEntry.id!, {
-      ...timeEntry,
+    const updatedEntry = {
+      ...entry,
       isRunning: false,
-      endTime: now,
-      lastPauseTime: null
-    });
-    return { ...timeEntry, endTime: now, isRunning: false };
+      endTime: now
+    };
+    await updateTimeEntry(entry.id!, updatedEntry);
+    return updatedEntry;
   }
 );
 
 export const fetchCurrentTimer = createAsyncThunk(
   'timer/fetchCurrent',
   async ({ userId, teamId }: { userId: string; teamId: string }) => {
-    return await getCurrentTimeEntry(userId, teamId);
+    const entry = await getCurrentTimeEntry(userId, teamId);
+    // Якщо запис існує але не активний, повертаємо null
+    if (entry && !entry.isRunning) {
+      return null;
+    }
+    return entry;
   }
 );
 
@@ -80,12 +86,14 @@ const timerSlice = createSlice({
   name: 'timer',
   initialState,
   reducers: {
-    updateElapsedTime: (state, action) => {
+    updateElapsedTime: (state, action: PayloadAction<number>) => {
       state.elapsedTime = action.payload;
     },
     resetTimer: (state) => {
       state.currentEntry = null;
       state.elapsedTime = 0;
+      state.isLoading = false;
+      state.error = null;
     }
   },
   extraReducers: (builder) => {
@@ -122,25 +130,37 @@ const timerSlice = createSlice({
           };
         }
       })
+      .addCase(stopTimer.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
       .addCase(stopTimer.fulfilled, (state, action) => {
-        if (state.currentEntry) {
-          state.currentEntry = {
-            ...state.currentEntry,
-            ...action.payload,
-            isRunning: false
-          };
-          state.elapsedTime = 0;
-        }
+        state.isLoading = false;
+        state.currentEntry = action.payload;
+      })
+      .addCase(stopTimer.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message || 'Failed to stop timer';
       })
       .addCase(fetchCurrentTimer.fulfilled, (state, action) => {
         const prevEntry = state.currentEntry;
         state.currentEntry = action.payload;
         
-        if (!action.payload || !action.payload.isRunning) {
+        // Якщо немає активного запису, скидаємо стан
+        if (!action.payload) {
+          state.currentEntry = null;
           state.elapsedTime = 0;
           return;
         }
 
+        // Якщо запис не активний, скидаємо стан
+        if (!action.payload.isRunning) {
+          state.currentEntry = null;
+          state.elapsedTime = 0;
+          return;
+        }
+
+        // Оновлюємо час тільки якщо це новий запис або змінився стан
         if (!prevEntry || 
             prevEntry.id !== action.payload.id || 
             prevEntry.isRunning !== action.payload.isRunning) {

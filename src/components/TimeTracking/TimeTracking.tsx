@@ -200,8 +200,7 @@ const TimeTracking: React.FC = () => {
 
     try {
       await dispatch(stopTimer(currentEntry)).unwrap();
-      // Відразу після зупинки перевіряємо стан
-      dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId }));
+      // Не оновлюємо стан відразу після зупинки
     } catch (err) {
       console.error('Error stopping timer:', err);
       setError(t('timeTracking.error'));
@@ -236,8 +235,8 @@ const TimeTracking: React.FC = () => {
       const entryToSave: Omit<TimeEntry, 'createdAt' | 'lastUpdate'> = {
         userId: currentUser.uid,
         teamId: teamId,
-        workTypeId: selectedWorkType,
-        locationId: selectedLocation,
+        workTypeId: currentEntry.workTypeId,
+        locationId: currentEntry.locationId,
         startTime,
         endTime,
         pausedTime,
@@ -261,7 +260,6 @@ const TimeTracking: React.FC = () => {
       setWorkAmount('');
       setSelectedWorkType('');
       setSelectedLocation('');
-      setSuccess('');
 
       // Оновлюємо стан через 2 секунди
       setTimeout(() => {
