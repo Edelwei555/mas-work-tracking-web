@@ -135,6 +135,19 @@ const TimeTracking: React.FC = () => {
     return () => clearInterval(interval);
   }, [currentEntry, dispatch]);
 
+  // Автоматичне приховування повідомлення про успіх
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    
+    if (success) {
+      timeout = setTimeout(() => {
+        setSuccess('');
+      }, 3000);
+    }
+
+    return () => clearTimeout(timeout);
+  }, [success]);
+
   const formatTime = (ms: number): string => {
     const seconds = Math.floor((ms / 1000) % 60);
     const minutes = Math.floor((ms / 1000 / 60) % 60);
@@ -214,7 +227,6 @@ const TimeTracking: React.FC = () => {
     try {
       setLoading(true);
       setError('');
-      setSuccess('');
 
       const now = new Date();
       const startTime = currentEntry.startTime ? new Date(currentEntry.startTime) : now;
@@ -225,7 +237,7 @@ const TimeTracking: React.FC = () => {
       const durationInSeconds = Math.floor(elapsedTime / 1000);
       
       const entryToSave: Omit<TimeEntry, 'createdAt' | 'lastUpdate'> = {
-        id: currentEntry.id, // Додаємо ID для оновлення
+        id: currentEntry.id,
         userId: currentUser.uid,
         teamId: teamId,
         workTypeId: currentEntry.workTypeId,
