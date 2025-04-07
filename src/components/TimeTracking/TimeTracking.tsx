@@ -45,14 +45,10 @@ const TimeTracking: React.FC = () => {
     if (!teamId) return;
     
     try {
-      console.log('Fetching lists for teamId:', teamId);
       const [fetchedWorkTypes, fetchedLocations] = await Promise.all([
         getTeamWorkTypes(teamId),
         getTeamLocations(teamId)
       ]);
-      
-      console.log('Fetched work types:', fetchedWorkTypes);
-      console.log('Fetched locations:', fetchedLocations);
       
       setWorkTypes(fetchedWorkTypes);
       setLocations(fetchedLocations);
@@ -72,9 +68,12 @@ const TimeTracking: React.FC = () => {
         const teams = await getUserTeams(currentUser.uid);
         if (teams.length > 0 && teams[0].id) {
           setTeamId(teams[0].id);
+        } else {
+          setError(t('teams.noTeams'));
         }
       } catch (err) {
         console.error('Error fetching team:', err);
+        setError(t('teams.error'));
       } finally {
         setLoading(false);
         setInitialLoadComplete(true);
@@ -82,7 +81,7 @@ const TimeTracking: React.FC = () => {
     };
 
     fetchTeam();
-  }, [currentUser]);
+  }, [currentUser, t]);
 
   // Завантаження даних після отримання ID команди
   useEffect(() => {
@@ -95,20 +94,19 @@ const TimeTracking: React.FC = () => {
         // Отримуємо поточний запис часу
         await dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId })).unwrap();
 
-        // Отримуємо види робіт та локації
+        // Оновлюємо списки
         await refreshLists();
-        setError('');
+        
       } catch (err) {
         console.error('Error fetching data:', err);
+        setError(t('timeTracking.error'));
       } finally {
         setLoading(false);
       }
     };
 
-    if (teamId) {
-      fetchData();
-    }
-  }, [currentUser, teamId, dispatch]);
+    fetchData();
+  }, [currentUser, teamId, dispatch, t]);
 
   // Періодична синхронізація стану таймера
   useEffect(() => {
