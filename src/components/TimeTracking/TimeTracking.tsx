@@ -5,6 +5,7 @@ import { WorkType, getTeamWorkTypes } from '../../services/workTypes';
 import { Location, getTeamLocations } from '../../services/locations';
 import { TimeEntry, saveTimeEntry } from '../../services/timeTracking';
 import { getUserTeams } from '../../services/teams';
+import { subscribeToTimer } from '../../services/timerSync';
 import { useSelector } from 'react-redux';
 import { 
   startTimer, 
@@ -150,6 +151,38 @@ const TimeTracking: React.FC = () => {
 
     return () => clearTimeout(timeout);
   }, [success]);
+
+  // Підписка на зміни таймера в реальному часі
+  useEffect(() => {
+    if (!currentUser) return;
+
+    // Підписуємось на зміни таймера
+    const unsubscribe = subscribeToTimer(currentUser.uid, (entry) => {
+      if (!entry) {
+        // Якщо запис видалено, скидаємо стан
+        dispatch(resetTimer());
+        return;
+      }
+
+      // Якщо запис змінився і він не активний, скидаємо стан
+      if (!entry.isRunning) {
+        dispatch(resetTimer());
+        return;
+      }
+
+      // Оновлюємо стан з Firebase
+      if (entry.isRunning) {
+        const now = new Date();
+        const start = new Date(entry.startTime);
+        const pausedTime = entry.pausedTime || 0;
+        const elapsed = Math.max(0, now.getTime() - start.getTime() + pausedTime);
+        
+        dispatch(updateElapsedTime(elapsed));
+      }
+    });
+
+    return () => unsubscribe();
+  }, [currentUser, dispatch]);
 
   const formatTime = (ms: number): string => {
     const seconds = Math.floor((ms / 1000) % 60);
@@ -399,7 +432,7 @@ const TimeTracking: React.FC = () => {
             )}
           </div>
 
-          {currentEntry && !currentEntry.isRunning && currentEntry.endTime && !success && (
+          {currentEntry && !currentEntry.isRunning && !success && (
             <div className="work-amount-form">
               <div className="form-group">
                 <label>{t('timeTracking.workAmount')}</label>

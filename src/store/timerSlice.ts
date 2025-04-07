@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { TimeEntry, saveTimeEntry, updateTimeEntry, getCurrentTimeEntry } from '../services/timeTracking';
+import { updateTimerState } from '../services/timerSync';
 import { PayloadAction } from '@reduxjs/toolkit';
 
 interface TimerState {
@@ -20,7 +21,9 @@ export const startTimer = createAsyncThunk(
   'timer/start',
   async (timeEntry: Omit<TimeEntry, 'createdAt' | 'lastUpdate' | 'id'>) => {
     const id = await saveTimeEntry(timeEntry);
-    return { ...timeEntry, id };
+    const entry = { ...timeEntry, id };
+    await updateTimerState(timeEntry.userId, entry);
+    return entry;
   }
 );
 
@@ -32,13 +35,16 @@ export const pauseTimer = createAsyncThunk(
     const additionalPausedTime = now.getTime() - new Date(timeEntry.startTime).getTime();
     const totalPausedTime = pausedTime + additionalPausedTime;
 
-    await updateTimeEntry(timeEntry.id!, {
+    const updatedEntry = {
       ...timeEntry,
       isRunning: false,
       pausedTime: totalPausedTime,
       lastPauseTime: null
-    });
-    return { ...timeEntry, pausedTime: totalPausedTime, lastPauseTime: null, isRunning: false };
+    };
+
+    await updateTimeEntry(timeEntry.id!, updatedEntry);
+    await updateTimerState(timeEntry.userId, updatedEntry);
+    return updatedEntry;
   }
 );
 
@@ -46,13 +52,16 @@ export const resumeTimer = createAsyncThunk(
   'timer/resume',
   async (timeEntry: TimeEntry) => {
     const now = new Date();
-    await updateTimeEntry(timeEntry.id!, {
+    const updatedEntry = {
       ...timeEntry,
       isRunning: true,
       startTime: now,
       lastPauseTime: null
-    });
-    return { ...timeEntry, startTime: now, isRunning: true };
+    };
+
+    await updateTimeEntry(timeEntry.id!, updatedEntry);
+    await updateTimerState(timeEntry.userId, updatedEntry);
+    return updatedEntry;
   }
 );
 
@@ -66,8 +75,8 @@ export const stopTimer = createAsyncThunk(
       endTime: now
     };
     
-    // Оновлюємо запис в базі даних
     await updateTimeEntry(entry.id!, updatedEntry);
+    await updateTimerState(entry.userId, updatedEntry);
     return updatedEntry;
   }
 );
@@ -76,6 +85,9 @@ export const fetchCurrentTimer = createAsyncThunk(
   'timer/fetchCurrent',
   async ({ userId, teamId }: { userId: string; teamId: string }) => {
     const entry = await getCurrentTimeEntry(userId, teamId);
+    if (entry) {
+      await updateTimerState(userId, entry);
+    }
     return entry;
   }
 );
