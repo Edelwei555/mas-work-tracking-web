@@ -300,8 +300,6 @@ const TimeTracking: React.FC = () => {
     
     try {
       await dispatch(stopTimer(currentEntry)).unwrap();
-      clearTimerState();
-      dispatch(resetTimer());
       setSuccess(t('timeTracking.stopped'));
     } catch (err) {
       setError(getErrorMessage(err));
@@ -335,7 +333,7 @@ const TimeTracking: React.FC = () => {
   };
 
   // Показуємо поле для введення обсягу робіт, якщо таймер зупинено
-  const showWorkAmountInput = currentEntry && !currentEntry.isRunning && !currentEntry.endTime;
+  const showWorkAmountInput = currentEntry && !currentEntry.isRunning;
 
   if (loading && !initialLoadComplete) {
     return <div className="loading">{t('common.loading')}</div>;
