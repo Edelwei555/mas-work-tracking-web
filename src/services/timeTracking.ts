@@ -83,7 +83,19 @@ export const saveTimeEntry = async (timeEntry: Omit<TimeEntry, 'createdAt' | 'la
     };
 
     const docRef = await addDoc(timeEntriesRef, firestoreEntry);
-    return docRef.id;
+    const id = docRef.id;
+
+    // Зберігаємо стан таймера в localStorage, якщо таймер активний
+    if (timeEntry.isRunning) {
+      saveTimerState({
+        ...timeEntry,
+        id,
+        createdAt: new Date(),
+        lastUpdate: new Date()
+      });
+    }
+
+    return id;
   } catch (error) {
     console.error('Error saving time entry:', error);
     throw error;
