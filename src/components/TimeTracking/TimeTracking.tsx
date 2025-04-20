@@ -192,13 +192,23 @@ const TimeTracking: React.FC = () => {
   };
 
   const handleStart = async () => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      console.log('No current user');
+      return;
+    }
     
     try {
+      console.log('Starting timer...');
+      console.log('Current user:', currentUser.uid);
+      console.log('Team ID:', teamId);
+      console.log('Selected work type:', selectedWorkType);
+      console.log('Selected location:', selectedLocation);
+      
       setError('');
       setSuccess('');
 
       if (!selectedWorkType || !selectedLocation) {
+        console.log('Missing required selections');
         setError(t('timeTracking.selectRequired'));
         return;
       }
@@ -218,7 +228,10 @@ const TimeTracking: React.FC = () => {
         lastPauseTime: null
       };
 
-      await dispatch(startTimer(timeEntry)).unwrap();
+      console.log('Time entry to save:', timeEntry);
+      const result = await dispatch(startTimer(timeEntry)).unwrap();
+      console.log('Timer started successfully:', result);
+      
       setSuccess(t('timeTracking.started'));
     } catch (err) {
       console.error('Error starting timer:', err);
