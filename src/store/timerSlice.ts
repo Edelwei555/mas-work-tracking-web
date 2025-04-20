@@ -172,18 +172,23 @@ const timerSlice = createSlice({
           return;
         }
 
-        state.currentEntry = action.payload;
-        
-        if (!action.payload.isRunning) {
-          const end = action.payload.endTime ? new Date(action.payload.endTime) : new Date();
-          const start = new Date(action.payload.startTime);
-          const pausedTime = action.payload.pausedTime || 0;
-          state.elapsedTime = Math.max(0, end.getTime() - start.getTime() - pausedTime);
-        } else {
-          const now = new Date();
-          const start = new Date(action.payload.startTime);
-          const pausedTime = action.payload.pausedTime || 0;
-          state.elapsedTime = Math.max(0, now.getTime() - start.getTime() - pausedTime);
+        const previousEntry = state.currentEntry;
+        const newEntry = action.payload;
+
+        if (!previousEntry || 
+            previousEntry.id !== newEntry.id || 
+            previousEntry.isRunning !== newEntry.isRunning ||
+            previousEntry.endTime !== newEntry.endTime) {
+          state.currentEntry = newEntry;
+          
+          if (!newEntry.isRunning || newEntry.endTime) {
+            state.elapsedTime = 0;
+          } else {
+            const now = new Date();
+            const start = new Date(newEntry.startTime);
+            const pausedTime = newEntry.pausedTime || 0;
+            state.elapsedTime = Math.max(0, now.getTime() - start.getTime() - pausedTime);
+          }
         }
       });
   },
