@@ -197,14 +197,14 @@ const TimeTracking: React.FC = () => {
     try {
       setError('');
       setSuccess('');
-      
+
       if (!selectedWorkType || !selectedLocation) {
         setError(t('timeTracking.selectRequired'));
         return;
       }
 
       const now = new Date();
-      const newEntry: Omit<TimeEntry, 'id'> = {
+      const timeEntry: Omit<TimeEntry, 'createdAt' | 'lastUpdate' | 'id'> = {
         userId: currentUser.uid,
         teamId,
         workTypeId: selectedWorkType,
@@ -215,12 +215,10 @@ const TimeTracking: React.FC = () => {
         workAmount: 0,
         isRunning: true,
         duration: 0,
-        lastPauseTime: null,
-        createdAt: now,
-        lastUpdate: now
+        lastPauseTime: null
       };
 
-      await dispatch(startTimer(newEntry)).unwrap();
+      await dispatch(startTimer(timeEntry)).unwrap();
       setSuccess(t('timeTracking.started'));
     } catch (err) {
       console.error('Error starting timer:', err);
