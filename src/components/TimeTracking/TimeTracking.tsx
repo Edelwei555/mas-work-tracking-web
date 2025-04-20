@@ -100,6 +100,7 @@ const TimeTracking: React.FC = () => {
         setError(t('timeTracking.error'));
       } finally {
         setLoading(false);
+        setInitialLoadComplete(true);
       }
     };
 
