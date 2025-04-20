@@ -198,25 +198,33 @@ const TimeTracking: React.FC = () => {
       setError('');
       setSuccess('');
       
-      const newEntry: Omit<TimeEntry, 'createdAt' | 'lastUpdate' | 'id'> = {
+      if (!selectedWorkType || !selectedLocation) {
+        setError(t('timeTracking.selectRequired'));
+        return;
+      }
+
+      const now = new Date();
+      const newEntry: Omit<TimeEntry, 'id'> = {
         userId: currentUser.uid,
         teamId,
         workTypeId: selectedWorkType,
         locationId: selectedLocation,
-        startTime: new Date(),
-        isRunning: true,
+        startTime: now,
+        endTime: now,
         pausedTime: 0,
-        lastPauseTime: null,
-        endTime: new Date(0),
         workAmount: 0,
-        duration: 0
+        isRunning: true,
+        duration: 0,
+        lastPauseTime: null,
+        createdAt: now,
+        lastUpdate: now
       };
 
       await dispatch(startTimer(newEntry)).unwrap();
       setSuccess(t('timeTracking.started'));
     } catch (err) {
       console.error('Error starting timer:', err);
-      setError(t('timeTracking.error'));
+      setError(getErrorMessage(err));
     }
   };
 

@@ -22,7 +22,13 @@ export const startTimer = createAsyncThunk(
   'timer/start',
   async (timeEntry: Omit<TimeEntry, 'createdAt' | 'lastUpdate' | 'id'>) => {
     const id = await saveTimeEntry(timeEntry);
-    const entry = { ...timeEntry, id };
+    const now = new Date();
+    const entry = { 
+      ...timeEntry, 
+      id,
+      createdAt: now,
+      lastUpdate: now
+    };
     await updateTimerState(timeEntry.userId, entry);
     return entry;
   }
