@@ -10,23 +10,7 @@ import {
   doc
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
-
-export interface TimeEntry {
-  id?: string;
-  userId: string;
-  teamId: string;
-  workTypeId: string;
-  locationId: string;
-  startTime: Date;
-  endTime: Date;
-  pausedTime: number;
-  workAmount: number;
-  isRunning: boolean;
-  duration: number;
-  lastPauseTime: null;
-  createdAt?: Date;
-  lastUpdate?: Date;
-}
+import { TimeEntry } from '../types/timeEntry';
 
 interface FirestoreTimeEntry {
   userId: string;
@@ -77,7 +61,7 @@ export const clearTimerState = () => {
   localStorage.removeItem(TIMER_STATE_KEY);
 };
 
-export const saveTimeEntry = async (timeEntry: Omit<TimeEntry, 'createdAt' | 'lastUpdate'>) => {
+export const saveTimeEntry = async (timeEntry: Omit<TimeEntry, 'createdAt' | 'lastUpdate' | 'id'>) => {
   try {
     const timeEntriesRef = collection(db, 'timeEntries');
     

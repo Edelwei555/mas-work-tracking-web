@@ -1,5 +1,5 @@
 import { getDatabase, ref, onValue, set, off } from 'firebase/database';
-import { TimeEntry } from './timeTracking';
+import { TimeEntry } from '../types/timeEntry';
 
 interface TimerState {
   entry: TimeEntry | null;

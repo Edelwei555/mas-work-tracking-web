@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { TimeEntry, saveTimeEntry, updateTimeEntry, getCurrentTimeEntry } from '../services/timeTracking';
+import { saveTimeEntry, updateTimeEntry, getCurrentTimeEntry } from '../services/timeTracking';
+import { TimeEntry } from '../types/timeEntry';
 import { updateTimerState } from '../services/timerSync';
 import { PayloadAction } from '@reduxjs/toolkit';
 
@@ -145,13 +146,19 @@ const timerSlice = createSlice({
         state.error = null;
       })
       .addCase(stopTimer.fulfilled, (state, action) => {
-        state.isLoading = false;
-        if (action.payload === null) {
+        if (!action.payload) {
           state.currentEntry = null;
           state.elapsedTime = 0;
-        } else {
-          state.currentEntry = action.payload;
-          state.elapsedTime = 0;
+          return;
+        }
+
+        state.currentEntry = action.payload;
+        
+        if (!action.payload.isRunning) {
+          const now = new Date();
+          const start = new Date(action.payload.startTime);
+          const pausedTime = action.payload.pausedTime || 0;
+          state.elapsedTime = Math.max(0, now.getTime() - start.getTime() - pausedTime);
         }
       })
       .addCase(stopTimer.rejected, (state, action) => {
@@ -165,31 +172,18 @@ const timerSlice = createSlice({
           return;
         }
 
-        const prevEntry = state.currentEntry;
+        state.currentEntry = action.payload;
         
-        if (!prevEntry || 
-            prevEntry.id !== action.payload.id || 
-            prevEntry.isRunning !== action.payload.isRunning) {
-          
-          state.currentEntry = action.payload;
-
-          if (!action.payload.isRunning) {
-            state.elapsedTime = 0;
-            return;
-          }
-        }
-
-        if (action.payload.isRunning && action.payload.startTime) {
+        if (!action.payload.isRunning) {
+          const end = action.payload.endTime ? new Date(action.payload.endTime) : new Date();
+          const start = new Date(action.payload.startTime);
+          const pausedTime = action.payload.pausedTime || 0;
+          state.elapsedTime = Math.max(0, end.getTime() - start.getTime() - pausedTime);
+        } else {
           const now = new Date();
           const start = new Date(action.payload.startTime);
           const pausedTime = action.payload.pausedTime || 0;
-          const elapsed = now.getTime() - start.getTime() + pausedTime;
-          
-          if (!isNaN(elapsed) && elapsed >= 0) {
-            state.elapsedTime = elapsed;
-          } else {
-            state.elapsedTime = 0;
-          }
+          state.elapsedTime = Math.max(0, now.getTime() - start.getTime() - pausedTime);
         }
       });
   },
