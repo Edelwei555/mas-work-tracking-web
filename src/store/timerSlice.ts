@@ -155,8 +155,8 @@ const timerSlice = createSlice({
       .addCase(fetchCurrentTimer.fulfilled, (state, action) => {
         const entry = action.payload;
         
-        if (!entry || !entry.isRunning) {
-          state.currentEntry = entry;
+        if (!entry || !entry.isRunning || entry.endTime) {
+          state.currentEntry = null;
           state.elapsedTime = 0;
           return;
         }

@@ -131,18 +131,28 @@ const TimeTracking: React.FC = () => {
   useEffect(() => {
     let syncInterval: NodeJS.Timeout;
 
-    if (currentUser && teamId) {
-      // Синхронізуємо кожну секунду коли таймер активний
-      syncInterval = setInterval(async () => {
+    const syncTimer = async () => {
+      if (!currentUser || !teamId) return;
+
+      try {
         const result = await dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId })).unwrap();
         
-        // Якщо таймер був зупинений на іншому пристрої
-        if (result && currentEntry?.isRunning && !result.isRunning) {
-          // Скидаємо локальний стан
+        // Якщо таймер був зупинений
+        if (currentEntry?.isRunning && (!result || !result.isRunning)) {
           setWorkAmount('');
           dispatch(resetTimer());
         }
-      }, 1000);
+      } catch (error) {
+        console.error('Error syncing timer:', error);
+      }
+    };
+
+    // Синхронізуємо одразу при монтуванні
+    syncTimer();
+
+    // Встановлюємо інтервал синхронізації
+    if (currentUser && teamId) {
+      syncInterval = setInterval(syncTimer, 3000);
     }
 
     return () => {
@@ -290,6 +300,7 @@ const TimeTracking: React.FC = () => {
     
     try {
       await dispatch(stopTimer(currentEntry)).unwrap();
+      clearTimerState();
       dispatch(resetTimer());
       setSuccess(t('timeTracking.stopped'));
     } catch (err) {
@@ -312,10 +323,9 @@ const TimeTracking: React.FC = () => {
       };
 
       await saveTimeEntry(updatedEntry);
-      
-      // Скидаємо стан
-      setWorkAmount('');
+      clearTimerState();
       dispatch(resetTimer());
+      setWorkAmount('');
       setSuccess(t('timeTracking.saved'));
     } catch (err) {
       setError(getErrorMessage(err));
