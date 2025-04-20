@@ -332,8 +332,8 @@ const TimeTracking: React.FC = () => {
     }
   };
 
-  // Показуємо поле для введення обсягу робіт, якщо таймер зупинено
-  const showWorkAmountInput = currentEntry && !currentEntry.isRunning;
+  // Показуємо поле для введення обсягу робіт тільки якщо таймер зупинено (не на паузі)
+  const showWorkAmountInput = currentEntry && !currentEntry.isRunning && currentEntry.endTime === null;
 
   if (loading && !initialLoadComplete) {
     return <div className="loading">{t('common.loading')}</div>;
@@ -393,7 +393,7 @@ const TimeTracking: React.FC = () => {
         </div>
 
         <div className="timer-controls">
-          {!currentEntry?.isRunning ? (
+          {!currentEntry ? (
             <button
               className="btn-primary"
               onClick={handleStart}
@@ -401,25 +401,28 @@ const TimeTracking: React.FC = () => {
             >
               {t('timeTracking.start')}
             </button>
-          ) : (
+          ) : currentEntry.isRunning ? (
             <>
-              {currentEntry.lastPauseTime ? (
-                <button className="btn-warning" onClick={handleResume}>
-                  {t('timeTracking.resume')}
-                </button>
-              ) : (
-                <button className="btn-warning" onClick={handlePause}>
-                  {t('timeTracking.pause')}
-                </button>
-              )}
+              <button className="btn-warning" onClick={handlePause}>
+                {t('timeTracking.pause')}
+              </button>
               <button className="btn-danger" onClick={handleStop}>
                 {t('timeTracking.stop')}
               </button>
             </>
-          )}
+          ) : currentEntry.endTime === null ? (
+            <>
+              <button className="btn-warning" onClick={handleResume}>
+                {t('timeTracking.resume')}
+              </button>
+              <button className="btn-danger" onClick={handleStop}>
+                {t('timeTracking.stop')}
+              </button>
+            </>
+          ) : null}
         </div>
 
-        {currentEntry && !currentEntry.isRunning && (
+        {showWorkAmountInput && (
           <div className="work-amount-form">
             <FormControl fullWidth margin="normal">
               <TextField

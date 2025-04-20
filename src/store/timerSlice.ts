@@ -155,17 +155,20 @@ const timerSlice = createSlice({
       .addCase(fetchCurrentTimer.fulfilled, (state, action) => {
         const entry = action.payload;
         
-        if (!entry || !entry.isRunning || entry.endTime) {
+        if (!entry || entry.endTime) {
           state.currentEntry = null;
           state.elapsedTime = 0;
           return;
         }
 
         state.currentEntry = entry;
-        const now = new Date();
-        const start = new Date(entry.startTime);
-        const pausedTime = entry.pausedTime || 0;
-        state.elapsedTime = Math.max(0, now.getTime() - start.getTime() - pausedTime);
+        
+        if (entry.isRunning) {
+          const now = new Date();
+          const start = new Date(entry.startTime);
+          const pausedTime = entry.pausedTime || 0;
+          state.elapsedTime = Math.max(0, now.getTime() - start.getTime() - pausedTime);
+        }
       });
   }
 });
