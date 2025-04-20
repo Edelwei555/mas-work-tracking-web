@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import type { TimeEntry } from '../types';
+import { updateTimerState } from './timerSync';
 
 interface FirestoreTimeEntry {
   userId: string;
@@ -85,14 +86,17 @@ export const saveTimeEntry = async (timeEntry: Omit<TimeEntry, 'createdAt' | 'la
     const docRef = await addDoc(timeEntriesRef, firestoreEntry);
     const id = docRef.id;
 
-    // Зберігаємо стан таймера в localStorage, якщо таймер активний
+    const fullEntry = {
+      ...timeEntry,
+      id,
+      createdAt: new Date(),
+      lastUpdate: new Date()
+    };
+
+    // Зберігаємо стан таймера в localStorage і синхронізуємо через Realtime Database
     if (timeEntry.isRunning) {
-      saveTimerState({
-        ...timeEntry,
-        id,
-        createdAt: new Date(),
-        lastUpdate: new Date()
-      });
+      saveTimerState(fullEntry);
+      await updateTimerState(timeEntry.userId, fullEntry);
     }
 
     return id;
@@ -125,18 +129,22 @@ export const updateTimeEntry = async (id: string, data: Partial<TimeEntry>) => {
     
     await updateDoc(docRef, updateData);
 
-    // Оновлюємо стан в localStorage
+    // Оновлюємо стан в localStorage і синхронізуємо через Realtime Database
     const currentState = getTimerState();
     if (currentState?.id === id) {
+      const updatedEntry = {
+        ...currentState,
+        ...data,
+        lastUpdate: new Date(),
+        lastPauseTime: null
+      };
+
       if (data.isRunning === false) {
         clearTimerState();
+        await updateTimerState(currentState.userId, null);
       } else {
-        saveTimerState({
-          ...currentState,
-          ...data,
-          lastUpdate: new Date(),
-          lastPauseTime: null
-        });
+        saveTimerState(updatedEntry);
+        await updateTimerState(currentState.userId, updatedEntry);
       }
     }
   } catch (error) {
@@ -170,6 +178,7 @@ export const getCurrentTimeEntry = async (userId: string, teamId: string): Promi
     const querySnapshot = await getDocs(q);
     if (querySnapshot.empty) {
       clearTimerState();
+      await updateTimerState(userId, null);
       return null;
     }
 
@@ -180,15 +189,16 @@ export const getCurrentTimeEntry = async (userId: string, teamId: string): Promi
       id: doc.id,
       ...data,
       startTime: data.startTime.toDate(),
-      endTime: data.endTime ? data.endTime.toDate() : new Date(),
+      endTime: data.endTime ? data.endTime.toDate() : null,
       createdAt: data.createdAt.toDate(),
       lastUpdate: data.lastUpdate.toDate(),
       lastPauseTime: null
     };
 
-    // Оновлюємо локальний стан
+    // Оновлюємо локальний стан і синхронізуємо через Realtime Database
     if (timeEntry.isRunning) {
       saveTimerState(timeEntry);
+      await updateTimerState(userId, timeEntry);
     }
 
     return timeEntry;

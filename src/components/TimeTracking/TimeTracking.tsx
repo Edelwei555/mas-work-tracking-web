@@ -20,6 +20,7 @@ import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import './TimeTracking.css';
 import { TimeEntry } from '../../types';
 import { getErrorMessage } from '../../utils/errors';
+import { subscribeToTimer } from '../../services/timerSync';
 
 const TimeTracking: React.FC = () => {
   const { t } = useTranslation();
@@ -185,6 +186,23 @@ const TimeTracking: React.FC = () => {
 
     return () => clearTimeout(timeout);
   }, [success]);
+
+  // Підписка на зміни таймера
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const unsubscribe = subscribeToTimer(currentUser.uid, (entry) => {
+      if (!entry) {
+        dispatch(resetTimer());
+        return;
+      }
+
+      // Оновлюємо стан таймера, якщо отримали нові дані
+      dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId }));
+    });
+
+    return () => unsubscribe();
+  }, [currentUser, teamId, dispatch]);
 
   const formatTime = (ms: number): string => {
     const totalSeconds = Math.floor(ms / 1000);
