@@ -42,13 +42,20 @@ const TimeTracking: React.FC = () => {
 
   // Функція оновлення списків
   const refreshLists = async () => {
-    if (!teamId) return;
+    if (!teamId) {
+      console.log('No teamId available for refreshing lists');
+      return;
+    }
     
     try {
+      console.log('Refreshing lists for teamId:', teamId);
       const [fetchedWorkTypes, fetchedLocations] = await Promise.all([
         getTeamWorkTypes(teamId),
         getTeamLocations(teamId)
       ]);
+      
+      console.log('Fetched work types:', fetchedWorkTypes);
+      console.log('Fetched locations:', fetchedLocations);
       
       setWorkTypes(fetchedWorkTypes);
       setLocations(fetchedLocations);
@@ -202,6 +209,22 @@ const TimeTracking: React.FC = () => {
     updateTimerState(currentUser.uid, currentEntry);
   }, [currentUser, currentEntry]);
 
+  // Відстеження змін у списках
+  useEffect(() => {
+    console.log('Work types changed:', workTypes);
+    console.log('Locations changed:', locations);
+  }, [workTypes, locations]);
+
+  // Відстеження змін у стані таймера
+  useEffect(() => {
+    console.log('Timer state changed:', {
+      currentEntry,
+      elapsedTime,
+      isLoading,
+      timerError
+    });
+  }, [currentEntry, elapsedTime, isLoading, timerError]);
+
   const formatTime = (ms: number): string => {
     // Перевіряємо чи ms є коректним числом
     if (!ms || isNaN(ms)) {
@@ -216,9 +239,24 @@ const TimeTracking: React.FC = () => {
   };
 
   const handleStart = async () => {
-    if (!selectedWorkType || !selectedLocation || !currentUser || !teamId) return;
+    if (!selectedWorkType || !selectedLocation || !currentUser || !teamId) {
+      console.log('Missing required fields:', {
+        selectedWorkType,
+        selectedLocation,
+        currentUser: !!currentUser,
+        teamId
+      });
+      return;
+    }
 
     try {
+      console.log('Starting timer with:', {
+        workTypeId: selectedWorkType,
+        locationId: selectedLocation,
+        userId: currentUser.uid,
+        teamId
+      });
+
       await dispatch(startTimer({
         userId: currentUser.uid,
         teamId: teamId,
@@ -232,9 +270,14 @@ const TimeTracking: React.FC = () => {
         duration: 0,
         lastPauseTime: null
       })).unwrap();
+
+      console.log('Timer started successfully');
     } catch (err) {
       console.error('Error starting timer:', err);
       setError(t('timeTracking.error'));
+      
+      // Перезавантажуємо списки при помилці
+      await refreshLists();
     }
   };
 
