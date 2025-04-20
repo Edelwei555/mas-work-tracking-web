@@ -1,4 +1,4 @@
-import { TimeEntry } from './timeTracking';
+import { TimeEntry } from '../types/timeEntry';
 import { Location } from './locations';
 import { WorkType } from './workTypes';
 import { User } from './teams';
