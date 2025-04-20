@@ -74,7 +74,8 @@ export const stopTimer = createAsyncThunk(
     const updatedEntry = {
       ...entry,
       isRunning: false,
-      endTime: now
+      endTime: now,
+      lastUpdate: now
     };
     
     await updateTimeEntry(entry.id!, updatedEntry);
@@ -142,50 +143,28 @@ const timerSlice = createSlice({
         state.error = null;
       })
       .addCase(stopTimer.fulfilled, (state, action) => {
-        if (!action.payload) {
-          state.currentEntry = null;
-          state.elapsedTime = 0;
-          return;
-        }
-
+        state.isLoading = false;
         state.currentEntry = action.payload;
-        
-        if (!action.payload.isRunning) {
-          const now = new Date();
-          const start = new Date(action.payload.startTime);
-          const pausedTime = action.payload.pausedTime || 0;
-          state.elapsedTime = Math.max(0, now.getTime() - start.getTime() - pausedTime);
-        }
+        state.elapsedTime = action.payload ? Math.max(0, new Date().getTime() - new Date(action.payload.startTime).getTime() - (action.payload.pausedTime || 0)) : 0;
       })
       .addCase(stopTimer.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.error.message || 'Failed to stop timer';
       })
       .addCase(fetchCurrentTimer.fulfilled, (state, action) => {
-        if (!action.payload) {
-          state.currentEntry = null;
+        const entry = action.payload;
+        
+        if (!entry || !entry.isRunning) {
+          state.currentEntry = entry;
           state.elapsedTime = 0;
           return;
         }
 
-        const previousEntry = state.currentEntry;
-        const newEntry = action.payload;
-
-        if (!previousEntry || 
-            previousEntry.id !== newEntry.id || 
-            previousEntry.isRunning !== newEntry.isRunning ||
-            previousEntry.endTime !== newEntry.endTime) {
-          state.currentEntry = newEntry;
-          
-          if (!newEntry.isRunning || newEntry.endTime) {
-            state.elapsedTime = 0;
-          } else {
-            const now = new Date();
-            const start = new Date(newEntry.startTime);
-            const pausedTime = newEntry.pausedTime || 0;
-            state.elapsedTime = Math.max(0, now.getTime() - start.getTime() - pausedTime);
-          }
-        }
+        state.currentEntry = entry;
+        const now = new Date();
+        const start = new Date(entry.startTime);
+        const pausedTime = entry.pausedTime || 0;
+        state.elapsedTime = Math.max(0, now.getTime() - start.getTime() - pausedTime);
       });
   }
 });

@@ -20,6 +20,7 @@ import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import './TimeTracking.css';
 import { TimeEntry } from '../../types';
 import { getErrorMessage } from '../../utils/errors';
+import { FormControl, TextField } from '@mui/material';
 
 const TimeTracking: React.FC = () => {
   const { t } = useTranslation();
@@ -131,10 +132,17 @@ const TimeTracking: React.FC = () => {
     let syncInterval: NodeJS.Timeout;
 
     if (currentUser && teamId) {
-      // Синхронізуємо кожні 10 секунд
-      syncInterval = setInterval(() => {
-        dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId }));
-      }, 10000);
+      // Синхронізуємо кожну секунду коли таймер активний
+      syncInterval = setInterval(async () => {
+        const result = await dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId })).unwrap();
+        
+        // Якщо таймер був зупинений на іншому пристрої
+        if (result && currentEntry?.isRunning && !result.isRunning) {
+          // Скидаємо локальний стан
+          setWorkAmount('');
+          dispatch(resetTimer());
+        }
+      }, 1000);
     }
 
     return () => {
@@ -142,13 +150,13 @@ const TimeTracking: React.FC = () => {
         clearInterval(syncInterval);
       }
     };
-  }, [currentUser, teamId, dispatch]);
+  }, [currentUser, teamId, dispatch, currentEntry?.isRunning]);
 
   // Оновлення таймера
   useEffect(() => {
     let interval: NodeJS.Timeout;
 
-    if (currentEntry?.isRunning && currentEntry?.startTime) {
+    if (currentEntry?.isRunning && !currentEntry?.endTime) {
       interval = setInterval(() => {
         try {
           const now = new Date();
@@ -156,7 +164,6 @@ const TimeTracking: React.FC = () => {
           const pausedTime = currentEntry.pausedTime || 0;
           const elapsed = Math.max(0, now.getTime() - start.getTime() - pausedTime);
           
-          // Перевіряємо чи обчислений час є коректним числом
           if (!isNaN(elapsed)) {
             dispatch(updateElapsedTime(elapsed));
           }
@@ -185,6 +192,16 @@ const TimeTracking: React.FC = () => {
 
     return () => clearTimeout(timeout);
   }, [success]);
+
+  useEffect(() => {
+    if (currentEntry) {
+      const interval = setInterval(() => {
+        dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId }));
+      }, 10000);
+
+      return () => clearInterval(interval);
+    }
+  }, [currentEntry?.id, dispatch, currentUser.uid, teamId]);
 
   const formatTime = (ms: number): string => {
     const totalSeconds = Math.floor(ms / 1000);
@@ -269,42 +286,39 @@ const TimeTracking: React.FC = () => {
   };
 
   const handleStop = async () => {
-    if (!currentEntry || !currentUser) return;
-
+    if (!currentEntry) return;
+    
     try {
-      setError('');
       await dispatch(stopTimer(currentEntry)).unwrap();
       setSuccess(t('timeTracking.stopped'));
-      
-      // Додаємо синхронізацію після зупинки
-      setTimeout(() => {
-        dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId }));
-      }, 1000);
     } catch (err) {
-      console.error('Error stopping timer:', err);
-      setError(t('timeTracking.error'));
+      setError(getErrorMessage(err));
     }
   };
 
   const handleSave = async () => {
-    if (!currentEntry || !currentUser) return;
+    if (!currentEntry) return;
     
     try {
       setIsSaving(true);
-      setError('');
-      setSuccess('');
-
-      const updatedEntry: Omit<TimeEntry, 'createdAt' | 'lastUpdate' | 'id'> = {
+      
+      // Зупиняємо таймер перед збереженням
+      await dispatch(stopTimer(currentEntry)).unwrap();
+      
+      // Зберігаємо запис з обсягом робіт
+      const updatedEntry = {
         ...currentEntry,
         workAmount: parseFloat(workAmount),
         isRunning: false,
-        endTime: new Date(),
-        duration: Math.max(0, new Date().getTime() - new Date(currentEntry.startTime).getTime() - (currentEntry.pausedTime || 0))
+        endTime: new Date()
       };
 
       await saveTimeEntry(updatedEntry);
-      setSuccess(t('timeTracking.saved'));
+      
+      // Скидаємо стан
       setWorkAmount('');
+      dispatch(resetTimer());
+      setSuccess(t('timeTracking.saved'));
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -401,19 +415,19 @@ const TimeTracking: React.FC = () => {
 
         {currentEntry && !currentEntry.isRunning && (
           <div className="work-amount-form">
-            <div className="form-group">
-              <label>{t('timeTracking.workAmount')}</label>
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <input
-                  type="number"
-                  value={workAmount}
-                  onChange={(e) => setWorkAmount(e.target.value)}
-                  min="0"
-                  step="0.01"
-                />
-                <span className="unit">м²</span>
-              </div>
-            </div>
+            <FormControl fullWidth margin="normal">
+              <TextField
+                label={t('timeTracking.workAmount')}
+                type="number"
+                value={workAmount}
+                onChange={(e) => setWorkAmount(e.target.value)}
+                disabled={isSaving}
+                inputProps={{
+                  step: 0.1,
+                  min: 0
+                }}
+              />
+            </FormControl>
             <button
               className="btn-success"
               onClick={handleSave}
