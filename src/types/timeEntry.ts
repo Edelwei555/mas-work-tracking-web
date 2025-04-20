@@ -1,7 +1,7 @@
 export interface TimeEntry {
     id?: string;
     startTime: Date;
-    endTime: Date;
+    endTime: Date | null;
     isRunning: boolean;
     workAmount: number;
     pausedTime: number;

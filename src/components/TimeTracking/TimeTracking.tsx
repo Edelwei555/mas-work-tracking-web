@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { WorkType, getTeamWorkTypes } from '../../services/workTypes';
 import { Location, getTeamLocations } from '../../services/locations';
-import { saveTimeEntry } from '../../services/timeTracking';
+import { saveTimeEntry, clearTimerState } from '../../services/timeTracking';
 import { getUserTeams } from '../../services/teams';
 import { useSelector } from 'react-redux';
 import { 
@@ -41,6 +41,11 @@ const TimeTracking: React.FC = () => {
   const [success, setSuccess] = useState<string>('');
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Очищення локального стану при монтуванні
+  useEffect(() => {
+    clearTimerState();
+  }, []);
 
   // Завантаження команди користувача
   useEffect(() => {
@@ -126,12 +131,10 @@ const TimeTracking: React.FC = () => {
     let syncInterval: NodeJS.Timeout;
 
     if (currentUser && teamId) {
-      // Синхронізуємо кожні 5 секунд для активного таймера
+      // Синхронізуємо кожні 10 секунд незалежно від стану таймера
       syncInterval = setInterval(() => {
-        if (currentEntry?.isRunning) {
-          dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId }));
-        }
-      }, 5000);
+        dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId }));
+      }, 10000);
     }
 
     return () => {
@@ -139,7 +142,7 @@ const TimeTracking: React.FC = () => {
         clearInterval(syncInterval);
       }
     };
-  }, [currentUser, teamId, dispatch, currentEntry]);
+  }, [currentUser, teamId, dispatch]);
 
   // Оновлення таймера
   useEffect(() => {
@@ -220,7 +223,7 @@ const TimeTracking: React.FC = () => {
         workTypeId: selectedWorkType,
         locationId: selectedLocation,
         startTime: now,
-        endTime: now,
+        endTime: null,
         pausedTime: 0,
         workAmount: 0,
         isRunning: true,

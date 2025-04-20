@@ -18,7 +18,7 @@ interface FirestoreTimeEntry {
   workTypeId: string;
   locationId: string;
   startTime: Timestamp;
-  endTime: Timestamp;
+  endTime: Timestamp | null;
   pausedTime: number;
   workAmount: number;
   isRunning: boolean;
@@ -35,7 +35,7 @@ export const saveTimerState = (timeEntry: TimeEntry) => {
   localStorage.setItem(TIMER_STATE_KEY, JSON.stringify({
     ...timeEntry,
     startTime: timeEntry.startTime.toISOString(),
-    endTime: timeEntry.endTime.toISOString(),
+    endTime: timeEntry.endTime ? timeEntry.endTime.toISOString() : null,
     createdAt: timeEntry.createdAt?.toISOString(),
     lastUpdate: timeEntry.lastUpdate?.toISOString(),
     lastPauseTime: null
@@ -50,7 +50,7 @@ export const getTimerState = (): TimeEntry | null => {
   return {
     ...data,
     startTime: new Date(data.startTime),
-    endTime: new Date(data.endTime),
+    endTime: data.endTime ? new Date(data.endTime) : null,
     createdAt: data.createdAt ? new Date(data.createdAt) : undefined,
     lastUpdate: data.lastUpdate ? new Date(data.lastUpdate) : undefined,
     lastPauseTime: null
@@ -72,11 +72,11 @@ export const saveTimeEntry = async (timeEntry: Omit<TimeEntry, 'createdAt' | 'la
       workTypeId: timeEntry.workTypeId,
       locationId: timeEntry.locationId,
       startTime: Timestamp.fromDate(timeEntry.startTime),
-      endTime: Timestamp.fromDate(timeEntry.endTime),
-      pausedTime: timeEntry.pausedTime,
-      workAmount: timeEntry.workAmount,
+      endTime: timeEntry.endTime ? Timestamp.fromDate(timeEntry.endTime) : null,
+      pausedTime: timeEntry.pausedTime || 0,
+      workAmount: timeEntry.workAmount || 0,
       isRunning: timeEntry.isRunning,
-      duration: timeEntry.duration,
+      duration: timeEntry.duration || 0,
       lastPauseTime: null,
       createdAt: Timestamp.now(),
       lastUpdate: Timestamp.now()
@@ -180,7 +180,7 @@ export const getCurrentTimeEntry = async (userId: string, teamId: string): Promi
       id: doc.id,
       ...data,
       startTime: data.startTime.toDate(),
-      endTime: data.endTime.toDate(),
+      endTime: data.endTime ? data.endTime.toDate() : new Date(),
       createdAt: data.createdAt.toDate(),
       lastUpdate: data.lastUpdate.toDate(),
       lastPauseTime: null
@@ -222,7 +222,7 @@ export const getTeamTimeEntries = async (teamId: string, startDate?: Date, endDa
 
     return querySnapshot.docs.map(doc => {
       const data = doc.data() as FirestoreTimeEntry;
-      console.log('Entry data:', data); // Додаємо лог для кожного запису
+      console.log('Entry data:', data);
 
       return {
         id: doc.id,
@@ -231,7 +231,7 @@ export const getTeamTimeEntries = async (teamId: string, startDate?: Date, endDa
         workTypeId: data.workTypeId,
         locationId: data.locationId,
         startTime: data.startTime.toDate(),
-        endTime: data.endTime.toDate(),
+        endTime: data.endTime ? data.endTime.toDate() : null,
         pausedTime: data.pausedTime,
         workAmount: data.workAmount,
         isRunning: data.isRunning,
