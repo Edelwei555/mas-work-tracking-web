@@ -2,6 +2,7 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, Auth, connectAuthEmulator } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
+import { getDatabase } from 'firebase/database';
 
 // Перевіряємо наявність всіх необхідних конфігурацій
 const requiredConfigs = [
@@ -10,7 +11,8 @@ const requiredConfigs = [
   'projectId',
   'storageBucket',
   'messagingSenderId',
-  'appId'
+  'appId',
+  'databaseURL'
 ];
 
 const firebaseConfig = {
@@ -39,6 +41,7 @@ console.log('Firebase конфігурація:', {
   storageBucket: firebaseConfig.storageBucket,
   messagingSenderId: firebaseConfig.messagingSenderId,
   appId: firebaseConfig.appId?.substring(0, 5) + '...',
+  databaseURL: firebaseConfig.databaseURL,
   currentDomain: window.location.hostname,
   currentOrigin: window.location.origin,
   currentHref: window.location.href
@@ -51,7 +54,8 @@ console.log('Перевірка змінних оточення:', {
   REACT_APP_FIREBASE_PROJECT_ID: !!process.env.REACT_APP_FIREBASE_PROJECT_ID,
   REACT_APP_FIREBASE_STORAGE_BUCKET: !!process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
   REACT_APP_FIREBASE_MESSAGING_SENDER_ID: !!process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
-  REACT_APP_FIREBASE_APP_ID: !!process.env.REACT_APP_FIREBASE_APP_ID
+  REACT_APP_FIREBASE_APP_ID: !!process.env.REACT_APP_FIREBASE_APP_ID,
+  REACT_APP_FIREBASE_DATABASE_URL: !!process.env.REACT_APP_FIREBASE_DATABASE_URL
 });
 
 console.log('Ініціалізація Firebase...');
@@ -77,6 +81,10 @@ console.log('Ініціалізація Firestore...');
 const db = getFirestore(app);
 console.log('Firestore сервіс ініціалізовано');
 
+console.log('Ініціалізація Realtime Database...');
+const database = getDatabase(app);
+console.log('Realtime Database сервіс ініціалізовано');
+
 console.log('Ініціалізація Functions...');
 const functions = getFunctions(app, 'us-central1');
 console.log('Functions сервіс ініціалізовано');
@@ -84,10 +92,11 @@ console.log('Functions сервіс ініціалізовано');
 // Перевіряємо, чи всі сервіси правильно ініціалізовані
 if (!auth) throw new Error('Auth не ініціалізовано');
 if (!db) throw new Error('Firestore не ініціалізовано');
+if (!database) throw new Error('Realtime Database не ініціалізовано');
 if (!functions) throw new Error('Functions не ініціалізовано');
 
 // Встановлюємо регіон для функцій (за замовчуванням us-central1)
 // functions.region = 'us-central1';
 
-export { auth, db, functions };
+export { auth, db, database, functions };
 export default app; 

@@ -1,5 +1,6 @@
-import { getDatabase, ref, onValue, set, off } from 'firebase/database';
+import { ref, onValue, set, off } from 'firebase/database';
 import { TimeEntry } from '../types';
+import { database } from '../config/firebase';
 
 interface TimerState {
   entry: TimeEntry | null;
@@ -12,8 +13,7 @@ const deviceId = Math.random().toString(36).substring(2);
 
 // Функція для отримання референсу на таймер користувача
 const getTimerRef = (userId: string) => {
-  const db = getDatabase();
-  return ref(db, `timers/${userId}`);
+  return ref(database, `timers/${userId}`);
 };
 
 // Функція для підписки на зміни таймера
