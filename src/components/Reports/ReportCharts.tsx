@@ -15,7 +15,7 @@ import {
   Pie,
   Cell
 } from 'recharts';
-import { TimeEntry } from '../../types/timeEntry';
+import { TimeEntry } from '../../types';
 import { Location } from '../../services/locations';
 import { WorkType } from '../../services/workTypes';
 

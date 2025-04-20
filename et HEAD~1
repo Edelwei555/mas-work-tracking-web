@@ -1,0 +1,179 @@
+[33mcommit bada21c19f0c927f2f2b8ea4e1a2847b3c34a5e5[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: Edelwei555 <dima.vasilenko.27@gmail.com>
+Date:   Mon Apr 7 20:56:45 2025 +0300
+
+    fix: виправлено типізацію та імпорти в timerSlice та TimeTracking
+
+[1mdiff --git a/src/components/TimeTracking/TimeTracking.tsx b/src/components/TimeTracking/TimeTracking.tsx[m
+[1mindex f46ce58..465cfc4 100644[m
+[1m--- a/src/components/TimeTracking/TimeTracking.tsx[m
+[1m+++ b/src/components/TimeTracking/TimeTracking.tsx[m
+[36m@@ -3,7 +3,7 @@[m [mimport { useTranslation } from 'react-i18next';[m
+ import { useAuth } from '../../contexts/AuthContext';[m
+ import { WorkType, getTeamWorkTypes } from '../../services/workTypes';[m
+ import { Location, getTeamLocations } from '../../services/locations';[m
+[31m-import { TimeEntry } from '../../services/timeTracking';[m
+[32m+[m[32mimport { TimeEntry, saveTimeEntry } from '../../services/timeTracking';[m
+ import { getUserTeams } from '../../services/teams';[m
+ import { useSelector } from 'react-redux';[m
+ import { [m
+[1mdiff --git a/src/store/timerSlice.ts b/src/store/timerSlice.ts[m
+[1mindex 48685b2..07496d6 100644[m
+[1m--- a/src/store/timerSlice.ts[m
+[1m+++ b/src/store/timerSlice.ts[m
+[36m@@ -29,9 +29,9 @@[m [mexport const pauseTimer = createAsyncThunk([m
+     await updateTimeEntry(timeEntry.id!, {[m
+       ...timeEntry,[m
+       isRunning: false,[m
+[31m-      lastPauseTime: new Date()[m
+[32m+[m[32m      lastPauseTime: null[m
+     });[m
+[31m-    return timeEntry;[m
+[32m+[m[32m    return { ...timeEntry, lastPauseTime: null, isRunning: false };[m
+   }[m
+ );[m
+ [m
+
+[33mcommit 928189c6666cd56538f09077d0a5576d8cb8e149[m
+Author: Edelwei555 <dima.vasilenko.27@gmail.com>
+Date:   Mon Apr 7 20:43:08 2025 +0300
+
+    feat: add redux store and timer synchronization
+
+[1mdiff --git a/src/App.tsx b/src/App.tsx[m
+[1mindex 8b830f5..13f2c85 100644[m
+[1m--- a/src/App.tsx[m
+[1m+++ b/src/App.tsx[m
+[36m@@ -7,34 +7,38 @@[m [mimport { CircularProgress } from '@mui/material';[m
+ import { useTimerSync } from './hooks/useTimerSync';[m
+ import Layout from './components/Layout/Layout';[m
+ import './i18n';[m
+[32m+[m[32mimport { Provider } from 'react-redux';[m
+[32m+[m[32mimport { store } from './store';[m
+ [m
+ const App: React.FC = () => {[m
+   useTimerSync(); // Хук для синхронізації таймера[m
+ [m
+   return ([m
+[31m-    <ErrorBoundary>[m
+[31m-      <Suspense fallback={[m
+[31m-        <div style={{ [m
+[31m-          display: 'flex', [m
+[31m-          justifyContent: 'center', [m
+[31m-          alignItems: 'center', [m
+[31m-          height: '100vh',[m
+[31m-          flexDirection: 'column',[m
+[31m-          gap: '20px'[m
+[31m-        }}>[m
+[31m-          <CircularProgress />[m
+[31m-          <div>Завантаження...</div>[m
+[31m-        </div>[m
+[31m-      }>[m
+[31m-        <div className="app">[m
+[31m-          <Routes>[m
+[31m-            <Route path="/*" element={<Layout />}>[m
+[31m-              <Route path="*" element={<AppRoutes />} />[m
+[31m-            </Route>[m
+[31m-          </Routes>[m
+[31m-        </div>[m
+[31m-      </Suspense>[m
+[31m-    </ErrorBoundary>[m
+[32m+[m[32m    <Provider store={store}>[m
+[32m+[m[32m      <ErrorBoundary>[m
+[32m+[m[32m        <Suspense fallback={[m
+[32m+[m[32m          <div style={{[m[41m [m
+[32m+[m[32m            display: 'flex',[m[41m [m
+[32m+[m[32m            justifyContent: 'center',[m[41m [m
+[32m+[m[32m            alignItems: 'center',[m[41m [m
+[32m+[m[32m            height: '100vh',[m
+[32m+[m[32m            flexDirection: 'column',[m
+[32m+[m[32m            gap: '20px'[m
+[32m+[m[32m          }}>[m
+[32m+[m[32m            <CircularProgress />[m
+[32m+[m[32m            <div>Завантаження...</div>[m
+[32m+[m[32m          </div>[m
+[32m+[m[32m        }>[m
+[32m+[m[32m          <div className="app">[m
+[32m+[m[32m            <Routes>[m
+[32m+[m[32m              <Route path="/*" element={<Layout />}>[m
+[32m+[m[32m                <Route path="*" element={<AppRoutes />} />[m
+[32m+[m[32m              </Route>[m
+[32m+[m[32m            </Routes>[m
+[32m+[m[32m          </div>[m
+[32m+[m[32m        </Suspense>[m
+[32m+[m[32m      </ErrorBoundary>[m
+[32m+[m[32m    </Provider>[m
+   );[m
+ };[m
+ [m
+[1mdiff --git a/src/components/TimeTracking/TimeTracking.tsx b/src/components/TimeTracking/TimeTracking.tsx[m
+[1mindex e50b555..f46ce58 100644[m
+[1m--- a/src/components/TimeTracking/TimeTracking.tsx[m
+[1m+++ b/src/components/TimeTracking/TimeTracking.tsx[m
+[36m@@ -3,15 +3,30 @@[m [mimport { useTranslation } from 'react-i18next';[m
+ import { useAuth } from '../../contexts/AuthContext';[m
+ import { WorkType, getTeamWorkTypes } from '../../services/workTypes';[m
+ import { Location, getTeamLocations } from '../../services/locations';[m
+[31m-import { TimeEntry, saveTimeEntry, getCurrentTimeEntry } from '../../services/timeTracking';[m
+[32m+[m[32mimport { TimeEntry } from '../../services/timeTracking';[m
+ import { getUserTeams } from '../../services/teams';[m
+[32m+[m[32mimport { useSelector } from 'react-redux';[m
+[32m+[m[32mimport {[m[41m [m
+[32m+[m[32m  startTimer,[m[41m [m
+[32m+[m[32m  pauseTimer,[m[41m [m
+[32m+[m[32m  resumeTimer,[m[41m [m
+[32m+[m[32m  stopTimer,[m[41m [m
+[32m+[m[32m  fetchCurrentTimer,[m
+[32m+[m[32m  updateElapsedTime[m[41m [m
+[32m+[m[32m} from '../../store/timerSlice';[m
+[32m+[m[32mimport { RootState } from '../../store/types';[m
+[32m+[m[32mimport { useAppDispatch } from '../../hooks/useAppDispatch';[m
+ import './TimeTracking.css';[m
+ [m
+ const TimeTracking: React.FC = () => {[m
+[31m-  const { t, i18n } = useTranslation();[m
+[32m+[m[32m  const { t } = useTranslation();[m
+   const { currentUser } = useAuth();[m
+[31m-  const [timeEntry, setTimeEntry] = useState<Partial<TimeEntry> | null>(null);[m
+[31m-  const [elapsedTime, setElapsedTime] = useState<number>(0);[m
+[32m+[m[32m  const dispatch = useAppDispatch();[m
+[32m+[m[41m  [m
+[32m+[m[32m  const { currentEntry, elapsedTime, isLoading, error: timerError } = useSelector([m
+[32m+[m[32m    (state: RootState) => state.timer[m
+[32m+[m[32m  );[m
+[32m+[m
+   const [selectedWorkType, setSelectedWorkType] = useState<string>('');[m
+   const [selectedLocation, setSelectedLocation] = useState<string>('');[m
+   const [teamId, setTeamId] = useState<string>('');[m
+[36m@@ -71,12 +86,7 @@[m [mconst TimeTracking: React.FC = () => {[m
+         setLoading(true);[m
+         [m
+         // Отримуємо поточний запис часу[m
+[31m-        const currentEntry = await getCurrentTimeEntry(currentUser.uid, teamId);[m
+[31m-        if (currentEntry) {[m
+[31m-          setTimeEntry(currentEntry);[m
+[31m-          setSelectedWorkType(currentEntry.workTypeId);[m
+[31m-          setSelectedLocation(currentEntry.locationId);[m
+[31m-        }[m
+[32m+[m[32m        await dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId })).unwrap();[m
+ [m
+         // Отримуємо види робіт та локації[m
+         await refreshLists();[m
+[36m@@ -91,23 +101,24 @@[m [mconst TimeTracking: React.FC = () => {[m
+     if (teamId) {[m
+       fetchData();[m
+     }[m
+[31m-  }, [currentUser, teamId]);[m
+[32m+[m[32m  }, [currentUser, teamId, dispatch]);[m
+ [m
+[32m+[m[32m  // Оновлення таймера[m
+   useEffect(() => {[m
+     let interval: NodeJS.Timeout;[m
+ [m
+[31m-    if (timeEntry?.isRunning) {[m
+[32m+[m[32m    if (currentEntry?.isRunning) {[m
+       interval = setInterval(() => {[m
+         const now = new Date();[m
+[31m-        const start = timeEntry.startTime ? new Date(timeEntry.startTime) : new Date();[m
+[31m-        const pausedTime = timeEntry.pausedTime || 0;[m
+[32m+[m[32m        const start = currentEntry.startTime ? n

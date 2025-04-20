@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { saveTimeEntry, updateTimeEntry, getCurrentTimeEntry } from '../services/timeTracking';
-import { TimeEntry } from '../types/timeEntry';
+import { TimeEntry } from '../types';
 import { updateTimerState } from '../services/timerSync';
 import { PayloadAction } from '@reduxjs/toolkit';
 

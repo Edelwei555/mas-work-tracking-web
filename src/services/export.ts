@@ -1,4 +1,4 @@
-import { TimeEntry } from '../types/timeEntry';
+import { TimeEntry } from '../types';
 import { Location } from './locations';
 import { WorkType } from './workTypes';
 import { User } from './teams';

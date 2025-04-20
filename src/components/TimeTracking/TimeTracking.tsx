@@ -18,7 +18,7 @@ import {
 import { AppDispatch, RootState } from '../../store';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import './TimeTracking.css';
-import { TimeEntry } from '../../types/timeEntry';
+import { TimeEntry } from '../../types';
 import { getErrorMessage } from '../../utils/errors';
 
 const TimeTracking: React.FC = () => {

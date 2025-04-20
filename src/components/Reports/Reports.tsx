@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { WorkType, getTeamWorkTypes } from '../../services/workTypes';
 import { Location, getTeamLocations } from '../../services/locations';
-import { TimeEntry } from '../../types/timeEntry';
+import { TimeEntry } from '../../types';
 import { getTeamTimeEntries } from '../../services/timeTracking';
 import { getUserTeams, getTeamMembers, User } from '../../services/teams';
 import { exportToExcel, exportToPDF, exportToCSV } from '../../services/export';
