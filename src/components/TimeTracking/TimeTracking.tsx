@@ -194,14 +194,14 @@ const TimeTracking: React.FC = () => {
   }, [success]);
 
   useEffect(() => {
-    if (currentEntry) {
+    if (currentEntry && currentUser) {
       const interval = setInterval(() => {
         dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId }));
       }, 10000);
 
       return () => clearInterval(interval);
     }
-  }, [currentEntry?.id, dispatch, currentUser.uid, teamId]);
+  }, [currentEntry?.id, dispatch, currentUser?.uid, teamId]);
 
   const formatTime = (ms: number): string => {
     const totalSeconds = Math.floor(ms / 1000);
