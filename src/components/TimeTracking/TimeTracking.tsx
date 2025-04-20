@@ -40,32 +40,6 @@ const TimeTracking: React.FC = () => {
   const [success, setSuccess] = useState<string>('');
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
-  // Функція оновлення списків
-  const refreshLists = async () => {
-    if (!teamId) {
-      console.log('No teamId available for refreshing lists');
-      return;
-    }
-    
-    try {
-      console.log('Refreshing lists for teamId:', teamId);
-      const [fetchedWorkTypes, fetchedLocations] = await Promise.all([
-        getTeamWorkTypes(teamId),
-        getTeamLocations(teamId)
-      ]);
-      
-      console.log('Fetched work types:', fetchedWorkTypes);
-      console.log('Fetched locations:', fetchedLocations);
-      
-      setWorkTypes(fetchedWorkTypes);
-      setLocations(fetchedLocations);
-      setError('');
-    } catch (err) {
-      console.error('Error refreshing lists:', err);
-      setError(t('timeTracking.error'));
-    }
-  };
-
   // Завантаження команди користувача
   useEffect(() => {
     const fetchTeam = async () => {
@@ -81,14 +55,34 @@ const TimeTracking: React.FC = () => {
       } catch (err) {
         console.error('Error fetching team:', err);
         setError(t('teams.error'));
-      } finally {
-        setLoading(false);
-        setInitialLoadComplete(true);
       }
     };
 
     fetchTeam();
   }, [currentUser, t]);
+
+  // Завантаження списків при зміні teamId
+  useEffect(() => {
+    if (!teamId) return;
+
+    const loadLists = async () => {
+      try {
+        const [fetchedWorkTypes, fetchedLocations] = await Promise.all([
+          getTeamWorkTypes(teamId),
+          getTeamLocations(teamId)
+        ]);
+        
+        setWorkTypes(fetchedWorkTypes);
+        setLocations(fetchedLocations);
+        setError('');
+      } catch (err) {
+        console.error('Error loading lists:', err);
+        setError(t('timeTracking.error'));
+      }
+    };
+
+    loadLists();
+  }, [teamId, t]);
 
   // Завантаження даних після отримання ID команди
   useEffect(() => {
@@ -100,9 +94,6 @@ const TimeTracking: React.FC = () => {
         
         // Отримуємо поточний запис часу
         await dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId })).unwrap();
-
-        // Оновлюємо списки
-        await refreshLists();
         
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -246,16 +237,13 @@ const TimeTracking: React.FC = () => {
         currentUser: !!currentUser,
         teamId
       });
+      setError(t('timeTracking.missingFields'));
       return;
     }
 
     try {
-      console.log('Starting timer with:', {
-        workTypeId: selectedWorkType,
-        locationId: selectedLocation,
-        userId: currentUser.uid,
-        teamId
-      });
+      setLoading(true);
+      setError('');
 
       await dispatch(startTimer({
         userId: currentUser.uid,
@@ -271,13 +259,11 @@ const TimeTracking: React.FC = () => {
         lastPauseTime: null
       })).unwrap();
 
-      console.log('Timer started successfully');
     } catch (err) {
       console.error('Error starting timer:', err);
       setError(t('timeTracking.error'));
-      
-      // Перезавантажуємо списки при помилці
-      await refreshLists();
+    } finally {
+      setLoading(false);
     }
   };
 
