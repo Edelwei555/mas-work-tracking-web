@@ -75,11 +75,12 @@ export const stopTimer = createAsyncThunk(
       ...entry,
       isRunning: false,
       endTime: now,
-      lastUpdate: now
+      lastUpdate: now,
+      duration: Math.max(0, now.getTime() - new Date(entry.startTime).getTime() - (entry.pausedTime || 0))
     };
     
     await updateTimeEntry(entry.id!, updatedEntry);
-    return updatedEntry;
+    return null;
   }
 );
 
@@ -144,8 +145,8 @@ const timerSlice = createSlice({
       })
       .addCase(stopTimer.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.currentEntry = action.payload;
-        state.elapsedTime = action.payload ? Math.max(0, new Date().getTime() - new Date(action.payload.startTime).getTime() - (action.payload.pausedTime || 0)) : 0;
+        state.currentEntry = null;
+        state.elapsedTime = 0;
       })
       .addCase(stopTimer.rejected, (state, action) => {
         state.isLoading = false;

@@ -290,6 +290,7 @@ const TimeTracking: React.FC = () => {
     
     try {
       await dispatch(stopTimer(currentEntry)).unwrap();
+      dispatch(resetTimer());
       setSuccess(t('timeTracking.stopped'));
     } catch (err) {
       setError(getErrorMessage(err));
@@ -301,9 +302,6 @@ const TimeTracking: React.FC = () => {
     
     try {
       setIsSaving(true);
-      
-      // Зупиняємо таймер перед збереженням
-      await dispatch(stopTimer(currentEntry)).unwrap();
       
       // Зберігаємо запис з обсягом робіт
       const updatedEntry = {

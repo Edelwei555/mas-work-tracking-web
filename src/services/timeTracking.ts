@@ -127,21 +127,22 @@ export const updateTimeEntry = async (id: string, data: Partial<TimeEntry>) => {
     
     await updateDoc(docRef, updateData);
 
-    // Оновлюємо стан в localStorage і синхронізуємо через Realtime Database
+    // Якщо таймер зупинено або завершено, очищуємо локальний стан
+    if (data.isRunning === false || data.endTime) {
+      clearTimerState();
+      return;
+    }
+
+    // Оновлюємо стан в localStorage тільки якщо таймер активний
     const currentState = getTimerState();
-    if (currentState?.id === id) {
+    if (currentState?.id === id && data.isRunning) {
       const updatedEntry = {
         ...currentState,
         ...data,
         lastUpdate: new Date(),
         lastPauseTime: null
       };
-
-      if (data.isRunning === false) {
-        clearTimerState();
-      } else {
-        saveTimerState(updatedEntry);
-      }
+      saveTimerState(updatedEntry);
     }
   } catch (error) {
     console.error('Error updating time entry:', error);
