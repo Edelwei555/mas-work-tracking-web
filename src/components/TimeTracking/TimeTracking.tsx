@@ -261,7 +261,7 @@ const TimeTracking: React.FC = () => {
   };
 
   const handleStop = async () => {
-    if (!currentEntry) return;
+    if (!currentEntry || !currentUser) return;
 
     try {
       setLoading(true);
