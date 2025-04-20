@@ -10,8 +10,7 @@ import {
   doc
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import type { TimeEntry } from '../types';
-import { updateTimerState } from './timerSync';
+import { TimeEntry } from '../types';
 
 interface FirestoreTimeEntry {
   userId: string;
@@ -96,7 +95,6 @@ export const saveTimeEntry = async (timeEntry: Omit<TimeEntry, 'createdAt' | 'la
     // Зберігаємо стан таймера в localStorage і синхронізуємо через Realtime Database
     if (timeEntry.isRunning) {
       saveTimerState(fullEntry);
-      await updateTimerState(timeEntry.userId, fullEntry);
     }
 
     return id;
@@ -141,10 +139,8 @@ export const updateTimeEntry = async (id: string, data: Partial<TimeEntry>) => {
 
       if (data.isRunning === false) {
         clearTimerState();
-        await updateTimerState(currentState.userId, null);
       } else {
         saveTimerState(updatedEntry);
-        await updateTimerState(currentState.userId, updatedEntry);
       }
     }
   } catch (error) {
@@ -178,7 +174,6 @@ export const getCurrentTimeEntry = async (userId: string, teamId: string): Promi
     const querySnapshot = await getDocs(q);
     if (querySnapshot.empty) {
       clearTimerState();
-      await updateTimerState(userId, null);
       return null;
     }
 
@@ -198,7 +193,6 @@ export const getCurrentTimeEntry = async (userId: string, teamId: string): Promi
     // Оновлюємо локальний стан і синхронізуємо через Realtime Database
     if (timeEntry.isRunning) {
       saveTimerState(timeEntry);
-      await updateTimerState(userId, timeEntry);
     }
 
     return timeEntry;
