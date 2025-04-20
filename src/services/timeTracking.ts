@@ -10,7 +10,7 @@ import {
   doc
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import { TimeEntry } from '../types/timeEntry';
+import type { TimeEntry } from '../types/timeEntry';
 
 interface FirestoreTimeEntry {
   userId: string;
