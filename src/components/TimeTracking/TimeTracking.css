@@ -8,6 +8,7 @@
 .time-tracking h2 {
   margin-bottom: 2rem;
   color: #333;
+  font-size: 1.5rem;
 }
 
 .time-tracking-form {
@@ -23,6 +24,7 @@
   display: block;
   margin-bottom: 0.5rem;
   color: #666;
+  font-weight: 500;
 }
 
 .form-group select,
@@ -32,6 +34,14 @@
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 1rem;
+  background-color: white;
+}
+
+.form-group select:focus,
+.form-group input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
 
 .form-group select:disabled {
@@ -40,19 +50,20 @@
 }
 
 .timer-display {
-  font-size: 3rem;
+  font-size: 4rem;
   font-weight: bold;
   text-align: center;
   margin: 2rem 0;
   font-family: monospace;
   color: #333;
+  letter-spacing: 2px;
 }
 
 .timer-controls {
   display: flex;
   gap: 1rem;
   justify-content: center;
-  margin-bottom: 2rem;
+  margin: 2rem 0;
 }
 
 .btn-primary,
@@ -63,8 +74,10 @@
   border: none;
   border-radius: 4px;
   font-size: 1rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
+  min-width: 120px;
 }
 
 .btn-primary {
@@ -72,8 +85,9 @@
   color: white;
 }
 
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
   background-color: #0056b3;
+  transform: translateY(-1px);
 }
 
 .btn-warning {
@@ -81,8 +95,9 @@
   color: #333;
 }
 
-.btn-warning:hover {
+.btn-warning:hover:not(:disabled) {
   background-color: #e0a800;
+  transform: translateY(-1px);
 }
 
 .btn-danger {
@@ -90,8 +105,9 @@
   color: white;
 }
 
-.btn-danger:hover {
+.btn-danger:hover:not(:disabled) {
   background-color: #c82333;
+  transform: translateY(-1px);
 }
 
 .btn-success {
@@ -99,13 +115,15 @@
   color: white;
 }
 
-.btn-success:hover {
+.btn-success:hover:not(:disabled) {
   background-color: #218838;
+  transform: translateY(-1px);
 }
 
 button:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+  transform: none !important;
 }
 
 .work-amount-form {
@@ -117,6 +135,7 @@ button:disabled {
 .unit {
   margin-left: 0.5rem;
   color: #666;
+  font-weight: 500;
 }
 
 .form-group input[type="number"] {
@@ -128,9 +147,10 @@ button:disabled {
   background-color: #f8d7da;
   border: 1px solid #f5c6cb;
   border-radius: 4px;
-  padding: 10px;
-  margin-bottom: 15px;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
   text-align: center;
+  font-weight: 500;
 }
 
 .success-message {
@@ -138,7 +158,8 @@ button:disabled {
   background-color: #d4edda;
   border: 1px solid #c3e6cb;
   border-radius: 4px;
-  padding: 10px;
-  margin-bottom: 15px;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
   text-align: center;
+  font-weight: 500;
 } 
