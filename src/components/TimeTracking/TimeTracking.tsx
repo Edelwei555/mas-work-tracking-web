@@ -5,7 +5,7 @@ import { WorkType, getTeamWorkTypes } from '../../services/workTypes';
 import { Location, getTeamLocations } from '../../services/locations';
 import { TimeEntry, saveTimeEntry } from '../../services/timeTracking';
 import { getUserTeams } from '../../services/teams';
-import { subscribeToTimer } from '../../services/timerSync';
+import { subscribeToTimer, updateTimerState } from '../../services/timerSync';
 import { useSelector } from 'react-redux';
 import { 
   startTimer, 
@@ -167,7 +167,6 @@ const TimeTracking: React.FC = () => {
   useEffect(() => {
     if (!currentUser) return;
 
-    // Підписуємось на зміни таймера
     const unsubscribe = subscribeToTimer(currentUser.uid, (entry) => {
       if (!entry) {
         // Якщо запис видалено, скидаємо стан
@@ -186,7 +185,7 @@ const TimeTracking: React.FC = () => {
         const now = new Date();
         const start = new Date(entry.startTime);
         const pausedTime = entry.pausedTime || 0;
-        const elapsed = Math.max(0, now.getTime() - start.getTime() + pausedTime);
+        const elapsed = Math.max(0, now.getTime() - start.getTime() - pausedTime);
         
         dispatch(updateElapsedTime(elapsed));
       }
@@ -194,6 +193,14 @@ const TimeTracking: React.FC = () => {
 
     return () => unsubscribe();
   }, [currentUser, dispatch]);
+
+  // Оновлення стану таймера при зміні
+  useEffect(() => {
+    if (!currentUser || !currentEntry) return;
+
+    // Оновлюємо стан в Firebase при зміні currentEntry
+    updateTimerState(currentUser.uid, currentEntry);
+  }, [currentUser, currentEntry]);
 
   const formatTime = (ms: number): string => {
     // Перевіряємо чи ms є коректним числом
@@ -254,13 +261,23 @@ const TimeTracking: React.FC = () => {
   };
 
   const handleStop = async () => {
-    if (!currentEntry || !currentUser || !teamId) return;
+    if (!currentEntry) return;
 
     try {
-      await dispatch(stopTimer(currentEntry)).unwrap();
+      setLoading(true);
+      setError('');
+
+      // Зупиняємо таймер
+      const stoppedEntry = await dispatch(stopTimer(currentEntry)).unwrap();
+      
+      // Оновлюємо стан в Firebase
+      await updateTimerState(currentUser.uid, stoppedEntry);
+      
     } catch (err) {
       console.error('Error stopping timer:', err);
       setError(t('timeTracking.error'));
+    } finally {
+      setLoading(false);
     }
   };
 

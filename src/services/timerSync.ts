@@ -1,6 +1,15 @@
 import { getDatabase, ref, onValue, set, off } from 'firebase/database';
 import { TimeEntry } from './timeTracking';
 
+interface TimerState {
+  entry: TimeEntry | null;
+  lastUpdate: number;
+  deviceId: string;
+}
+
+// Генеруємо унікальний ID для пристрою
+const deviceId = Math.random().toString(36).substring(2);
+
 // Функція для отримання референсу на таймер користувача
 const getTimerRef = (userId: string) => {
   const db = getDatabase();
@@ -15,8 +24,14 @@ export const subscribeToTimer = (
   const timerRef = getTimerRef(userId);
   
   onValue(timerRef, (snapshot) => {
-    const data = snapshot.val();
-    callback(data);
+    const data = snapshot.val() as TimerState | null;
+    
+    // Ігноруємо оновлення від поточного пристрою
+    if (data && data.deviceId === deviceId) {
+      return;
+    }
+    
+    callback(data?.entry || null);
   });
 
   // Повертаємо функцію для відписки
@@ -29,5 +44,11 @@ export const updateTimerState = async (
   entry: TimeEntry | null
 ) => {
   const timerRef = getTimerRef(userId);
-  await set(timerRef, entry);
+  const state: TimerState = {
+    entry,
+    lastUpdate: Date.now(),
+    deviceId
+  };
+  
+  await set(timerRef, state);
 }; 
