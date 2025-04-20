@@ -1,4 +1,4 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, Auth, connectAuthEmulator } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
@@ -55,7 +55,8 @@ console.log('Перевірка змінних оточення:', {
 });
 
 console.log('Ініціалізація Firebase...');
-const app = initializeApp(firebaseConfig);
+// Перевіряємо чи вже є ініціалізований екземпляр
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 console.log('Firebase успішно ініціалізовано');
 
 console.log('Ініціалізація Auth...');
