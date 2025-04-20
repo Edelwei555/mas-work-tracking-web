@@ -3,6 +3,7 @@ import { getAuth, Auth, connectAuthEmulator } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 import { getDatabase } from 'firebase/database';
+import { ref, onValue } from 'firebase/database';
 
 // Перевіряємо наявність всіх необхідних конфігурацій
 const requiredConfigs = [
@@ -22,7 +23,7 @@ const firebaseConfig = {
   storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.REACT_APP_FIREBASE_APP_ID,
-  databaseURL: process.env.REACT_APP_FIREBASE_DATABASE_URL || 'https://mas-work-tracking-8c9b9-default-rtdb.firebaseio.com'
+  databaseURL: process.env.REACT_APP_FIREBASE_DATABASE_URL?.trim() || 'https://mas-work-tracking-8c9b9-default-rtdb.firebaseio.com'
 };
 
 const missingConfigs = requiredConfigs.filter(
@@ -83,6 +84,18 @@ console.log('Firestore сервіс ініціалізовано');
 
 console.log('Ініціалізація Realtime Database...');
 const database = getDatabase(app);
+
+// Перевіряємо підключення до бази даних
+try {
+  const testRef = ref(database, '.info/connected');
+  onValue(testRef, (snapshot) => {
+    const connected = snapshot.val();
+    console.log('Realtime Database connection status:', connected ? 'connected' : 'disconnected');
+  });
+} catch (error) {
+  console.error('Error checking Realtime Database connection:', error);
+}
+
 console.log('Realtime Database сервіс ініціалізовано');
 
 console.log('Ініціалізація Functions...');

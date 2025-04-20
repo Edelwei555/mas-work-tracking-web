@@ -21,21 +21,31 @@ export const subscribeToTimer = (
   userId: string, 
   callback: (entry: TimeEntry | null) => void
 ) => {
-  const timerRef = getTimerRef(userId);
-  
-  onValue(timerRef, (snapshot) => {
-    const data = snapshot.val() as TimerState | null;
+  try {
+    const timerRef = getTimerRef(userId);
     
-    // Ігноруємо оновлення від поточного пристрою
-    if (data && data.deviceId === deviceId) {
-      return;
-    }
-    
-    callback(data?.entry || null);
-  });
+    onValue(timerRef, (snapshot) => {
+      try {
+        const data = snapshot.val() as TimerState | null;
+        
+        // Ігноруємо оновлення від поточного пристрою
+        if (data && data.deviceId === deviceId) {
+          return;
+        }
+        
+        console.log('Received timer update:', data);
+        callback(data?.entry || null);
+      } catch (error) {
+        console.error('Error processing timer update:', error);
+      }
+    });
 
-  // Повертаємо функцію для відписки
-  return () => off(timerRef);
+    // Повертаємо функцію для відписки
+    return () => off(timerRef);
+  } catch (error) {
+    console.error('Error subscribing to timer:', error);
+    return () => {};
+  }
 };
 
 // Функція для оновлення стану таймера
@@ -43,12 +53,18 @@ export const updateTimerState = async (
   userId: string, 
   entry: TimeEntry | null
 ) => {
-  const timerRef = getTimerRef(userId);
-  const state: TimerState = {
-    entry,
-    lastUpdate: Date.now(),
-    deviceId
-  };
-  
-  await set(timerRef, state);
+  try {
+    const timerRef = getTimerRef(userId);
+    const state: TimerState = {
+      entry,
+      lastUpdate: Date.now(),
+      deviceId
+    };
+    
+    await set(timerRef, state);
+    console.log('Timer state updated successfully:', state);
+  } catch (error) {
+    console.error('Error updating timer state:', error);
+    throw error;
+  }
 }; 
