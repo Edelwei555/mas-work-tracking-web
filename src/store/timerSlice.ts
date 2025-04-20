@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { saveTimeEntry, updateTimeEntry, getCurrentTimeEntry } from '../services/timeTracking';
 import { TimeEntry } from '../types';
-import { updateTimerState } from '../services/timerSync';
 import { PayloadAction } from '@reduxjs/toolkit';
 
 interface TimerState {
@@ -23,14 +22,12 @@ export const startTimer = createAsyncThunk(
   async (timeEntry: Omit<TimeEntry, 'createdAt' | 'lastUpdate' | 'id'>) => {
     const id = await saveTimeEntry(timeEntry);
     const now = new Date();
-    const entry = { 
+    return { 
       ...timeEntry, 
       id,
       createdAt: now,
       lastUpdate: now
     };
-    await updateTimerState(timeEntry.userId, entry);
-    return entry;
   }
 );
 
@@ -50,7 +47,6 @@ export const pauseTimer = createAsyncThunk(
     };
 
     await updateTimeEntry(timeEntry.id!, updatedEntry);
-    await updateTimerState(timeEntry.userId, updatedEntry);
     return updatedEntry;
   }
 );
@@ -67,7 +63,6 @@ export const resumeTimer = createAsyncThunk(
     };
 
     await updateTimeEntry(timeEntry.id!, updatedEntry);
-    await updateTimerState(timeEntry.userId, updatedEntry);
     return updatedEntry;
   }
 );
@@ -83,7 +78,6 @@ export const stopTimer = createAsyncThunk(
     };
     
     await updateTimeEntry(entry.id!, updatedEntry);
-    await updateTimerState(entry.userId, updatedEntry);
     return updatedEntry;
   }
 );
@@ -91,11 +85,7 @@ export const stopTimer = createAsyncThunk(
 export const fetchCurrentTimer = createAsyncThunk(
   'timer/fetchCurrent',
   async ({ userId, teamId }: { userId: string; teamId: string }) => {
-    const entry = await getCurrentTimeEntry(userId, teamId);
-    if (entry) {
-      await updateTimerState(userId, entry);
-    }
-    return entry;
+    return await getCurrentTimeEntry(userId, teamId);
   }
 );
 
@@ -197,7 +187,7 @@ const timerSlice = createSlice({
           }
         }
       });
-  },
+  }
 });
 
 export const { updateElapsedTime, resetTimer } = timerSlice.actions;
