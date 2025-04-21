@@ -27,12 +27,16 @@ const prepareData = (
     const location = locations.find(l => l.id === entry.locationId);
     const workType = workTypes.find(w => w.id === entry.workTypeId);
     
+    const timeSpent = entry.endTime 
+      ? Math.round((entry.endTime.getTime() - entry.startTime.getTime()) / 1000 / 60)
+      : 0;
+
     return {
       date: entry.startTime.toLocaleDateString(),
       worker: member?.displayName || member?.email || '',
       location: location?.name || '',
       workType: workType?.name || '',
-      timeSpent: Math.round((entry.endTime!.getTime() - entry.startTime.getTime()) / 1000 / 60),
+      timeSpent: timeSpent,
       workAmount: entry.workAmount || 0
     };
   });

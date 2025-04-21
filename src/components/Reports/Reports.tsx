@@ -376,8 +376,12 @@ const Reports: React.FC = () => {
                     <td>{member?.displayName || member?.email}</td>
                     <td>{location?.name}</td>
                     <td>{workType?.name}</td>
-                    <td>{Math.round((entry.endTime!.getTime() - entry.startTime.getTime()) / 1000 / 60)} хв</td>
-                    <td>{entry.workAmount}</td>
+                    <td>
+                      {entry.endTime 
+                        ? Math.round((entry.endTime.getTime() - entry.startTime.getTime()) / 1000 / 60)
+                        : '-'} хв
+                    </td>
+                    <td>{entry.workAmount || '-'}</td>
                   </tr>
                 );
               })}
