@@ -121,14 +121,8 @@ const timerSlice = createSlice({
         state.error = action.error.message || 'Failed to start timer';
       })
       .addCase(pauseTimer.fulfilled, (state, action) => {
-        if (state.currentEntry) {
-          state.currentEntry = {
-            ...state.currentEntry,
-            ...action.payload,
-            isRunning: false,
-            pausedTime: action.payload.pausedTime
-          };
-        }
+        state.currentEntry = action.payload;
+        state.elapsedTime = action.payload.duration || 0;
       })
       .addCase(resumeTimer.fulfilled, (state, action) => {
         if (state.currentEntry) {
@@ -146,7 +140,7 @@ const timerSlice = createSlice({
       .addCase(stopTimer.fulfilled, (state, action) => {
         state.isLoading = false;
         state.currentEntry = action.payload;
-        state.elapsedTime = action.payload ? Math.max(0, new Date().getTime() - new Date(action.payload.startTime).getTime() - (action.payload.pausedTime || 0)) : 0;
+        state.elapsedTime = action.payload.duration || 0;
       })
       .addCase(stopTimer.rejected, (state, action) => {
         state.isLoading = false;
@@ -155,7 +149,7 @@ const timerSlice = createSlice({
       .addCase(fetchCurrentTimer.fulfilled, (state, action) => {
         const entry = action.payload;
         
-        if (!entry || entry.endTime) {
+        if (!entry) {
           state.currentEntry = null;
           state.elapsedTime = 0;
           return;
@@ -168,6 +162,8 @@ const timerSlice = createSlice({
           const start = new Date(entry.startTime);
           const pausedTime = entry.pausedTime || 0;
           state.elapsedTime = Math.max(0, now.getTime() - start.getTime() - pausedTime);
+        } else {
+          state.elapsedTime = entry.duration || 0;
         }
       });
   }
