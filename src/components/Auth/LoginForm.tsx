@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TextField, Button, Typography, Alert, Link } from '@mui/material';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth, signInWithGoogle } from '../../services/firebase';
+import { auth } from '../../firebase';
+import { signInWithGoogle } from '../../services/auth';
 import GoogleIcon from '@mui/icons-material/Google';
 import './Auth.css';
 

@@ -4,7 +4,9 @@ import {
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
   onAuthStateChanged,
-  User
+  User,
+  GoogleAuthProvider,
+  signInWithPopup
 } from 'firebase/auth';
 import { doc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { createTeamMember } from './teamMembers';
@@ -45,6 +47,17 @@ export const signOut = async () => {
     await firebaseSignOut(auth);
   } catch (error) {
     console.error('Error signing out:', error);
+    throw error;
+  }
+};
+
+export const signInWithGoogle = async () => {
+  try {
+    const provider = new GoogleAuthProvider();
+    const result = await signInWithPopup(auth, provider);
+    return result.user;
+  } catch (error) {
+    console.error('Error signing in with Google:', error);
     throw error;
   }
 };
