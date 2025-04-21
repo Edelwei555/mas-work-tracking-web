@@ -24,7 +24,7 @@ interface FirestoreTimeEntry {
   workAmount: number;
   isRunning: boolean;
   duration: number;
-  lastPauseTime: null;
+  lastPauseTime: Timestamp | null;
   createdAt: Timestamp;
   lastUpdate: Timestamp;
 }
@@ -132,7 +132,11 @@ export const updateTimeEntry = async (id: string, data: Partial<TimeEntry>) => {
     if (data.endTime) {
       updateData.endTime = Timestamp.fromDate(data.endTime);
     }
-    updateData.lastPauseTime = null;
+    if (data.lastPauseTime) {
+      updateData.lastPauseTime = Timestamp.fromDate(data.lastPauseTime);
+    } else if (data.lastPauseTime === null) {
+      updateData.lastPauseTime = null;
+    }
 
     // Якщо запис зупиняється, встановлюємо всі необхідні поля
     if (data.isRunning === false) {
@@ -160,7 +164,7 @@ export const updateTimeEntry = async (id: string, data: Partial<TimeEntry>) => {
         startTime: data.startTime || currentData.startTime.toDate(),
         endTime: data.endTime || null,
         lastUpdate: new Date(),
-        lastPauseTime: null,
+        lastPauseTime: data.lastPauseTime || null,
         createdAt: currentData.createdAt.toDate()
       } as TimeEntry;
       saveTimerState(updatedEntry);
