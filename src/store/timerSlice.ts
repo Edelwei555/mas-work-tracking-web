@@ -51,12 +51,16 @@ export const pauseTimer = createAsyncThunk(
     }
 
     const now = new Date();
+    const startTime = new Date(currentEntry.startTime);
+    const currentPausedTime = currentEntry.pausedTime || 0;
+    const elapsedTime = Math.floor((now.getTime() - startTime.getTime()) / 1000);
     const lastPauseTime = now;
 
     // Оновлюємо в базі даних
     await updateTimeEntry(currentEntry.id, {
       isRunning: false,
       lastPauseTime,
+      pausedTime: currentPausedTime,
       lastUpdate: now
     });
 
@@ -65,6 +69,7 @@ export const pauseTimer = createAsyncThunk(
       ...currentEntry,
       isRunning: false,
       lastPauseTime,
+      pausedTime: currentPausedTime,
       lastUpdate: now
     };
   }

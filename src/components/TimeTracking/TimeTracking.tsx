@@ -45,12 +45,14 @@ const TimeTracking: React.FC = () => {
         if (currentEntry?.isRunning) {
           const now = new Date();
           const start = new Date(currentEntry.startTime);
-          const timeDiffInSeconds = Math.floor((now.getTime() - start.getTime()) / 1000);
-          const pausedTimeInSeconds = Math.floor((currentEntry.pausedTime || 0) / 1000);
-          const elapsed = timeDiffInSeconds - pausedTimeInSeconds;
+          const pausedTime = currentEntry.pausedTime || 0;
+          let elapsedTime = Math.floor((now.getTime() - start.getTime()) / 1000);
+          
+          // Віднімаємо час паузи
+          elapsedTime = Math.max(0, elapsedTime - pausedTime);
           
           if (mounted) {
-            dispatch(updateElapsedTime(elapsed));
+            dispatch(updateElapsedTime(elapsedTime));
           }
         }
       } catch (err) {
