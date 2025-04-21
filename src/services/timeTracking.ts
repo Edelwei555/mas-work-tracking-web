@@ -117,15 +117,19 @@ export const updateTimeEntry = async (id: string, data: Partial<TimeEntry>) => {
 
     const currentData = docSnap.data() as FirestoreTimeEntry;
     
+    // Створюємо базовий об'єкт оновлення
     const updateData: Partial<FirestoreTimeEntry> = {
-      ...Object.fromEntries(
-        Object.entries(data).filter(([key]) => 
-          !['startTime', 'endTime', 'lastPauseTime', 'createdAt', 'lastUpdate'].includes(key)
-        )
-      ),
       lastUpdate: Timestamp.now()
     };
+
+    // Копіюємо всі поля, крім дат
+    Object.entries(data).forEach(([key, value]) => {
+      if (!['startTime', 'endTime', 'lastPauseTime', 'createdAt', 'lastUpdate'].includes(key)) {
+        (updateData as any)[key] = value;
+      }
+    });
     
+    // Конвертуємо дати в Timestamp
     if (data.startTime) {
       updateData.startTime = Timestamp.fromDate(data.startTime);
     }
@@ -134,7 +138,7 @@ export const updateTimeEntry = async (id: string, data: Partial<TimeEntry>) => {
     }
     if (data.lastPauseTime) {
       updateData.lastPauseTime = Timestamp.fromDate(data.lastPauseTime);
-    } else if (data.lastPauseTime === null) {
+    } else if (data.hasOwnProperty('lastPauseTime')) {
       updateData.lastPauseTime = null;
     }
 

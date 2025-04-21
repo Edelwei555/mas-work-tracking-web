@@ -46,11 +46,12 @@ export const pauseTimer = createAsyncThunk(
     const now = new Date();
     
     // Спочатку оновлюємо в базі даних
-    await updateTimeEntry(timeEntry.id!, {
+    const updateData: Partial<TimeEntry> = {
       isRunning: false,
       lastPauseTime: now,
       lastUpdate: now
-    });
+    };
+    await updateTimeEntry(timeEntry.id!, updateData);
 
     // Потім повертаємо повний оновлений об'єкт
     return {
@@ -75,12 +76,13 @@ export const resumeTimer = createAsyncThunk(
     }
 
     // Спочатку оновлюємо в базі даних
-    await updateTimeEntry(timeEntry.id!, {
+    const updateData: Partial<TimeEntry> = {
       isRunning: true,
       pausedTime: totalPausedTime,
       lastPauseTime: null,
       lastUpdate: now
-    });
+    };
+    await updateTimeEntry(timeEntry.id!, updateData);
 
     // Потім повертаємо повний оновлений об'єкт
     return {
@@ -110,13 +112,14 @@ export const stopTimer = createAsyncThunk(
     const duration = Math.max(0, elapsedTime - totalPausedTime);
     
     // Спочатку оновлюємо в базі даних
-    await updateTimeEntry(entry.id!, {
+    const updateData: Partial<TimeEntry> = {
       isRunning: false,
       endTime: now,
       lastUpdate: now,
       pausedTime: totalPausedTime,
       duration
-    });
+    };
+    await updateTimeEntry(entry.id!, updateData);
 
     // Потім повертаємо повний оновлений об'єкт
     return {
