@@ -43,7 +43,8 @@ export const pauseTimer = createAsyncThunk(
       ...timeEntry,
       isRunning: false,
       pausedTime: totalPausedTime,
-      lastPauseTime: null
+      lastPauseTime: null,
+      endTime: null
     };
 
     await updateTimeEntry(timeEntry.id!, updatedEntry);
@@ -71,12 +72,15 @@ export const stopTimer = createAsyncThunk(
   'timer/stopTimer',
   async (entry: TimeEntry) => {
     const now = new Date();
+    const startTime = new Date(entry.startTime);
+    const duration = Math.floor((now.getTime() - startTime.getTime() - (entry.pausedTime || 0)) / 1000);
+    
     const updatedEntry = {
       ...entry,
       isRunning: false,
-      endTime: null,
+      endTime: now,
       lastUpdate: now,
-      duration: Math.max(0, now.getTime() - new Date(entry.startTime).getTime() - (entry.pausedTime || 0))
+      duration
     };
     
     await updateTimeEntry(entry.id!, updatedEntry);
@@ -87,7 +91,30 @@ export const stopTimer = createAsyncThunk(
 export const fetchCurrentTimer = createAsyncThunk(
   'timer/fetchCurrent',
   async ({ userId, teamId }: { userId: string; teamId: string }) => {
-    return await getCurrentTimeEntry(userId, teamId);
+    const entry = await getCurrentTimeEntry(userId, teamId);
+    
+    if (!entry) {
+      return null;
+    }
+
+    // Перевіряємо, чи запис не застарів (більше 24 годин)
+    const now = new Date();
+    const startTime = new Date(entry.startTime);
+    const timeSinceStart = now.getTime() - startTime.getTime();
+    
+    if (timeSinceStart > 24 * 60 * 60 * 1000) { // 24 години
+      // Автоматично зупиняємо застарілий запис
+      const updatedEntry = {
+        ...entry,
+        isRunning: false,
+        endTime: now,
+        lastUpdate: now
+      };
+      await updateTimeEntry(entry.id!, updatedEntry);
+      return null;
+    }
+
+    return entry;
   }
 );
 
@@ -96,7 +123,9 @@ const timerSlice = createSlice({
   initialState,
   reducers: {
     updateElapsedTime: (state, action: PayloadAction<number>) => {
-      state.elapsedTime = action.payload;
+      if (state.currentEntry?.isRunning) {
+        state.elapsedTime = action.payload;
+      }
     },
     resetTimer: (state) => {
       state.currentEntry = null;
@@ -122,10 +151,14 @@ const timerSlice = createSlice({
       })
       .addCase(pauseTimer.fulfilled, (state, action) => {
         state.currentEntry = action.payload;
-        state.elapsedTime = action.payload.duration || 0;
+        const now = new Date();
+        const start = new Date(action.payload.startTime);
+        const pausedTime = action.payload.pausedTime || 0;
+        state.elapsedTime = Math.floor((now.getTime() - start.getTime() - pausedTime) / 1000);
       })
       .addCase(resumeTimer.fulfilled, (state, action) => {
         state.currentEntry = action.payload;
+        state.elapsedTime = 0;
       })
       .addCase(stopTimer.pending, (state) => {
         state.isLoading = true;
@@ -149,26 +182,18 @@ const timerSlice = createSlice({
           return;
         }
 
-        // Перевіряємо, чи запис не застарів (більше 24 годин)
-        const now = new Date();
-        const startTime = new Date(entry.startTime);
-        const timeSinceStart = now.getTime() - startTime.getTime();
-        
-        if (timeSinceStart > 24 * 60 * 60 * 1000) { // 24 години
-          state.currentEntry = null;
-          state.elapsedTime = 0;
-          return;
-        }
-
-        if (!entry.isRunning) {
-          state.currentEntry = null;
-          state.elapsedTime = 0;
-          return;
-        }
-
         state.currentEntry = entry;
-        const pausedTime = entry.pausedTime || 0;
-        state.elapsedTime = Math.max(0, timeSinceStart - pausedTime);
+        
+        if (entry.isRunning) {
+          const now = new Date();
+          const start = new Date(entry.startTime);
+          const pausedTime = entry.pausedTime || 0;
+          state.elapsedTime = Math.floor((now.getTime() - start.getTime() - pausedTime) / 1000);
+        } else if (entry.duration) {
+          state.elapsedTime = entry.duration;
+        } else {
+          state.elapsedTime = 0;
+        }
       });
   }
 });

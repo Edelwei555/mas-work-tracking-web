@@ -9,7 +9,7 @@ import {
   Select, 
   MenuItem 
 } from '@mui/material';
-import { startTimer, stopTimer, pauseTimer, resumeTimer } from '../../store/timerSlice';
+import { startTimer, stopTimer, pauseTimer, resumeTimer, resetTimer, updateElapsedTime } from '../../store/timerSlice';
 import { saveTimeEntry } from '../../services/timeTracking';
 import { TimeEntry } from '../../types/timeEntry';
 import WorkAmountDialog from './WorkAmountDialog';
@@ -29,6 +29,26 @@ const TimeTracking: React.FC = () => {
   const [locations, setLocations] = useState<Location[]>([]);
   const [selectedWorkType, setSelectedWorkType] = useState<string>('');
   const [selectedLocation, setSelectedLocation] = useState<string>('');
+
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+
+    if (currentEntry?.isRunning) {
+      intervalId = setInterval(() => {
+        const now = new Date();
+        const start = new Date(currentEntry.startTime);
+        const pausedTime = currentEntry.pausedTime || 0;
+        const elapsed = Math.floor((now.getTime() - start.getTime() - pausedTime) / 1000);
+        dispatch(updateElapsedTime(elapsed));
+      }, 1000);
+    }
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [currentEntry, dispatch]);
 
   useEffect(() => {
     const loadTeam = async () => {
@@ -61,6 +81,8 @@ const TimeTracking: React.FC = () => {
   }, [teamId]);
   
   const formatTime = (time: number) => {
+    if (!time && time !== 0) return '00:00:00';
+    
     const hours = Math.floor(time / 3600);
     const minutes = Math.floor((time % 3600) / 60);
     const seconds = time % 60;
@@ -119,6 +141,7 @@ const TimeTracking: React.FC = () => {
       setShowWorkAmountDialog(false);
       setSelectedWorkType('');
       setSelectedLocation('');
+      dispatch(resetTimer());
     }
   };
 
