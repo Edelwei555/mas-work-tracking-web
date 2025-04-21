@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { collection, query, where, getDocs, doc, deleteDoc } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 
 interface TeamMember {

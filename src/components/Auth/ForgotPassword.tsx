@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { sendPasswordResetEmail } from 'firebase/auth';
-import { auth } from '../../config/firebase';
+import { auth } from '../../firebase';
 import { TextField, Button, Typography, Alert } from '@mui/material';
 import './Auth.css';
 

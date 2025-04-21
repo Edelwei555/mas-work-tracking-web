@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, where, getDocs, doc, deleteDoc, onSnapshot } from 'firebase/firestore';
-import { db } from '../../config/firebase';
+import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { TextField, Button, List, ListItem, ListItemText, ListItemSecondaryAction, IconButton } from '@mui/material';
@@ -9,7 +9,7 @@ import EmailIcon from '@mui/icons-material/Email';
 import { sendTeamInvitation } from '../../services/teams';
 import './TeamMembers.css';
 import { useParams } from 'react-router-dom';
-import { auth } from '../../config/firebase';
+import { auth } from '../../firebase';
 import { updateTeamMemberRole, removeTeamMember } from '../../services/teamMembers';
 
 interface TeamMembersProps {
