@@ -137,10 +137,12 @@ const TimeTracking: React.FC = () => {
       try {
         const result = await dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId })).unwrap();
         
-        // Якщо таймер був зупинений
-        if (currentEntry?.isRunning && (!result || !result.isRunning)) {
-          setWorkAmount('');
-          dispatch(resetTimer());
+        // Якщо таймер був зупинений або не існує
+        if (!result || !result.isRunning) {
+          if (currentEntry?.isRunning) {
+            setWorkAmount('');
+            dispatch(resetTimer());
+          }
         }
       } catch (error) {
         console.error('Error syncing timer:', error);
@@ -152,7 +154,7 @@ const TimeTracking: React.FC = () => {
 
     // Встановлюємо інтервал синхронізації
     if (currentUser && teamId) {
-      syncInterval = setInterval(syncTimer, 3000);
+      syncInterval = setInterval(syncTimer, 10000); // Збільшуємо інтервал до 10 секунд
     }
 
     return () => {
@@ -181,6 +183,9 @@ const TimeTracking: React.FC = () => {
           console.error('Error updating elapsed time:', error);
         }
       }, 1000);
+    } else {
+      // Якщо таймер не активний, скидаємо стан
+      dispatch(resetTimer());
     }
 
     return () => {
@@ -273,12 +278,13 @@ const TimeTracking: React.FC = () => {
     if (!currentEntry) return;
 
     try {
-      setError('');
+      setLoading(true);
       await dispatch(pauseTimer(currentEntry)).unwrap();
-      setSuccess(t('timeTracking.paused'));
     } catch (err) {
       console.error('Error pausing timer:', err);
-      setError(t('timeTracking.error'));
+      setError(t('timeTracking.pauseError'));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -297,12 +303,18 @@ const TimeTracking: React.FC = () => {
 
   const handleStop = async () => {
     if (!currentEntry) return;
-    
+
     try {
+      setLoading(true);
       await dispatch(stopTimer(currentEntry)).unwrap();
-      setSuccess(t('timeTracking.stopped'));
+      setWorkAmount('');
+      setSelectedWorkType('');
+      setSelectedLocation('');
     } catch (err) {
-      setError(getErrorMessage(err));
+      console.error('Error stopping timer:', err);
+      setError(t('timeTracking.stopError'));
+    } finally {
+      setLoading(false);
     }
   };
 

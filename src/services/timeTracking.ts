@@ -7,7 +7,8 @@ import {
   Timestamp,
   orderBy,
   updateDoc,
-  doc
+  doc,
+  getDoc
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { TimeEntry } from '../types';
@@ -107,6 +108,15 @@ export const saveTimeEntry = async (timeEntry: Omit<TimeEntry, 'createdAt' | 'la
 export const updateTimeEntry = async (id: string, data: Partial<TimeEntry>) => {
   try {
     const docRef = doc(db, 'timeEntries', id);
+    
+    // Спочатку отримуємо поточний запис
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists()) {
+      throw new Error('Time entry not found');
+    }
+
+    const currentData = docSnap.data() as FirestoreTimeEntry;
+    
     const updateData: Partial<FirestoreTimeEntry> = {
       ...Object.fromEntries(
         Object.entries(data).filter(([key]) => 
@@ -123,22 +133,35 @@ export const updateTimeEntry = async (id: string, data: Partial<TimeEntry>) => {
       updateData.endTime = Timestamp.fromDate(data.endTime);
     }
     updateData.lastPauseTime = null;
+
+    // Якщо запис зупиняється, встановлюємо всі необхідні поля
+    if (data.isRunning === false) {
+      updateData.isRunning = false;
+      updateData.endTime = Timestamp.now();
+      if (!updateData.duration) {
+        const now = new Date();
+        const start = currentData.startTime.toDate();
+        const pausedTime = currentData.pausedTime || 0;
+        updateData.duration = Math.max(0, now.getTime() - start.getTime() - pausedTime);
+      }
+    }
     
     await updateDoc(docRef, updateData);
 
     // Завжди очищуємо локальний стан при оновленні
     clearTimerState();
 
-    // Оновлюємо локальний стан тільки якщо таймер активний і не зупинений
-    if (data.isRunning === true && !data.endTime) {
+    // Оновлюємо локальний стан тільки якщо таймер активний
+    if (data.isRunning === true) {
       const updatedEntry = {
+        ...currentData,
         ...data,
         id,
-        startTime: data.startTime || new Date(),
+        startTime: data.startTime || currentData.startTime.toDate(),
         endTime: data.endTime || null,
         lastUpdate: new Date(),
         lastPauseTime: null,
-        createdAt: data.createdAt || new Date()
+        createdAt: currentData.createdAt.toDate()
       } as TimeEntry;
       saveTimerState(updatedEntry);
     }
@@ -188,18 +211,31 @@ export const getCurrentTimeEntry = async (userId: string, teamId: string): Promi
       return null;
     }
 
+    // Якщо запис не активний, повертаємо null
+    if (!data.isRunning) {
+      clearTimerState();
+      return null;
+    }
+
     const timeEntry: TimeEntry = {
       id: doc.id,
-      ...data,
+      userId: data.userId,
+      teamId: data.teamId,
+      workTypeId: data.workTypeId,
+      locationId: data.locationId,
       startTime: startTime,
       endTime: data.endTime ? data.endTime.toDate() : null,
+      pausedTime: data.pausedTime || 0,
+      workAmount: data.workAmount || 0,
+      isRunning: data.isRunning,
+      duration: data.duration || 0,
+      lastPauseTime: null,
       createdAt: data.createdAt.toDate(),
-      lastUpdate: data.lastUpdate.toDate(),
-      lastPauseTime: null
+      lastUpdate: data.lastUpdate.toDate()
     };
 
-    // Оновлюємо локальний стан тільки якщо запис активний і не застарів
-    if (timeEntry.isRunning && !timeEntry.endTime) {
+    // Оновлюємо локальний стан тільки якщо запис активний
+    if (timeEntry.isRunning) {
       saveTimerState(timeEntry);
     } else {
       clearTimerState();
