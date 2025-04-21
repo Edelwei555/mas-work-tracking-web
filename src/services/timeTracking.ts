@@ -64,12 +64,18 @@ export const clearTimerState = () => {
 
 export const saveTimeEntry = async (timeEntry: Omit<TimeEntry, 'createdAt' | 'lastUpdate' | 'id'>) => {
   try {
-    if (!(timeEntry.startTime instanceof Date) || isNaN(timeEntry.startTime.getTime())) {
+    // Перевіряємо та конвертуємо дати
+    const startTime = timeEntry.startTime instanceof Date ? timeEntry.startTime : new Date(timeEntry.startTime);
+    if (isNaN(startTime.getTime())) {
       throw new Error('Invalid startTime');
     }
 
-    if (timeEntry.endTime && (!(timeEntry.endTime instanceof Date) || isNaN(timeEntry.endTime.getTime()))) {
-      throw new Error('Invalid endTime');
+    let endTime = null;
+    if (timeEntry.endTime) {
+      endTime = timeEntry.endTime instanceof Date ? timeEntry.endTime : new Date(timeEntry.endTime);
+      if (isNaN(endTime.getTime())) {
+        throw new Error('Invalid endTime');
+      }
     }
 
     const timeEntriesRef = collection(db, 'timeEntries');
@@ -80,8 +86,8 @@ export const saveTimeEntry = async (timeEntry: Omit<TimeEntry, 'createdAt' | 'la
       teamId: timeEntry.teamId,
       workTypeId: timeEntry.workTypeId,
       locationId: timeEntry.locationId,
-      startTime: Timestamp.fromDate(timeEntry.startTime),
-      endTime: timeEntry.endTime ? Timestamp.fromDate(timeEntry.endTime) : null,
+      startTime: Timestamp.fromDate(startTime),
+      endTime: endTime ? Timestamp.fromDate(endTime) : null,
       pausedTime: timeEntry.pausedTime || 0,
       workAmount: timeEntry.workAmount || 0,
       isRunning: timeEntry.isRunning,
@@ -97,11 +103,13 @@ export const saveTimeEntry = async (timeEntry: Omit<TimeEntry, 'createdAt' | 'la
     const fullEntry = {
       ...timeEntry,
       id,
+      startTime,
+      endTime,
       createdAt: new Date(),
       lastUpdate: new Date()
     };
 
-    // Зберігаємо стан таймера в localStorage і синхронізуємо через Realtime Database
+    // Зберігаємо стан таймера в localStorage
     if (timeEntry.isRunning) {
       saveTimerState(fullEntry);
     } else {
