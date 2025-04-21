@@ -69,7 +69,7 @@ export const resumeTimer = createAsyncThunk(
 
 export const stopTimer = createAsyncThunk(
   'timer/stopTimer',
-  async (entry: TimeEntry) => {
+  async (entry: TimeEntry, { dispatch }) => {
     const now = new Date();
     const updatedEntry = {
       ...entry,
@@ -80,6 +80,7 @@ export const stopTimer = createAsyncThunk(
     };
     
     await updateTimeEntry(entry.id!, updatedEntry);
+    dispatch(resetTimer());
     return null;
   }
 );
@@ -149,18 +150,32 @@ const timerSlice = createSlice({
       .addCase(fetchCurrentTimer.fulfilled, (state, action) => {
         const entry = action.payload;
         
-        if (!entry || !entry.isRunning) {
+        if (!entry) {
+          state.currentEntry = null;
+          state.elapsedTime = 0;
+          return;
+        }
+
+        // Перевіряємо, чи запис не застарів (більше 24 годин)
+        const now = new Date();
+        const startTime = new Date(entry.startTime);
+        const timeSinceStart = now.getTime() - startTime.getTime();
+        
+        if (timeSinceStart > 24 * 60 * 60 * 1000) { // 24 години
+          state.currentEntry = null;
+          state.elapsedTime = 0;
+          return;
+        }
+
+        if (!entry.isRunning) {
           state.currentEntry = null;
           state.elapsedTime = 0;
           return;
         }
 
         state.currentEntry = entry;
-        
-        const now = new Date();
-        const start = new Date(entry.startTime);
         const pausedTime = entry.pausedTime || 0;
-        state.elapsedTime = Math.max(0, now.getTime() - start.getTime() - pausedTime);
+        state.elapsedTime = Math.max(0, timeSinceStart - pausedTime);
       });
   }
 });

@@ -122,26 +122,24 @@ export const updateTimeEntry = async (id: string, data: Partial<TimeEntry>) => {
     if (data.endTime) {
       updateData.endTime = Timestamp.fromDate(data.endTime);
     }
-    // lastPauseTime завжди null
     updateData.lastPauseTime = null;
     
     await updateDoc(docRef, updateData);
 
-    // Якщо таймер зупинено або завершено, очищуємо локальний стан
-    if (data.isRunning === false || data.endTime) {
-      clearTimerState();
-      return;
-    }
+    // Завжди очищуємо локальний стан при оновленні
+    clearTimerState();
 
-    // Оновлюємо стан в localStorage тільки якщо таймер активний
-    const currentState = getTimerState();
-    if (currentState?.id === id && data.isRunning) {
+    // Оновлюємо локальний стан тільки якщо таймер активний і не зупинений
+    if (data.isRunning === true && !data.endTime) {
       const updatedEntry = {
-        ...currentState,
         ...data,
+        id,
+        startTime: data.startTime || new Date(),
+        endTime: data.endTime || null,
         lastUpdate: new Date(),
-        lastPauseTime: null
-      };
+        lastPauseTime: null,
+        createdAt: data.createdAt || new Date()
+      } as TimeEntry;
       saveTimerState(updatedEntry);
     }
   } catch (error) {
@@ -162,6 +160,8 @@ export const getCurrentTimeEntry = async (userId: string, teamId: string): Promi
     );
 
     const querySnapshot = await getDocs(q);
+    
+    // Якщо немає активних записів, очищуємо локальний стан
     if (querySnapshot.empty) {
       clearTimerState();
       return null;
@@ -170,18 +170,36 @@ export const getCurrentTimeEntry = async (userId: string, teamId: string): Promi
     const doc = querySnapshot.docs[0];
     const data = doc.data() as FirestoreTimeEntry;
     
+    // Перевіряємо, чи запис не застарів
+    const now = new Date();
+    const startTime = data.startTime.toDate();
+    const timeSinceStart = now.getTime() - startTime.getTime();
+    
+    if (timeSinceStart > 24 * 60 * 60 * 1000) { // 24 години
+      clearTimerState();
+      
+      // Автоматично зупиняємо застарілий запис
+      await updateDoc(doc.ref, {
+        isRunning: false,
+        endTime: Timestamp.now(),
+        lastUpdate: Timestamp.now()
+      });
+      
+      return null;
+    }
+
     const timeEntry: TimeEntry = {
       id: doc.id,
       ...data,
-      startTime: data.startTime.toDate(),
+      startTime: startTime,
       endTime: data.endTime ? data.endTime.toDate() : null,
       createdAt: data.createdAt.toDate(),
       lastUpdate: data.lastUpdate.toDate(),
       lastPauseTime: null
     };
 
-    // Оновлюємо локальний стан тільки якщо запис активний
-    if (timeEntry.isRunning) {
+    // Оновлюємо локальний стан тільки якщо запис активний і не застарів
+    if (timeEntry.isRunning && !timeEntry.endTime) {
       saveTimerState(timeEntry);
     } else {
       clearTimerState();
@@ -190,6 +208,7 @@ export const getCurrentTimeEntry = async (userId: string, teamId: string): Promi
     return timeEntry;
   } catch (error) {
     console.error('Error getting current time entry:', error);
+    clearTimerState();
     throw error;
   }
 };
