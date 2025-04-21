@@ -20,10 +20,19 @@ const initialState: TimerState = {
 export const startTimer = createAsyncThunk(
   'timer/start',
   async (timeEntry: Omit<TimeEntry, 'createdAt' | 'lastUpdate' | 'id'>) => {
-    const id = await saveTimeEntry(timeEntry);
     const now = new Date();
+    const entry = {
+      ...timeEntry,
+      startTime: now,
+      endTime: null,
+      pausedTime: 0,
+      duration: 0,
+      lastPauseTime: null,
+      isRunning: true
+    };
+    const id = await saveTimeEntry(entry);
     return { 
-      ...timeEntry, 
+      ...entry, 
       id,
       createdAt: now,
       lastUpdate: now
@@ -35,16 +44,10 @@ export const pauseTimer = createAsyncThunk(
   'timer/pause',
   async (timeEntry: TimeEntry) => {
     const now = new Date();
-    const pausedTime = timeEntry.pausedTime || 0;
-    const additionalPausedTime = now.getTime() - new Date(timeEntry.startTime).getTime();
-    const totalPausedTime = pausedTime + additionalPausedTime;
-
     const updatedEntry = {
       ...timeEntry,
       isRunning: false,
-      pausedTime: totalPausedTime,
-      lastPauseTime: null,
-      endTime: null
+      lastPauseTime: now
     };
 
     await updateTimeEntry(timeEntry.id!, updatedEntry);
@@ -56,10 +59,18 @@ export const resumeTimer = createAsyncThunk(
   'timer/resume',
   async (timeEntry: TimeEntry) => {
     const now = new Date();
+    const lastPauseTime = timeEntry.lastPauseTime ? new Date(timeEntry.lastPauseTime) : null;
+    
+    // Додаємо час паузи до загального часу пауз
+    let totalPausedTime = timeEntry.pausedTime || 0;
+    if (lastPauseTime) {
+      totalPausedTime += Math.floor((now.getTime() - lastPauseTime.getTime()) / 1000);
+    }
+
     const updatedEntry = {
       ...timeEntry,
       isRunning: true,
-      startTime: now,
+      pausedTime: totalPausedTime,
       lastPauseTime: null
     };
 
@@ -73,13 +84,23 @@ export const stopTimer = createAsyncThunk(
   async (entry: TimeEntry) => {
     const now = new Date();
     const startTime = new Date(entry.startTime);
-    const duration = Math.floor((now.getTime() - startTime.getTime() - (entry.pausedTime || 0)) / 1000);
+    let totalPausedTime = entry.pausedTime || 0;
+    
+    // Якщо таймер був на паузі при зупинці, додаємо останній час паузи
+    if (entry.lastPauseTime) {
+      const lastPauseTime = new Date(entry.lastPauseTime);
+      totalPausedTime += Math.floor((now.getTime() - lastPauseTime.getTime()) / 1000);
+    }
+    
+    const elapsedTime = Math.floor((now.getTime() - startTime.getTime()) / 1000);
+    const duration = Math.max(0, elapsedTime - totalPausedTime);
     
     const updatedEntry = {
       ...entry,
       isRunning: false,
       endTime: now,
       lastUpdate: now,
+      pausedTime: totalPausedTime,
       duration
     };
     
@@ -93,7 +114,7 @@ export const fetchCurrentTimer = createAsyncThunk(
   async ({ userId, teamId }: { userId: string; teamId: string }) => {
     const entry = await getCurrentTimeEntry(userId, teamId);
     
-    if (!entry) {
+    if (!entry || entry.endTime) {
       return null;
     }
 
@@ -124,7 +145,7 @@ const timerSlice = createSlice({
   reducers: {
     updateElapsedTime: (state, action: PayloadAction<number>) => {
       if (state.currentEntry?.isRunning) {
-        state.elapsedTime = action.payload;
+        state.elapsedTime = Math.max(0, action.payload);
       }
     },
     resetTimer: (state) => {
@@ -151,14 +172,9 @@ const timerSlice = createSlice({
       })
       .addCase(pauseTimer.fulfilled, (state, action) => {
         state.currentEntry = action.payload;
-        const now = new Date();
-        const start = new Date(action.payload.startTime);
-        const pausedTime = action.payload.pausedTime || 0;
-        state.elapsedTime = Math.floor((now.getTime() - start.getTime() - pausedTime) / 1000);
       })
       .addCase(resumeTimer.fulfilled, (state, action) => {
         state.currentEntry = action.payload;
-        state.elapsedTime = 0;
       })
       .addCase(stopTimer.pending, (state) => {
         state.isLoading = true;
@@ -167,7 +183,6 @@ const timerSlice = createSlice({
       .addCase(stopTimer.fulfilled, (state, action) => {
         state.isLoading = false;
         state.currentEntry = action.payload;
-        state.elapsedTime = action.payload.duration || 0;
       })
       .addCase(stopTimer.rejected, (state, action) => {
         state.isLoading = false;
@@ -188,7 +203,8 @@ const timerSlice = createSlice({
           const now = new Date();
           const start = new Date(entry.startTime);
           const pausedTime = entry.pausedTime || 0;
-          state.elapsedTime = Math.floor((now.getTime() - start.getTime() - pausedTime) / 1000);
+          const elapsedTime = Math.max(0, Math.floor((now.getTime() - start.getTime()) / 1000) - Math.floor(pausedTime));
+          state.elapsedTime = elapsedTime;
         } else if (entry.duration) {
           state.elapsedTime = entry.duration;
         } else {
