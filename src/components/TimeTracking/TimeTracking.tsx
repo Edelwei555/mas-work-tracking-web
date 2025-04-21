@@ -1,448 +1,203 @@
 import React, { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useAuth } from '../../contexts/AuthContext';
-import { WorkType, getTeamWorkTypes } from '../../services/workTypes';
-import { Location, getTeamLocations } from '../../services/locations';
-import { saveTimeEntry, clearTimerState } from '../../services/timeTracking';
-import { getUserTeams } from '../../services/teams';
-import { useSelector } from 'react-redux';
+import { useAppDispatch, useAppSelector } from '../../hooks';
 import { 
-  startTimer, 
-  pauseTimer, 
-  resumeTimer, 
-  stopTimer, 
-  fetchCurrentTimer,
-  updateElapsedTime,
-  resetTimer
-} from '../../store/timerSlice';
-import { AppDispatch, RootState } from '../../store';
-import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import './TimeTracking.css';
-import { TimeEntry } from '../../types';
-import { getErrorMessage } from '../../utils/errors';
-import { FormControl, TextField } from '@mui/material';
+  Button, 
+  Stack, 
+  Typography, 
+  FormControl, 
+  InputLabel, 
+  Select, 
+  MenuItem 
+} from '@mui/material';
+import { startTimer, stopTimer, pauseTimer, resumeTimer } from '../../store/timerSlice';
+import { saveTimeEntry } from '../../services/timeTracking';
+import { TimeEntry } from '../../types/timeEntry';
+import WorkAmountDialog from './WorkAmountDialog';
+import { RootState } from '../../store/store';
+import { useAuth } from '../../contexts/AuthContext';
+import { getUserTeams } from '../../services/teams';
+import { getTeamWorkTypes, WorkType } from '../../services/workTypes';
+import { getTeamLocations, Location } from '../../services/locations';
 
 const TimeTracking: React.FC = () => {
-  const { t } = useTranslation();
-  const { currentUser } = useAuth();
   const dispatch = useAppDispatch();
-  
-  const { currentEntry, elapsedTime, isLoading, error: timerError } = useAppSelector(
-    (state: RootState) => state.timer
-  );
-
-  const [selectedWorkType, setSelectedWorkType] = useState<string>('');
-  const [selectedLocation, setSelectedLocation] = useState<string>('');
+  const { currentUser } = useAuth();
+  const { currentEntry, elapsedTime } = useAppSelector((state: RootState) => state.timer);
+  const [showWorkAmountDialog, setShowWorkAmountDialog] = useState(false);
   const [teamId, setTeamId] = useState<string>('');
-  const [workAmount, setWorkAmount] = useState<string>('');
   const [workTypes, setWorkTypes] = useState<WorkType[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string>('');
-  const [success, setSuccess] = useState<string>('');
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const [selectedWorkType, setSelectedWorkType] = useState<string>('');
+  const [selectedLocation, setSelectedLocation] = useState<string>('');
 
-  // Очищення локального стану при монтуванні
   useEffect(() => {
-    clearTimerState();
-  }, []);
-
-  // Завантаження команди користувача
-  useEffect(() => {
-    const fetchTeam = async () => {
-      if (!currentUser) return;
-      
-      try {
+    const loadTeam = async () => {
+      if (currentUser) {
         const teams = await getUserTeams(currentUser.uid);
         if (teams.length > 0 && teams[0].id) {
           setTeamId(teams[0].id);
-        } else {
-          setError(t('teams.noTeams'));
         }
-      } catch (err) {
-        console.error('Error fetching team:', err);
-        setError(t('teams.error'));
       }
     };
+    loadTeam();
+  }, [currentUser]);
 
-    fetchTeam();
-  }, [currentUser, t]);
-
-  // Завантаження списків при зміні teamId
   useEffect(() => {
-    if (!teamId) return;
-
-    const loadLists = async () => {
-      try {
-        setLoading(true);
-        const [fetchedWorkTypes, fetchedLocations] = await Promise.all([
-          getTeamWorkTypes(teamId),
-          getTeamLocations(teamId)
-        ]);
-        
-        setWorkTypes(fetchedWorkTypes);
-        setLocations(fetchedLocations);
-        setError('');
-      } catch (err) {
-        console.error('Error loading lists:', err);
-        setError(t('timeTracking.error'));
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadLists();
-  }, [teamId, t]);
-
-  // Завантаження даних після отримання ID команди
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!currentUser || !teamId) return;
-      
-      try {
-        setLoading(true);
-        
-        // Завантажуємо списки перед отриманням поточного запису
-        const [fetchedWorkTypes, fetchedLocations] = await Promise.all([
-          getTeamWorkTypes(teamId),
-          getTeamLocations(teamId)
-        ]);
-        
-        setWorkTypes(fetchedWorkTypes);
-        setLocations(fetchedLocations);
-
-        // Отримуємо поточний запис часу
-        await dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId })).unwrap();
-        
-      } catch (err) {
-        console.error('Error fetching data:', err);
-        setError(t('timeTracking.error'));
-      } finally {
-        setLoading(false);
-        setInitialLoadComplete(true);
-      }
-    };
-
-    fetchData();
-  }, [currentUser, teamId, dispatch, t]);
-
-  // Періодична синхронізація стану таймера
-  useEffect(() => {
-    let syncInterval: NodeJS.Timeout;
-
-    const syncTimer = async () => {
-      if (!currentUser || !teamId) return;
-
-      try {
-        const result = await dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId })).unwrap();
-        
-        // Якщо таймер був зупинений або не існує
-        if (!result || !result.isRunning) {
-          if (currentEntry?.isRunning) {
-            setWorkAmount('');
-            dispatch(resetTimer());
-          }
-        }
-      } catch (error) {
-        console.error('Error syncing timer:', error);
-      }
-    };
-
-    // Встановлюємо інтервал синхронізації
-    if (currentUser && teamId) {
-      syncInterval = setInterval(syncTimer, 10000);
-    }
-
-    return () => {
-      if (syncInterval) {
-        clearInterval(syncInterval);
-      }
-    };
-  }, [currentUser, teamId, dispatch, currentEntry?.isRunning]);
-
-  // Оновлення таймера
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-
-    if (currentEntry?.isRunning) {
-      interval = setInterval(() => {
+    const loadData = async () => {
+      if (teamId) {
         try {
-          const now = new Date();
-          const start = new Date(currentEntry.startTime);
-          const pausedTime = currentEntry.pausedTime || 0;
-          const elapsed = Math.max(0, now.getTime() - start.getTime() - pausedTime);
-          
-          if (!isNaN(elapsed)) {
-            dispatch(updateElapsedTime(elapsed));
-          }
+          const [fetchedWorkTypes, fetchedLocations] = await Promise.all([
+            getTeamWorkTypes(teamId),
+            getTeamLocations(teamId)
+          ]);
+          setWorkTypes(fetchedWorkTypes);
+          setLocations(fetchedLocations);
         } catch (error) {
-          console.error('Error updating elapsed time:', error);
+          console.error('Помилка завантаження даних:', error);
         }
-      }, 1000);
-    }
-
-    return () => {
-      if (interval) {
-        clearInterval(interval);
       }
     };
-  }, [currentEntry, dispatch]);
+    loadData();
+  }, [teamId]);
+  
+  const formatTime = (time: number) => {
+    const hours = Math.floor(time / 3600);
+    const minutes = Math.floor((time % 3600) / 60);
+    const seconds = time % 60;
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  };
 
-  // Автоматичне приховування повідомлення про успіх
-  useEffect(() => {
-    let timeout: NodeJS.Timeout;
+  const handleStart = () => {
+    if (!currentUser || !teamId || !selectedWorkType || !selectedLocation) return;
     
-    if (success) {
-      timeout = setTimeout(() => {
-        setSuccess('');
-      }, 3000);
-    }
-
-    return () => clearTimeout(timeout);
-  }, [success]);
-
-  const formatTime = (ms: number): string => {
-    const totalSeconds = Math.floor(ms / 1000);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    const now = new Date();
+    dispatch(startTimer({
+      startTime: now,
+      endTime: null,
+      isRunning: true,
+      workAmount: 0,
+      pausedTime: 0,
+      duration: 0,
+      lastPauseTime: null,
+      userId: currentUser.uid,
+      teamId: teamId,
+      workTypeId: selectedWorkType,
+      locationId: selectedLocation
+    }));
   };
 
-  const handleStart = async () => {
-    if (!currentUser) {
-      console.log('No current user');
-      return;
-    }
-    
-    try {
-      console.log('Starting timer...');
-      console.log('Current user:', currentUser.uid);
-      console.log('Team ID:', teamId);
-      console.log('Selected work type:', selectedWorkType);
-      console.log('Selected location:', selectedLocation);
-      
-      setError('');
-      setSuccess('');
-
-      if (!selectedWorkType || !selectedLocation) {
-        console.log('Missing required selections');
-        setError(t('timeTracking.selectRequired'));
-        return;
-      }
-
-      const now = new Date();
-      const timeEntry: Omit<TimeEntry, 'createdAt' | 'lastUpdate' | 'id'> = {
-        userId: currentUser.uid,
-        teamId,
-        workTypeId: selectedWorkType,
-        locationId: selectedLocation,
-        startTime: now,
-        endTime: null,
-        pausedTime: 0,
-        workAmount: 0,
-        isRunning: true,
-        duration: 0,
-        lastPauseTime: null
-      };
-
-      console.log('Time entry to save:', timeEntry);
-      const result = await dispatch(startTimer(timeEntry)).unwrap();
-      console.log('Timer started successfully:', result);
-      
-      setSuccess(t('timeTracking.started'));
-    } catch (err) {
-      console.error('Error starting timer:', err);
-      setError(getErrorMessage(err));
+  const handlePause = () => {
+    if (currentEntry) {
+      dispatch(pauseTimer(currentEntry));
     }
   };
 
-  const handlePause = async () => {
-    if (!currentEntry) return;
-
-    try {
-      setLoading(true);
-      await dispatch(pauseTimer(currentEntry)).unwrap();
-    } catch (err) {
-      console.error('Error pausing timer:', err);
-      setError(t('timeTracking.pauseError'));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResume = async () => {
-    if (!currentEntry) return;
-
-    try {
-      setError('');
-      await dispatch(resumeTimer(currentEntry)).unwrap();
-      setSuccess(t('timeTracking.resumed'));
-    } catch (err) {
-      console.error('Error resuming timer:', err);
-      setError(t('timeTracking.error'));
+  const handleResume = () => {
+    if (currentEntry) {
+      dispatch(resumeTimer(currentEntry));
     }
   };
 
   const handleStop = async () => {
-    if (!currentEntry) return;
-
-    try {
-      setLoading(true);
-      await dispatch(stopTimer(currentEntry)).unwrap();
-    } catch (err) {
-      console.error('Error stopping timer:', err);
-      setError(t('timeTracking.stopError'));
-    } finally {
-      setLoading(false);
+    if (currentEntry) {
+      const stoppedEntry = await dispatch(stopTimer(currentEntry)).unwrap();
+      if (stoppedEntry) {
+        setShowWorkAmountDialog(true);
+      }
     }
   };
 
-  const handleSave = async () => {
-    if (!currentEntry) return;
-    
-    try {
-      setIsSaving(true);
-      
-      // Зберігаємо запис з обсягом робіт
-      const updatedEntry = {
+  const handleSave = async (workAmount: number) => {
+    if (currentEntry) {
+      const entry: TimeEntry = {
         ...currentEntry,
-        workAmount: parseFloat(workAmount),
+        workAmount,
         isRunning: false,
         endTime: new Date()
       };
-
-      await saveTimeEntry(updatedEntry);
-      clearTimerState();
-      dispatch(resetTimer());
-      setWorkAmount('');
+      await saveTimeEntry(entry);
+      setShowWorkAmountDialog(false);
       setSelectedWorkType('');
       setSelectedLocation('');
-      setSuccess(t('timeTracking.saved'));
-    } catch (err) {
-      setError(getErrorMessage(err));
-    } finally {
-      setIsSaving(false);
     }
   };
 
-  // Показуємо поле для введення обсягу робіт тільки якщо таймер зупинено (не на паузі)
-  const showWorkAmountInput = currentEntry && !currentEntry.isRunning && currentEntry.endTime === null;
-
-  if (loading && !initialLoadComplete) {
-    return <div className="loading">{t('common.loading')}</div>;
-  }
-
-  if (initialLoadComplete && !teamId) {
-    return <div className="error-message">{t('teams.noTeams')}</div>;
-  }
+  const isStartDisabled = !teamId || !selectedWorkType || !selectedLocation;
 
   return (
-    <div className="time-tracking">
-      <h2>{t('timeTracking.title')}</h2>
+    <Stack spacing={2} alignItems="center" sx={{ p: 4 }}>
+      <Typography variant="h4">Облік часу</Typography>
       
-      {error && <div className="error-message">{error}</div>}
-      {success && <div className="success-message">{success}</div>}
-      {timerError && <div className="error-message">{timerError}</div>}
+      {!currentEntry && (
+        <Stack spacing={2} sx={{ width: '100%', maxWidth: 400 }}>
+          <FormControl fullWidth>
+            <InputLabel>Вид робіт</InputLabel>
+            <Select
+              value={selectedWorkType}
+              onChange={(e) => setSelectedWorkType(e.target.value)}
+              label="Вид робіт"
+            >
+              {workTypes.map((type) => (
+                <MenuItem key={type.id} value={type.id}>
+                  {type.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
-      <div className="time-tracking-form">
+          <FormControl fullWidth>
+            <InputLabel>Локація</InputLabel>
+            <Select
+              value={selectedLocation}
+              onChange={(e) => setSelectedLocation(e.target.value)}
+              label="Локація"
+            >
+              {locations.map((location) => (
+                <MenuItem key={location.id} value={location.id}>
+                  {location.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Stack>
+      )}
+
+      <Typography variant="h2">{formatTime(elapsedTime)}</Typography>
+      
+      <Stack direction="row" spacing={2}>
         {!currentEntry && (
-          <>
-            <div className="form-group">
-              <label>{t('timeTracking.workType')}</label>
-              <select
-                value={selectedWorkType}
-                onChange={(e) => setSelectedWorkType(e.target.value)}
-                disabled={loading}
-              >
-                <option value="">{t('timeTracking.selectWorkType')}</option>
-                {workTypes.map((type) => (
-                  <option key={type.id} value={type.id}>
-                    {type.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label>{t('timeTracking.location')}</label>
-              <select
-                value={selectedLocation}
-                onChange={(e) => setSelectedLocation(e.target.value)}
-                disabled={loading}
-              >
-                <option value="">{t('timeTracking.selectLocation')}</option>
-                {locations.map((location) => (
-                  <option key={location.id} value={location.id}>
-                    {location.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </>
+          <Button 
+            variant="contained" 
+            color="primary" 
+            onClick={handleStart} 
+            disabled={isStartDisabled}
+          >
+            Почати
+          </Button>
         )}
-
-        <div className="timer-display">
-          {formatTime(elapsedTime)}
-        </div>
-
-        <div className="timer-controls">
-          {!currentEntry ? (
-            <button
-              className="btn-primary"
-              onClick={handleStart}
-              disabled={loading || !selectedWorkType || !selectedLocation}
-            >
-              {t('timeTracking.start')}
-            </button>
-          ) : currentEntry.isRunning ? (
-            <>
-              <button className="btn-warning" onClick={handlePause}>
-                {t('timeTracking.pause')}
-              </button>
-              <button className="btn-danger" onClick={handleStop}>
-                {t('timeTracking.stop')}
-              </button>
-            </>
-          ) : !currentEntry.endTime ? (
-            <>
-              <button className="btn-warning" onClick={handleResume}>
-                {t('timeTracking.resume')}
-              </button>
-              <button className="btn-danger" onClick={handleStop}>
-                {t('timeTracking.stop')}
-              </button>
-            </>
-          ) : null}
-        </div>
-
-        {showWorkAmountInput && (
-          <div className="work-amount-form">
-            <FormControl fullWidth margin="normal">
-              <TextField
-                label={t('timeTracking.workAmount')}
-                type="number"
-                value={workAmount}
-                onChange={(e) => setWorkAmount(e.target.value)}
-                disabled={isSaving}
-                inputProps={{
-                  step: 0.1,
-                  min: 0
-                }}
-              />
-            </FormControl>
-            <button
-              className="btn-success"
-              onClick={handleSave}
-              disabled={isSaving || !workAmount}
-            >
-              {t('timeTracking.save')}
-            </button>
-          </div>
+        {currentEntry && currentEntry.isRunning && !currentEntry.endTime && (
+          <Button variant="contained" color="warning" onClick={handlePause}>
+            Пауза
+          </Button>
         )}
-      </div>
-    </div>
+        {currentEntry && !currentEntry.isRunning && !currentEntry.endTime && (
+          <Button variant="contained" color="primary" onClick={handleResume}>
+            Продовжити
+          </Button>
+        )}
+        {currentEntry && !currentEntry.endTime && (
+          <Button variant="contained" color="error" onClick={handleStop}>
+            Зупинити
+          </Button>
+        )}
+      </Stack>
+      
+      <WorkAmountDialog
+        open={showWorkAmountDialog}
+        onClose={() => setShowWorkAmountDialog(false)}
+        onSave={handleSave}
+      />
+    </Stack>
   );
 };
 

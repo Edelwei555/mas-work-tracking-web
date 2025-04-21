@@ -8,6 +8,7 @@ import { PersistGate } from 'redux-persist/integration/react';
 import { store, persistor } from './store/store';
 import { TimerProvider } from './contexts/TimerContext';
 import { AuthProvider } from './contexts/AuthContext';
+import './i18n';
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
