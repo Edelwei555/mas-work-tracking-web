@@ -152,18 +152,7 @@ export const updateTimeEntry = async (id: string, data: Partial<TimeEntry>) => {
 
 export const getCurrentTimeEntry = async (userId: string, teamId: string): Promise<TimeEntry | null> => {
   try {
-    // Спочатку перевіряємо локальний стан
-    const localState = getTimerState();
-    if (localState && localState.userId === userId && localState.teamId === teamId && localState.isRunning) {
-      // Перевіряємо, чи не минуло забагато часу з останнього оновлення
-      const lastUpdateTime = localState.lastUpdate?.getTime() || Date.now();
-      const timeSinceLastUpdate = Date.now() - lastUpdateTime;
-      if (timeSinceLastUpdate < 24 * 60 * 60 * 1000) { // 24 години
-        return localState;
-      }
-    }
-
-    // Якщо немає локального стану або він застарів, перевіряємо Firestore
+    // Спочатку перевіряємо Firestore
     const q = query(
       collection(db, 'timeEntries'),
       where('userId', '==', userId),
@@ -191,9 +180,11 @@ export const getCurrentTimeEntry = async (userId: string, teamId: string): Promi
       lastPauseTime: null
     };
 
-    // Оновлюємо локальний стан і синхронізуємо через Realtime Database
+    // Оновлюємо локальний стан тільки якщо запис активний
     if (timeEntry.isRunning) {
       saveTimerState(timeEntry);
+    } else {
+      clearTimerState();
     }
 
     return timeEntry;

@@ -74,13 +74,13 @@ export const stopTimer = createAsyncThunk(
     const updatedEntry = {
       ...entry,
       isRunning: false,
-      endTime: null,
+      endTime: now,
       lastUpdate: now,
       duration: Math.max(0, now.getTime() - new Date(entry.startTime).getTime() - (entry.pausedTime || 0))
     };
     
     await updateTimeEntry(entry.id!, updatedEntry);
-    return updatedEntry;
+    return null;
   }
 );
 
@@ -139,8 +139,8 @@ const timerSlice = createSlice({
       })
       .addCase(stopTimer.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.currentEntry = action.payload;
-        state.elapsedTime = action.payload.duration || 0;
+        state.currentEntry = null;
+        state.elapsedTime = 0;
       })
       .addCase(stopTimer.rejected, (state, action) => {
         state.isLoading = false;
@@ -149,7 +149,7 @@ const timerSlice = createSlice({
       .addCase(fetchCurrentTimer.fulfilled, (state, action) => {
         const entry = action.payload;
         
-        if (!entry) {
+        if (!entry || !entry.isRunning) {
           state.currentEntry = null;
           state.elapsedTime = 0;
           return;
@@ -157,14 +157,10 @@ const timerSlice = createSlice({
 
         state.currentEntry = entry;
         
-        if (entry.isRunning) {
-          const now = new Date();
-          const start = new Date(entry.startTime);
-          const pausedTime = entry.pausedTime || 0;
-          state.elapsedTime = Math.max(0, now.getTime() - start.getTime() - pausedTime);
-        } else {
-          state.elapsedTime = entry.duration || 0;
-        }
+        const now = new Date();
+        const start = new Date(entry.startTime);
+        const pausedTime = entry.pausedTime || 0;
+        state.elapsedTime = Math.max(0, now.getTime() - start.getTime() - pausedTime);
       });
   }
 });
