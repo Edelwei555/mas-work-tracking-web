@@ -103,10 +103,7 @@ const TimeTracking: React.FC = () => {
       try {
         setLoading(true);
         
-        // Отримуємо поточний запис часу
-        await dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId })).unwrap();
-        
-        // Завантажуємо списки
+        // Завантажуємо списки перед отриманням поточного запису
         const [fetchedWorkTypes, fetchedLocations] = await Promise.all([
           getTeamWorkTypes(teamId),
           getTeamLocations(teamId)
@@ -114,6 +111,9 @@ const TimeTracking: React.FC = () => {
         
         setWorkTypes(fetchedWorkTypes);
         setLocations(fetchedLocations);
+
+        // Отримуємо поточний запис часу
+        await dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId })).unwrap();
         
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -149,12 +149,9 @@ const TimeTracking: React.FC = () => {
       }
     };
 
-    // Синхронізуємо одразу при монтуванні
-    syncTimer();
-
     // Встановлюємо інтервал синхронізації
     if (currentUser && teamId) {
-      syncInterval = setInterval(syncTimer, 10000); // Збільшуємо інтервал до 10 секунд
+      syncInterval = setInterval(syncTimer, 10000);
     }
 
     return () => {
@@ -207,16 +204,6 @@ const TimeTracking: React.FC = () => {
 
     return () => clearTimeout(timeout);
   }, [success]);
-
-  useEffect(() => {
-    if (currentEntry && currentUser) {
-      const interval = setInterval(() => {
-        dispatch(fetchCurrentTimer({ userId: currentUser.uid, teamId }));
-      }, 10000);
-
-      return () => clearInterval(interval);
-    }
-  }, [currentEntry?.id, dispatch, currentUser?.uid, teamId]);
 
   const formatTime = (ms: number): string => {
     const totalSeconds = Math.floor(ms / 1000);
@@ -364,14 +351,14 @@ const TimeTracking: React.FC = () => {
       {timerError && <div className="error-message">{timerError}</div>}
 
       <div className="time-tracking-form">
-        {!currentEntry?.isRunning && (
+        {(!currentEntry || (!currentEntry.isRunning && !currentEntry.endTime)) && (
           <>
             <div className="form-group">
               <label>{t('timeTracking.workType')}</label>
               <select
                 value={selectedWorkType}
                 onChange={(e) => setSelectedWorkType(e.target.value)}
-                disabled={loading || currentEntry?.isRunning}
+                disabled={loading || (currentEntry?.isRunning ?? false)}
               >
                 <option value="">{t('timeTracking.selectWorkType')}</option>
                 {workTypes.map((type) => (
@@ -387,7 +374,7 @@ const TimeTracking: React.FC = () => {
               <select
                 value={selectedLocation}
                 onChange={(e) => setSelectedLocation(e.target.value)}
-                disabled={loading || currentEntry?.isRunning}
+                disabled={loading || (currentEntry?.isRunning ?? false)}
               >
                 <option value="">{t('timeTracking.selectLocation')}</option>
                 {locations.map((location) => (
