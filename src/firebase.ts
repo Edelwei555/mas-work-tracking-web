@@ -1,4 +1,4 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import { getDatabase, connectDatabaseEmulator } from 'firebase/database';
@@ -33,8 +33,14 @@ const firebaseConfig = {
 // Ініціалізуємо Firebase з обробкою помилок
 let app;
 try {
-  app = initializeApp(firebaseConfig);
-  console.log('Firebase успішно ініціалізовано');
+  // Перевіряємо, чи вже є ініціалізований екземпляр
+  if (getApps().length === 0) {
+    app = initializeApp(firebaseConfig);
+    console.log('Firebase успішно ініціалізовано');
+  } else {
+    app = getApp();
+    console.log('Використовуємо існуючий екземпляр Firebase');
+  }
 } catch (error) {
   console.error('Помилка ініціалізації Firebase:', error);
   throw new Error('Не вдалося ініціалізувати Firebase. Перевірте конфігурацію.');
