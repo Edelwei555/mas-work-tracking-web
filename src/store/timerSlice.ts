@@ -69,19 +69,18 @@ export const resumeTimer = createAsyncThunk(
 
 export const stopTimer = createAsyncThunk(
   'timer/stopTimer',
-  async (entry: TimeEntry, { dispatch }) => {
+  async (entry: TimeEntry) => {
     const now = new Date();
     const updatedEntry = {
       ...entry,
       isRunning: false,
-      endTime: now,
+      endTime: null,
       lastUpdate: now,
       duration: Math.max(0, now.getTime() - new Date(entry.startTime).getTime() - (entry.pausedTime || 0))
     };
     
     await updateTimeEntry(entry.id!, updatedEntry);
-    dispatch(resetTimer());
-    return null;
+    return updatedEntry;
   }
 );
 
@@ -126,13 +125,7 @@ const timerSlice = createSlice({
         state.elapsedTime = action.payload.duration || 0;
       })
       .addCase(resumeTimer.fulfilled, (state, action) => {
-        if (state.currentEntry) {
-          state.currentEntry = {
-            ...state.currentEntry,
-            ...action.payload,
-            isRunning: true
-          };
-        }
+        state.currentEntry = action.payload;
       })
       .addCase(stopTimer.pending, (state) => {
         state.isLoading = true;
@@ -140,8 +133,8 @@ const timerSlice = createSlice({
       })
       .addCase(stopTimer.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.currentEntry = null;
-        state.elapsedTime = 0;
+        state.currentEntry = action.payload;
+        state.elapsedTime = action.payload.duration || 0;
       })
       .addCase(stopTimer.rejected, (state, action) => {
         state.isLoading = false;

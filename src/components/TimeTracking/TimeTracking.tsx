@@ -165,7 +165,7 @@ const TimeTracking: React.FC = () => {
   useEffect(() => {
     let interval: NodeJS.Timeout;
 
-    if (currentEntry?.isRunning && !currentEntry?.endTime) {
+    if (currentEntry?.isRunning) {
       interval = setInterval(() => {
         try {
           const now = new Date();
@@ -180,9 +180,6 @@ const TimeTracking: React.FC = () => {
           console.error('Error updating elapsed time:', error);
         }
       }, 1000);
-    } else {
-      // Якщо таймер не активний, скидаємо стан
-      dispatch(resetTimer());
     }
 
     return () => {
@@ -294,9 +291,6 @@ const TimeTracking: React.FC = () => {
     try {
       setLoading(true);
       await dispatch(stopTimer(currentEntry)).unwrap();
-      setWorkAmount('');
-      setSelectedWorkType('');
-      setSelectedLocation('');
     } catch (err) {
       console.error('Error stopping timer:', err);
       setError(t('timeTracking.stopError'));
@@ -323,6 +317,8 @@ const TimeTracking: React.FC = () => {
       clearTimerState();
       dispatch(resetTimer());
       setWorkAmount('');
+      setSelectedWorkType('');
+      setSelectedLocation('');
       setSuccess(t('timeTracking.saved'));
     } catch (err) {
       setError(getErrorMessage(err));
@@ -351,14 +347,14 @@ const TimeTracking: React.FC = () => {
       {timerError && <div className="error-message">{timerError}</div>}
 
       <div className="time-tracking-form">
-        {(!currentEntry || (!currentEntry.isRunning && !currentEntry.endTime)) && (
+        {!currentEntry && (
           <>
             <div className="form-group">
               <label>{t('timeTracking.workType')}</label>
               <select
                 value={selectedWorkType}
                 onChange={(e) => setSelectedWorkType(e.target.value)}
-                disabled={loading || (currentEntry?.isRunning ?? false)}
+                disabled={loading}
               >
                 <option value="">{t('timeTracking.selectWorkType')}</option>
                 {workTypes.map((type) => (
@@ -374,7 +370,7 @@ const TimeTracking: React.FC = () => {
               <select
                 value={selectedLocation}
                 onChange={(e) => setSelectedLocation(e.target.value)}
-                disabled={loading || (currentEntry?.isRunning ?? false)}
+                disabled={loading}
               >
                 <option value="">{t('timeTracking.selectLocation')}</option>
                 {locations.map((location) => (
@@ -409,7 +405,7 @@ const TimeTracking: React.FC = () => {
                 {t('timeTracking.stop')}
               </button>
             </>
-          ) : currentEntry.endTime === null ? (
+          ) : !currentEntry.endTime ? (
             <>
               <button className="btn-warning" onClick={handleResume}>
                 {t('timeTracking.resume')}
