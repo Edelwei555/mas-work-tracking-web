@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '../../hooks';
 import { 
   Button, 
@@ -29,19 +29,42 @@ const TimeTracking: React.FC = () => {
   const [locations, setLocations] = useState<Location[]>([]);
   const [selectedWorkType, setSelectedWorkType] = useState<string>('');
   const [selectedLocation, setSelectedLocation] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
+
+  const formatTime = useCallback((time: number) => {
+    if (!time && time !== 0) return '00:00:00';
+    
+    const hours = Math.floor(time / 3600);
+    const minutes = Math.floor((time % 3600) / 60);
+    const seconds = time % 60;
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }, []);
 
   useEffect(() => {
-    let intervalId: NodeJS.Timeout;
+    let intervalId: NodeJS.Timeout | null = null;
+
+    const updateTimer = () => {
+      try {
+        if (currentEntry?.isRunning) {
+          const now = new Date();
+          const start = new Date(currentEntry.startTime);
+          const timeDiffInSeconds = Math.floor((now.getTime() - start.getTime()) / 1000);
+          const pausedTimeInSeconds = Math.floor((currentEntry.pausedTime || 0) / 1000);
+          const elapsed = timeDiffInSeconds - pausedTimeInSeconds;
+          dispatch(updateElapsedTime(elapsed));
+        }
+      } catch (err) {
+        console.error('Помилка оновлення таймера:', err);
+        setError('Помилка оновлення таймера');
+        if (intervalId) {
+          clearInterval(intervalId);
+        }
+      }
+    };
 
     if (currentEntry?.isRunning) {
-      intervalId = setInterval(() => {
-        const now = new Date();
-        const start = new Date(currentEntry.startTime);
-        const timeDiffInSeconds = Math.floor((now.getTime() - start.getTime()) / 1000);
-        const pausedTimeInSeconds = Math.floor((currentEntry.pausedTime || 0) / 1000);
-        const elapsed = timeDiffInSeconds - pausedTimeInSeconds;
-        dispatch(updateElapsedTime(elapsed));
-      }, 1000);
+      updateTimer();
+      intervalId = setInterval(updateTimer, 1000);
     }
 
     return () => {
@@ -53,11 +76,16 @@ const TimeTracking: React.FC = () => {
 
   useEffect(() => {
     const loadTeam = async () => {
-      if (currentUser) {
-        const teams = await getUserTeams(currentUser.uid);
-        if (teams.length > 0 && teams[0].id) {
-          setTeamId(teams[0].id);
+      try {
+        if (currentUser) {
+          const teams = await getUserTeams(currentUser.uid);
+          if (teams.length > 0 && teams[0].id) {
+            setTeamId(teams[0].id);
+          }
         }
+      } catch (err) {
+        console.error('Помилка завантаження команди:', err);
+        setError('Помилка завантаження даних команди');
       }
     };
     loadTeam();
@@ -81,15 +109,6 @@ const TimeTracking: React.FC = () => {
     loadData();
   }, [teamId]);
   
-  const formatTime = (time: number) => {
-    if (!time && time !== 0) return '00:00:00';
-    
-    const hours = Math.floor(time / 3600);
-    const minutes = Math.floor((time % 3600) / 60);
-    const seconds = time % 60;
-    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-  };
-
   const handleStart = () => {
     if (!currentUser || !teamId || !selectedWorkType || !selectedLocation) return;
     
@@ -152,6 +171,12 @@ const TimeTracking: React.FC = () => {
     <Stack spacing={2} alignItems="center" sx={{ p: 4 }}>
       <Typography variant="h4">Облік часу</Typography>
       
+      {error && (
+        <Typography color="error" variant="body1">
+          {error}
+        </Typography>
+      )}
+
       {!currentEntry && (
         <Stack spacing={2} sx={{ width: '100%', maxWidth: 400 }}>
           <FormControl fullWidth>

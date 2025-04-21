@@ -61,7 +61,13 @@ console.log('Перевірка змінних оточення:', {
 
 console.log('Ініціалізація Firebase...');
 // Перевіряємо чи вже є ініціалізований екземпляр
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+let app;
+try {
+  app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+} catch (error) {
+  console.error('Помилка ініціалізації Firebase:', error);
+  throw new Error('Не вдалося ініціалізувати Firebase. Перевірте конфігурацію та підключення до мережі.');
+}
 console.log('Firebase успішно ініціалізовано');
 
 console.log('Ініціалізація Auth...');
@@ -110,6 +116,17 @@ if (!functions) throw new Error('Functions не ініціалізовано');
 
 // Встановлюємо регіон для функцій (за замовчуванням us-central1)
 // functions.region = 'us-central1';
+
+// Додаємо обробник помилок для auth
+auth.onAuthStateChanged((user) => {
+  if (user) {
+    console.log('Користувач авторизований:', user.uid);
+  } else {
+    console.log('Користувач не авторизований');
+  }
+}, (error) => {
+  console.error('Помилка авторизації:', error);
+});
 
 export { auth, db, database, functions };
 export default app; 
