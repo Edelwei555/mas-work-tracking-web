@@ -44,14 +44,21 @@ export const pauseTimer = createAsyncThunk(
   'timer/pause',
   async (timeEntry: TimeEntry) => {
     const now = new Date();
-    const updatedEntry = {
+    
+    // Спочатку оновлюємо в базі даних
+    await updateTimeEntry(timeEntry.id!, {
+      isRunning: false,
+      lastPauseTime: now,
+      lastUpdate: now
+    });
+
+    // Потім повертаємо повний оновлений об'єкт
+    return {
       ...timeEntry,
       isRunning: false,
-      lastPauseTime: now
+      lastPauseTime: now,
+      lastUpdate: now
     };
-
-    await updateTimeEntry(timeEntry.id!, updatedEntry);
-    return updatedEntry;
   }
 );
 
@@ -67,15 +74,22 @@ export const resumeTimer = createAsyncThunk(
       totalPausedTime += Math.floor((now.getTime() - lastPauseTime.getTime()) / 1000);
     }
 
-    const updatedEntry = {
+    // Спочатку оновлюємо в базі даних
+    await updateTimeEntry(timeEntry.id!, {
+      isRunning: true,
+      pausedTime: totalPausedTime,
+      lastPauseTime: null,
+      lastUpdate: now
+    });
+
+    // Потім повертаємо повний оновлений об'єкт
+    return {
       ...timeEntry,
       isRunning: true,
       pausedTime: totalPausedTime,
-      lastPauseTime: null
+      lastPauseTime: null,
+      lastUpdate: now
     };
-
-    await updateTimeEntry(timeEntry.id!, updatedEntry);
-    return updatedEntry;
   }
 );
 
@@ -95,7 +109,17 @@ export const stopTimer = createAsyncThunk(
     const elapsedTime = Math.floor((now.getTime() - startTime.getTime()) / 1000);
     const duration = Math.max(0, elapsedTime - totalPausedTime);
     
-    const updatedEntry = {
+    // Спочатку оновлюємо в базі даних
+    await updateTimeEntry(entry.id!, {
+      isRunning: false,
+      endTime: now,
+      lastUpdate: now,
+      pausedTime: totalPausedTime,
+      duration
+    });
+
+    // Потім повертаємо повний оновлений об'єкт
+    return {
       ...entry,
       isRunning: false,
       endTime: now,
@@ -103,9 +127,6 @@ export const stopTimer = createAsyncThunk(
       pausedTime: totalPausedTime,
       duration
     };
-    
-    await updateTimeEntry(entry.id!, updatedEntry);
-    return updatedEntry;
   }
 );
 
