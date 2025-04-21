@@ -1,4 +1,4 @@
-import { db } from '../config/firebase';
+import { db } from '../firebase';
 import { collection, query, where, getDocs, Timestamp, Query } from 'firebase/firestore';
 import { TimeEntry } from '../types/timeEntry';
 import * as XLSX from 'xlsx';
