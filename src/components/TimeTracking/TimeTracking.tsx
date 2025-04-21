@@ -7,7 +7,10 @@ import {
   FormControl, 
   InputLabel, 
   Select, 
-  MenuItem 
+  MenuItem,
+  CircularProgress,
+  Alert,
+  Snackbar 
 } from '@mui/material';
 import { startTimer, stopTimer, pauseTimer, resumeTimer, resetTimer, updateElapsedTime } from '../../store/timerSlice';
 import { saveTimeEntry } from '../../services/timeTracking';
@@ -29,18 +32,12 @@ const TimeTracking: React.FC = () => {
   const [locations, setLocations] = useState<Location[]>([]);
   const [selectedWorkType, setSelectedWorkType] = useState<string>('');
   const [selectedLocation, setSelectedLocation] = useState<string>('');
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const formatTime = useCallback((time: number) => {
-    if (!time && time !== 0) return '00:00:00';
-    
-    const hours = Math.floor(time / 3600);
-    const minutes = Math.floor((time % 3600) / 60);
-    const seconds = time % 60;
-    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-  }, []);
+  const [showError, setShowError] = useState(false);
 
   useEffect(() => {
+    let mounted = true;
     let intervalId: NodeJS.Timeout | null = null;
 
     const updateTimer = () => {
@@ -51,23 +48,28 @@ const TimeTracking: React.FC = () => {
           const timeDiffInSeconds = Math.floor((now.getTime() - start.getTime()) / 1000);
           const pausedTimeInSeconds = Math.floor((currentEntry.pausedTime || 0) / 1000);
           const elapsed = timeDiffInSeconds - pausedTimeInSeconds;
-          dispatch(updateElapsedTime(elapsed));
+          
+          if (mounted) {
+            dispatch(updateElapsedTime(elapsed));
+          }
         }
       } catch (err) {
         console.error('Помилка оновлення таймера:', err);
         setError('Помилка оновлення таймера');
+        setShowError(true);
         if (intervalId) {
           clearInterval(intervalId);
         }
       }
     };
 
-    if (currentEntry?.isRunning) {
-      updateTimer();
+    if (currentEntry?.isRunning && mounted) {
+      updateTimer(); // Оновлюємо одразу
       intervalId = setInterval(updateTimer, 1000);
     }
 
     return () => {
+      mounted = false;
       if (intervalId) {
         clearInterval(intervalId);
       }
@@ -75,108 +77,199 @@ const TimeTracking: React.FC = () => {
   }, [currentEntry, dispatch]);
 
   useEffect(() => {
+    let mounted = true;
+
     const loadTeam = async () => {
       try {
-        if (currentUser) {
+        setLoading(true);
+        if (currentUser && mounted) {
           const teams = await getUserTeams(currentUser.uid);
-          if (teams.length > 0 && teams[0].id) {
+          if (teams.length > 0 && teams[0].id && mounted) {
             setTeamId(teams[0].id);
           }
         }
       } catch (err) {
         console.error('Помилка завантаження команди:', err);
-        setError('Помилка завантаження даних команди');
+        if (mounted) {
+          setError('Помилка завантаження даних команди');
+          setShowError(true);
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
+
     loadTeam();
+
+    return () => {
+      mounted = false;
+    };
   }, [currentUser]);
 
   useEffect(() => {
+    let mounted = true;
+
     const loadData = async () => {
-      if (teamId) {
+      if (teamId && mounted) {
         try {
+          setLoading(true);
           const [fetchedWorkTypes, fetchedLocations] = await Promise.all([
             getTeamWorkTypes(teamId),
             getTeamLocations(teamId)
           ]);
-          setWorkTypes(fetchedWorkTypes);
-          setLocations(fetchedLocations);
-        } catch (error) {
-          console.error('Помилка завантаження даних:', error);
+          if (mounted) {
+            setWorkTypes(fetchedWorkTypes);
+            setLocations(fetchedLocations);
+          }
+        } catch (err) {
+          console.error('Помилка завантаження даних:', err);
+          if (mounted) {
+            setError('Помилка завантаження даних');
+            setShowError(true);
+          }
+        } finally {
+          if (mounted) {
+            setLoading(false);
+          }
         }
       }
     };
-    loadData();
-  }, [teamId]);
-  
-  const handleStart = () => {
-    if (!currentUser || !teamId || !selectedWorkType || !selectedLocation) return;
-    
-    const now = new Date();
-    dispatch(startTimer({
-      startTime: now,
-      endTime: null,
-      isRunning: true,
-      workAmount: 0,
-      pausedTime: 0,
-      duration: 0,
-      lastPauseTime: null,
-      userId: currentUser.uid,
-      teamId: teamId,
-      workTypeId: selectedWorkType,
-      locationId: selectedLocation
-    }));
-  };
 
-  const handlePause = () => {
-    if (currentEntry) {
-      dispatch(pauseTimer());
+    loadData();
+
+    return () => {
+      mounted = false;
+    };
+  }, [teamId]);
+
+  const formatTime = useCallback((time: number) => {
+    if (!time && time !== 0) return '00:00:00';
+    
+    const hours = Math.floor(time / 3600);
+    const minutes = Math.floor((time % 3600) / 60);
+    const seconds = time % 60;
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }, []);
+
+  const handleStart = async () => {
+    try {
+      if (!currentUser || !teamId || !selectedWorkType || !selectedLocation) return;
+      
+      const now = new Date();
+      await dispatch(startTimer({
+        startTime: now,
+        endTime: null,
+        isRunning: true,
+        workAmount: 0,
+        pausedTime: 0,
+        duration: 0,
+        lastPauseTime: null,
+        userId: currentUser.uid,
+        teamId: teamId,
+        workTypeId: selectedWorkType,
+        locationId: selectedLocation
+      }));
+    } catch (err) {
+      console.error('Помилка запуску таймера:', err);
+      setError('Помилка запуску таймера');
+      setShowError(true);
     }
   };
 
-  const handleResume = () => {
-    if (currentEntry) {
-      dispatch(resumeTimer());
+  const handlePause = async () => {
+    try {
+      if (currentEntry) {
+        await dispatch(pauseTimer());
+      }
+    } catch (err) {
+      console.error('Помилка паузи таймера:', err);
+      setError('Помилка паузи таймера');
+      setShowError(true);
+    }
+  };
+
+  const handleResume = async () => {
+    try {
+      if (currentEntry) {
+        await dispatch(resumeTimer());
+      }
+    } catch (err) {
+      console.error('Помилка відновлення таймера:', err);
+      setError('Помилка відновлення таймера');
+      setShowError(true);
     }
   };
 
   const handleStop = async () => {
-    if (currentEntry) {
-      const stoppedEntry = await dispatch(stopTimer(currentEntry)).unwrap();
-      if (stoppedEntry) {
-        setShowWorkAmountDialog(true);
+    try {
+      if (currentEntry) {
+        const stoppedEntry = await dispatch(stopTimer(currentEntry)).unwrap();
+        if (stoppedEntry) {
+          setShowWorkAmountDialog(true);
+        }
       }
+    } catch (err) {
+      console.error('Помилка зупинки таймера:', err);
+      setError('Помилка зупинки таймера');
+      setShowError(true);
     }
   };
 
   const handleSave = async (workAmount: number) => {
-    if (currentEntry) {
-      const entry: TimeEntry = {
-        ...currentEntry,
-        workAmount,
-        isRunning: false,
-        endTime: new Date()
-      };
-      await saveTimeEntry(entry);
-      setShowWorkAmountDialog(false);
-      setSelectedWorkType('');
-      setSelectedLocation('');
-      dispatch(resetTimer());
+    try {
+      if (currentEntry) {
+        const entry: TimeEntry = {
+          ...currentEntry,
+          workAmount,
+          isRunning: false,
+          endTime: new Date()
+        };
+        await saveTimeEntry(entry);
+        setShowWorkAmountDialog(false);
+        setSelectedWorkType('');
+        setSelectedLocation('');
+        dispatch(resetTimer());
+      }
+    } catch (err) {
+      console.error('Помилка збереження запису:', err);
+      setError('Помилка збереження запису');
+      setShowError(true);
     }
+  };
+
+  const handleCloseError = () => {
+    setShowError(false);
+    setError(null);
   };
 
   const isStartDisabled = !teamId || !selectedWorkType || !selectedLocation;
 
+  if (loading) {
+    return (
+      <Stack spacing={2} alignItems="center" sx={{ p: 4 }}>
+        <CircularProgress />
+        <Typography>Завантаження...</Typography>
+      </Stack>
+    );
+  }
+
   return (
     <Stack spacing={2} alignItems="center" sx={{ p: 4 }}>
       <Typography variant="h4">Облік часу</Typography>
-      
-      {error && (
-        <Typography color="error" variant="body1">
-          {error}
-        </Typography>
-      )}
 
+      <Snackbar 
+        open={showError} 
+        autoHideDuration={6000} 
+        onClose={handleCloseError}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert onClose={handleCloseError} severity="error" sx={{ width: '100%' }}>
+          {error}
+        </Alert>
+      </Snackbar>
+      
       {!currentEntry && (
         <Stack spacing={2} sx={{ width: '100%', maxWidth: 400 }}>
           <FormControl fullWidth>
@@ -218,29 +311,44 @@ const TimeTracking: React.FC = () => {
           <Button 
             variant="contained" 
             color="primary" 
-            onClick={handleStart} 
+            onClick={handleStart}
             disabled={isStartDisabled}
           >
             Почати
           </Button>
         )}
-        {currentEntry && currentEntry.isRunning && !currentEntry.endTime && (
-          <Button variant="contained" color="warning" onClick={handlePause}>
+        
+        {currentEntry && currentEntry.isRunning && (
+          <Button 
+            variant="contained" 
+            color="warning" 
+            onClick={handlePause}
+          >
             Пауза
           </Button>
         )}
-        {currentEntry && !currentEntry.isRunning && !currentEntry.endTime && (
-          <Button variant="contained" color="primary" onClick={handleResume}>
+        
+        {currentEntry && !currentEntry.isRunning && (
+          <Button 
+            variant="contained" 
+            color="primary" 
+            onClick={handleResume}
+          >
             Продовжити
           </Button>
         )}
-        {currentEntry && !currentEntry.endTime && (
-          <Button variant="contained" color="error" onClick={handleStop}>
-            Зупинити
+        
+        {currentEntry && (
+          <Button 
+            variant="contained" 
+            color="error" 
+            onClick={handleStop}
+          >
+            Стоп
           </Button>
         )}
       </Stack>
-      
+
       <WorkAmountDialog
         open={showWorkAmountDialog}
         onClose={() => setShowWorkAmountDialog(false)}
