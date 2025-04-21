@@ -64,6 +64,14 @@ export const clearTimerState = () => {
 
 export const saveTimeEntry = async (timeEntry: Omit<TimeEntry, 'createdAt' | 'lastUpdate' | 'id'>) => {
   try {
+    if (!(timeEntry.startTime instanceof Date) || isNaN(timeEntry.startTime.getTime())) {
+      throw new Error('Invalid startTime');
+    }
+
+    if (timeEntry.endTime && (!(timeEntry.endTime instanceof Date) || isNaN(timeEntry.endTime.getTime()))) {
+      throw new Error('Invalid endTime');
+    }
+
     const timeEntriesRef = collection(db, 'timeEntries');
     
     // Конвертуємо дати в Timestamp
@@ -96,17 +104,35 @@ export const saveTimeEntry = async (timeEntry: Omit<TimeEntry, 'createdAt' | 'la
     // Зберігаємо стан таймера в localStorage і синхронізуємо через Realtime Database
     if (timeEntry.isRunning) {
       saveTimerState(fullEntry);
+    } else {
+      clearTimerState(); // Очищуємо стан, якщо запис не активний
     }
 
     return id;
   } catch (error) {
     console.error('Error saving time entry:', error);
-    throw error;
+    if (error instanceof Error) {
+      throw new Error(`Помилка збереження запису: ${error.message}`);
+    }
+    throw new Error('Помилка збереження запису');
   }
 };
 
 export const updateTimeEntry = async (id: string, data: Partial<TimeEntry>) => {
   try {
+    // Перевіряємо валідність дат
+    if (data.startTime && (!(data.startTime instanceof Date) || isNaN(data.startTime.getTime()))) {
+      throw new Error('Invalid startTime');
+    }
+
+    if (data.endTime && (!(data.endTime instanceof Date) || isNaN(data.endTime.getTime()))) {
+      throw new Error('Invalid endTime');
+    }
+
+    if (data.lastPauseTime && (!(data.lastPauseTime instanceof Date) || isNaN(data.lastPauseTime.getTime()))) {
+      throw new Error('Invalid lastPauseTime');
+    }
+
     const docRef = doc(db, 'timeEntries', id);
     
     // Спочатку отримуємо поточний запис
@@ -150,6 +176,9 @@ export const updateTimeEntry = async (id: string, data: Partial<TimeEntry>) => {
         const now = new Date();
         const start = currentData.startTime.toDate();
         const pausedTime = currentData.pausedTime || 0;
+        if (isNaN(now.getTime()) || isNaN(start.getTime())) {
+          throw new Error('Invalid date values for duration calculation');
+        }
         updateData.duration = Math.max(0, now.getTime() - start.getTime() - pausedTime);
       }
     }
@@ -171,11 +200,24 @@ export const updateTimeEntry = async (id: string, data: Partial<TimeEntry>) => {
         lastPauseTime: data.lastPauseTime || null,
         createdAt: currentData.createdAt.toDate()
       } as TimeEntry;
-      saveTimerState(updatedEntry);
+
+      // Перевіряємо валідність дат перед збереженням
+      if (
+        updatedEntry.startTime instanceof Date && 
+        !isNaN(updatedEntry.startTime.getTime()) &&
+        (!updatedEntry.endTime || (updatedEntry.endTime instanceof Date && !isNaN(updatedEntry.endTime.getTime())))
+      ) {
+        saveTimerState(updatedEntry);
+      } else {
+        throw new Error('Invalid date values in updated entry');
+      }
     }
   } catch (error) {
     console.error('Error updating time entry:', error);
-    throw error;
+    if (error instanceof Error) {
+      throw new Error(`Помилка оновлення запису: ${error.message}`);
+    }
+    throw new Error('Помилка оновлення запису');
   }
 };
 

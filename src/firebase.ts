@@ -1,6 +1,22 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { getAuth, connectAuthEmulator } from 'firebase/auth';
+
+// Перевіряємо наявність всіх необхідних змінних середовища
+const requiredEnvVars = [
+  'REACT_APP_FIREBASE_API_KEY',
+  'REACT_APP_FIREBASE_AUTH_DOMAIN',
+  'REACT_APP_FIREBASE_PROJECT_ID',
+  'REACT_APP_FIREBASE_STORAGE_BUCKET',
+  'REACT_APP_FIREBASE_MESSAGING_SENDER_ID',
+  'REACT_APP_FIREBASE_APP_ID'
+];
+
+const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+if (missingEnvVars.length > 0) {
+  throw new Error(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
+}
 
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
@@ -11,6 +27,29 @@ const firebaseConfig = {
   appId: process.env.REACT_APP_FIREBASE_APP_ID
 };
 
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app); 
+// Ініціалізуємо Firebase з обробкою помилок
+let app;
+try {
+  app = initializeApp(firebaseConfig);
+  console.log('Firebase успішно ініціалізовано');
+} catch (error) {
+  console.error('Помилка ініціалізації Firebase:', error);
+  throw new Error('Не вдалося ініціалізувати Firebase. Перевірте конфігурацію.');
+}
+
+// Ініціалізуємо сервіси
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// Використовуємо емулятори для локальної розробки
+if (process.env.NODE_ENV === 'development') {
+  try {
+    connectAuthEmulator(auth, 'http://localhost:9099');
+    connectFirestoreEmulator(db, 'localhost', 8080);
+    console.log('Емулятори Firebase підключено');
+  } catch (error) {
+    console.warn('Не вдалося підключити емулятори Firebase:', error);
+  }
+}
+
+export { auth, db }; 
