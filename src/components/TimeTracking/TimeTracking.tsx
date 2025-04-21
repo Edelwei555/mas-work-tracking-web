@@ -13,7 +13,7 @@ import {
   Snackbar 
 } from '@mui/material';
 import { startTimer, stopTimer, pauseTimer, resumeTimer, resetTimer, updateElapsedTime } from '../../store/timerSlice';
-import { saveTimeEntry } from '../../services/timeTracking';
+import { saveTimeEntry, updateTimeEntry } from '../../services/timeTracking';
 import { TimeEntry } from '../../types/timeEntry';
 import WorkAmountDialog from './WorkAmountDialog';
 import { RootState } from '../../store/store';
@@ -219,21 +219,8 @@ const TimeTracking: React.FC = () => {
 
   const handleSave = async (workAmount: number) => {
     try {
-      if (currentEntry) {
-        const entry = {
-          userId: currentEntry.userId,
-          teamId: currentEntry.teamId,
-          workTypeId: currentEntry.workTypeId,
-          locationId: currentEntry.locationId,
-          startTime: currentEntry.startTime instanceof Date ? currentEntry.startTime : new Date(currentEntry.startTime),
-          endTime: new Date(),
-          pausedTime: currentEntry.pausedTime || 0,
-          lastPauseTime: null,
-          isRunning: false,
-          workAmount,
-          duration: currentEntry.duration || 0
-        };
-        await saveTimeEntry(entry);
+      if (currentEntry && currentEntry.id) {
+        await updateTimeEntry(currentEntry.id, { workAmount });
         setShowWorkAmountDialog(false);
         setSelectedWorkType('');
         setSelectedLocation('');

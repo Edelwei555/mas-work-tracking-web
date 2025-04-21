@@ -51,15 +51,12 @@ export const pauseTimer = createAsyncThunk(
     }
 
     const now = new Date();
-    const startTime = new Date(currentEntry.startTime);
-    const pausedTime = currentEntry.pausedTime || 0;
-    const additionalPausedTime = Math.floor((now.getTime() - startTime.getTime()) / 1000) - pausedTime;
+    const lastPauseTime = now;
 
     // Оновлюємо в базі даних
     await updateTimeEntry(currentEntry.id, {
       isRunning: false,
-      pausedTime: pausedTime + additionalPausedTime,
-      lastPauseTime: now,
+      lastPauseTime,
       lastUpdate: now
     });
 
@@ -67,8 +64,7 @@ export const pauseTimer = createAsyncThunk(
     return {
       ...currentEntry,
       isRunning: false,
-      pausedTime: pausedTime + additionalPausedTime,
-      lastPauseTime: now,
+      lastPauseTime,
       lastUpdate: now
     };
   }
@@ -84,11 +80,19 @@ export const resumeTimer = createAsyncThunk(
     }
 
     const now = new Date();
+    let pausedTime = currentEntry.pausedTime || 0;
+
+    // Додаємо час, який пройшов з моменту останньої паузи
+    if (currentEntry.lastPauseTime) {
+      const lastPauseTime = new Date(currentEntry.lastPauseTime);
+      pausedTime += Math.floor((now.getTime() - lastPauseTime.getTime()) / 1000);
+    }
 
     // Оновлюємо в базі даних
     await updateTimeEntry(currentEntry.id, {
       isRunning: true,
       lastPauseTime: null,
+      pausedTime,
       lastUpdate: now
     });
 
@@ -97,6 +101,7 @@ export const resumeTimer = createAsyncThunk(
       ...currentEntry,
       isRunning: true,
       lastPauseTime: null,
+      pausedTime,
       lastUpdate: now
     };
   }
