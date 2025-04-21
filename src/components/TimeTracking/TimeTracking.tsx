@@ -37,8 +37,9 @@ const TimeTracking: React.FC = () => {
       intervalId = setInterval(() => {
         const now = new Date();
         const start = new Date(currentEntry.startTime);
-        const pausedTime = currentEntry.pausedTime || 0;
-        const elapsed = Math.floor((now.getTime() - start.getTime() - pausedTime) / 1000);
+        const timeDiffInSeconds = Math.floor((now.getTime() - start.getTime()) / 1000);
+        const pausedTimeInSeconds = Math.floor((currentEntry.pausedTime || 0) / 1000);
+        const elapsed = timeDiffInSeconds - pausedTimeInSeconds;
         dispatch(updateElapsedTime(elapsed));
       }, 1000);
     }
@@ -110,13 +111,13 @@ const TimeTracking: React.FC = () => {
 
   const handlePause = () => {
     if (currentEntry) {
-      dispatch(pauseTimer(currentEntry));
+      dispatch(pauseTimer());
     }
   };
 
   const handleResume = () => {
     if (currentEntry) {
-      dispatch(resumeTimer(currentEntry));
+      dispatch(resumeTimer());
     }
   };
 

@@ -10,7 +10,7 @@ export interface TimeEntry {
     workTypeId: string;
     locationId: string;
     duration: number;
-    lastPauseTime: null;
+    lastPauseTime: Date | null;
     createdAt?: Date;
     lastUpdate?: Date;
 } 

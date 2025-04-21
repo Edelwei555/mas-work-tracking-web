@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { saveTimeEntry, updateTimeEntry, getCurrentTimeEntry } from '../services/timeTracking';
 import { TimeEntry } from '../types';
 import { PayloadAction } from '@reduxjs/toolkit';
+import { RootState } from '../store';
 
 interface TimerState {
   currentEntry: TimeEntry | null;
@@ -41,57 +42,43 @@ export const startTimer = createAsyncThunk(
 );
 
 export const pauseTimer = createAsyncThunk(
-  'timer/pause',
-  async (timeEntry: TimeEntry) => {
-    const now = new Date();
-    
-    // Спочатку оновлюємо в базі даних
-    const updateData: Partial<TimeEntry> = {
-      isRunning: false,
-      lastPauseTime: now,
-      lastUpdate: now
-    };
-    await updateTimeEntry(timeEntry.id!, updateData);
+  'timer/pauseTimer',
+  async (_, { getState }) => {
+    const state = getState() as RootState;
+    const { currentEntry } = state.timer;
+    if (!currentEntry) return null;
 
-    // Потім повертаємо повний оновлений об'єкт
-    return {
-      ...timeEntry,
+    const now = new Date();
+    const pausedTime = currentEntry.pausedTime || 0;
+    const additionalPausedTime = now.getTime() - new Date(currentEntry.startTime).getTime() - pausedTime;
+
+    const updatedEntry = {
+      ...currentEntry,
       isRunning: false,
-      lastPauseTime: now,
-      lastUpdate: now
+      pausedTime: pausedTime + additionalPausedTime,
+      lastPauseTime: now
     };
+
+    await updateTimeEntry(currentEntry.id!, updatedEntry);
+    return updatedEntry;
   }
 );
 
 export const resumeTimer = createAsyncThunk(
-  'timer/resume',
-  async (timeEntry: TimeEntry) => {
-    const now = new Date();
-    const lastPauseTime = timeEntry.lastPauseTime ? new Date(timeEntry.lastPauseTime) : null;
-    
-    // Додаємо час паузи до загального часу пауз
-    let totalPausedTime = timeEntry.pausedTime || 0;
-    if (lastPauseTime) {
-      totalPausedTime += Math.floor((now.getTime() - lastPauseTime.getTime()) / 1000);
-    }
+  'timer/resumeTimer',
+  async (_, { getState }) => {
+    const state = getState() as RootState;
+    const { currentEntry } = state.timer;
+    if (!currentEntry) return null;
 
-    // Спочатку оновлюємо в базі даних
-    const updateData: Partial<TimeEntry> = {
+    const updatedEntry = {
+      ...currentEntry,
       isRunning: true,
-      pausedTime: totalPausedTime,
-      lastPauseTime: null,
-      lastUpdate: now
+      lastPauseTime: null
     };
-    await updateTimeEntry(timeEntry.id!, updateData);
 
-    // Потім повертаємо повний оновлений об'єкт
-    return {
-      ...timeEntry,
-      isRunning: true,
-      pausedTime: totalPausedTime,
-      lastPauseTime: null,
-      lastUpdate: now
-    };
+    await updateTimeEntry(currentEntry.id!, updatedEntry);
+    return updatedEntry;
   }
 );
 
