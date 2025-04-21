@@ -1,3 +1,5 @@
+import { Timestamp } from 'firebase/firestore';
+
 export interface TimeEntry {
     id?: string;
     startTime: Date;
@@ -13,4 +15,12 @@ export interface TimeEntry {
     lastPauseTime: Date | null;
     createdAt?: Date;
     lastUpdate?: Date;
+}
+
+export interface FirestoreTimeEntry extends Omit<TimeEntry, 'startTime' | 'endTime' | 'lastPauseTime' | 'createdAt' | 'lastUpdate'> {
+    startTime: Timestamp;
+    endTime: Timestamp | null;
+    lastPauseTime: Timestamp | null;
+    createdAt: Timestamp;
+    lastUpdate: Timestamp;
 } 

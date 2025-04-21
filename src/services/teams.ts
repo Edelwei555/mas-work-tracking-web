@@ -1,4 +1,4 @@
-import { db, functions } from '../config/firebase';
+import { db } from '../firebase';
 import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc, setDoc } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { createTeamMember } from './teamMembers';

@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { saveTimeEntry, updateTimeEntry, getCurrentTimeEntry } from '../services/timeTracking';
-import { TimeEntry } from '../types';
+import { TimeEntry } from '../types/timeEntry';
 import { PayloadAction } from '@reduxjs/toolkit';
 import { RootState } from '../store';
 
@@ -46,21 +46,31 @@ export const pauseTimer = createAsyncThunk(
   async (_, { getState }) => {
     const state = getState() as RootState;
     const { currentEntry } = state.timer;
-    if (!currentEntry) return null;
+    if (!currentEntry || !currentEntry.id) {
+      throw new Error('No active timer to pause');
+    }
 
     const now = new Date();
+    const startTime = new Date(currentEntry.startTime);
     const pausedTime = currentEntry.pausedTime || 0;
-    const additionalPausedTime = now.getTime() - new Date(currentEntry.startTime).getTime() - pausedTime;
+    const additionalPausedTime = Math.floor((now.getTime() - startTime.getTime()) / 1000) - pausedTime;
 
-    const updatedEntry = {
+    // Оновлюємо в базі даних
+    await updateTimeEntry(currentEntry.id, {
+      isRunning: false,
+      pausedTime: pausedTime + additionalPausedTime,
+      lastPauseTime: now,
+      lastUpdate: now
+    });
+
+    // Повертаємо повний оновлений об'єкт
+    return {
       ...currentEntry,
       isRunning: false,
       pausedTime: pausedTime + additionalPausedTime,
-      lastPauseTime: now
+      lastPauseTime: now,
+      lastUpdate: now
     };
-
-    await updateTimeEntry(currentEntry.id!, updatedEntry);
-    return updatedEntry;
   }
 );
 
@@ -69,16 +79,26 @@ export const resumeTimer = createAsyncThunk(
   async (_, { getState }) => {
     const state = getState() as RootState;
     const { currentEntry } = state.timer;
-    if (!currentEntry) return null;
+    if (!currentEntry || !currentEntry.id) {
+      throw new Error('No paused timer to resume');
+    }
 
-    const updatedEntry = {
+    const now = new Date();
+
+    // Оновлюємо в базі даних
+    await updateTimeEntry(currentEntry.id, {
+      isRunning: true,
+      lastPauseTime: null,
+      lastUpdate: now
+    });
+
+    // Повертаємо повний оновлений об'єкт
+    return {
       ...currentEntry,
       isRunning: true,
-      lastPauseTime: null
+      lastPauseTime: null,
+      lastUpdate: now
     };
-
-    await updateTimeEntry(currentEntry.id!, updatedEntry);
-    return updatedEntry;
   }
 );
 
@@ -182,10 +202,14 @@ const timerSlice = createSlice({
         state.error = action.error.message || 'Failed to start timer';
       })
       .addCase(pauseTimer.fulfilled, (state, action) => {
-        state.currentEntry = action.payload;
+        if (action.payload) {
+          state.currentEntry = action.payload;
+        }
       })
       .addCase(resumeTimer.fulfilled, (state, action) => {
-        state.currentEntry = action.payload;
+        if (action.payload) {
+          state.currentEntry = action.payload;
+        }
       })
       .addCase(stopTimer.pending, (state) => {
         state.isLoading = true;
@@ -199,28 +223,33 @@ const timerSlice = createSlice({
         state.isLoading = false;
         state.error = action.error.message || 'Failed to stop timer';
       })
+      .addCase(fetchCurrentTimer.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
       .addCase(fetchCurrentTimer.fulfilled, (state, action) => {
-        const entry = action.payload;
-        
-        if (!entry) {
-          state.currentEntry = null;
-          state.elapsedTime = 0;
-          return;
-        }
-
-        state.currentEntry = entry;
-        
-        if (entry.isRunning) {
+        state.isLoading = false;
+        state.currentEntry = action.payload;
+        if (action.payload) {
           const now = new Date();
-          const start = new Date(entry.startTime);
-          const pausedTime = entry.pausedTime || 0;
-          const elapsedTime = Math.max(0, Math.floor((now.getTime() - start.getTime()) / 1000) - Math.floor(pausedTime));
-          state.elapsedTime = elapsedTime;
-        } else if (entry.duration) {
-          state.elapsedTime = entry.duration;
+          const startTime = new Date(action.payload.startTime);
+          const pausedTime = action.payload.pausedTime || 0;
+          const lastPauseTime = action.payload.lastPauseTime ? new Date(action.payload.lastPauseTime) : null;
+          
+          let elapsedTime = Math.floor((now.getTime() - startTime.getTime()) / 1000);
+          
+          if (lastPauseTime) {
+            elapsedTime = Math.floor((lastPauseTime.getTime() - startTime.getTime()) / 1000);
+          }
+          
+          state.elapsedTime = Math.max(0, elapsedTime - pausedTime);
         } else {
           state.elapsedTime = 0;
         }
+      })
+      .addCase(fetchCurrentTimer.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message || 'Failed to fetch current timer';
       });
   }
 });

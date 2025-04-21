@@ -8,26 +8,12 @@ import {
   orderBy,
   updateDoc,
   doc,
-  getDoc
+  getDoc,
+  setDoc,
+  DocumentData
 } from 'firebase/firestore';
-import { db } from '../config/firebase';
-import { TimeEntry } from '../types';
-
-interface FirestoreTimeEntry {
-  userId: string;
-  teamId: string;
-  workTypeId: string;
-  locationId: string;
-  startTime: Timestamp;
-  endTime: Timestamp | null;
-  pausedTime: number;
-  workAmount: number;
-  isRunning: boolean;
-  duration: number;
-  lastPauseTime: Timestamp | null;
-  createdAt: Timestamp;
-  lastUpdate: Timestamp;
-}
+import { db } from '../firebase';
+import { TimeEntry, FirestoreTimeEntry } from '../types/timeEntry';
 
 // Зберігаємо стан таймера в localStorage
 const TIMER_STATE_KEY = 'timerState';
@@ -62,247 +48,119 @@ export const clearTimerState = () => {
   localStorage.removeItem(TIMER_STATE_KEY);
 };
 
-export const saveTimeEntry = async (timeEntry: Omit<TimeEntry, 'createdAt' | 'lastUpdate' | 'id'>) => {
+const convertToFirestore = (entry: Partial<TimeEntry>): Partial<FirestoreTimeEntry> => {
+  const result: Partial<FirestoreTimeEntry> = {};
+  
+  // Копіюємо всі поля, крім дат
+  Object.entries(entry).forEach(([key, value]) => {
+    if (!['startTime', 'endTime', 'lastPauseTime', 'createdAt', 'lastUpdate'].includes(key)) {
+      (result as any)[key] = value;
+    }
+  });
+  
+  // Конвертуємо дати в Timestamp
+  if (entry.startTime) {
+    result.startTime = Timestamp.fromDate(entry.startTime);
+  }
+  if (entry.endTime) {
+    result.endTime = Timestamp.fromDate(entry.endTime);
+  }
+  if (entry.lastPauseTime) {
+    result.lastPauseTime = Timestamp.fromDate(entry.lastPauseTime);
+  }
+  if (entry.createdAt) {
+    result.createdAt = Timestamp.fromDate(entry.createdAt);
+  }
+  if (entry.lastUpdate) {
+    result.lastUpdate = Timestamp.fromDate(entry.lastUpdate);
+  }
+  
+  return result;
+};
+
+const convertFromFirestore = (doc: FirestoreTimeEntry & { id: string }): TimeEntry => {
+  return {
+    ...doc,
+    startTime: doc.startTime.toDate(),
+    endTime: doc.endTime?.toDate() || null,
+    lastPauseTime: doc.lastPauseTime?.toDate() || null,
+    createdAt: doc.createdAt.toDate(),
+    lastUpdate: doc.lastUpdate.toDate()
+  };
+};
+
+export const saveTimeEntry = async (entry: Omit<TimeEntry, 'id' | 'createdAt' | 'lastUpdate'>): Promise<string> => {
   try {
-    // Перевіряємо та конвертуємо дати
-    const startTime = timeEntry.startTime instanceof Date ? timeEntry.startTime : new Date(timeEntry.startTime);
-    if (isNaN(startTime.getTime())) {
-      throw new Error('Invalid startTime');
-    }
+    const now = new Date();
+    const firestoreEntry = convertToFirestore({
+      ...entry,
+      createdAt: now,
+      lastUpdate: now
+    }) as FirestoreTimeEntry;
 
-    let endTime = null;
-    if (timeEntry.endTime) {
-      endTime = timeEntry.endTime instanceof Date ? timeEntry.endTime : new Date(timeEntry.endTime);
-      if (isNaN(endTime.getTime())) {
-        throw new Error('Invalid endTime');
-      }
-    }
-
-    const timeEntriesRef = collection(db, 'timeEntries');
+    const docRef = doc(collection(db, 'timeEntries'));
+    await setDoc(docRef, firestoreEntry);
     
-    // Конвертуємо дати в Timestamp
-    const firestoreEntry: FirestoreTimeEntry = {
-      userId: timeEntry.userId,
-      teamId: timeEntry.teamId,
-      workTypeId: timeEntry.workTypeId,
-      locationId: timeEntry.locationId,
-      startTime: Timestamp.fromDate(startTime),
-      endTime: endTime ? Timestamp.fromDate(endTime) : null,
-      pausedTime: timeEntry.pausedTime || 0,
-      workAmount: timeEntry.workAmount || 0,
-      isRunning: timeEntry.isRunning,
-      duration: timeEntry.duration || 0,
-      lastPauseTime: null,
-      createdAt: Timestamp.now(),
-      lastUpdate: Timestamp.now()
-    };
-
-    const docRef = await addDoc(timeEntriesRef, firestoreEntry);
-    const id = docRef.id;
-
-    const fullEntry = {
-      ...timeEntry,
-      id,
-      startTime,
-      endTime,
-      createdAt: new Date(),
-      lastUpdate: new Date()
-    };
-
-    // Зберігаємо стан таймера в localStorage
-    if (timeEntry.isRunning) {
-      saveTimerState(fullEntry);
-    } else {
-      clearTimerState(); // Очищуємо стан, якщо запис не активний
-    }
-
-    return id;
+    return docRef.id;
   } catch (error) {
     console.error('Error saving time entry:', error);
-    if (error instanceof Error) {
-      throw new Error(`Помилка збереження запису: ${error.message}`);
-    }
-    throw new Error('Помилка збереження запису');
+    throw error;
   }
 };
 
-export const updateTimeEntry = async (id: string, data: Partial<TimeEntry>) => {
+export const updateTimeEntry = async (id: string, data: Partial<TimeEntry>): Promise<void> => {
   try {
-    // Перевіряємо валідність дат
-    if (data.startTime && (!(data.startTime instanceof Date) || isNaN(data.startTime.getTime()))) {
-      throw new Error('Invalid startTime');
-    }
-
-    if (data.endTime && (!(data.endTime instanceof Date) || isNaN(data.endTime.getTime()))) {
-      throw new Error('Invalid endTime');
-    }
-
-    if (data.lastPauseTime && (!(data.lastPauseTime instanceof Date) || isNaN(data.lastPauseTime.getTime()))) {
-      throw new Error('Invalid lastPauseTime');
-    }
+    const now = new Date();
+    const updateData = convertToFirestore({
+      ...data,
+      lastUpdate: now
+    });
 
     const docRef = doc(db, 'timeEntries', id);
-    
-    // Спочатку отримуємо поточний запис
-    const docSnap = await getDoc(docRef);
-    if (!docSnap.exists()) {
-      throw new Error('Time entry not found');
-    }
-
-    const currentData = docSnap.data() as FirestoreTimeEntry;
-    
-    // Створюємо базовий об'єкт оновлення
-    const updateData: Partial<FirestoreTimeEntry> = {
-      lastUpdate: Timestamp.now()
-    };
-
-    // Копіюємо всі поля, крім дат
-    Object.entries(data).forEach(([key, value]) => {
-      if (!['startTime', 'endTime', 'lastPauseTime', 'createdAt', 'lastUpdate'].includes(key)) {
-        (updateData as any)[key] = value;
-      }
-    });
-    
-    // Конвертуємо дати в Timestamp
-    if (data.startTime) {
-      updateData.startTime = Timestamp.fromDate(data.startTime);
-    }
-    if (data.endTime) {
-      updateData.endTime = Timestamp.fromDate(data.endTime);
-    }
-    if (data.lastPauseTime) {
-      updateData.lastPauseTime = Timestamp.fromDate(data.lastPauseTime);
-    } else if (data.hasOwnProperty('lastPauseTime')) {
-      updateData.lastPauseTime = null;
-    }
-
-    // Якщо запис зупиняється, встановлюємо всі необхідні поля
-    if (data.isRunning === false) {
-      updateData.isRunning = false;
-      updateData.endTime = Timestamp.now();
-      if (!updateData.duration) {
-        const now = new Date();
-        const start = currentData.startTime.toDate();
-        const pausedTime = currentData.pausedTime || 0;
-        if (isNaN(now.getTime()) || isNaN(start.getTime())) {
-          throw new Error('Invalid date values for duration calculation');
-        }
-        updateData.duration = Math.max(0, now.getTime() - start.getTime() - pausedTime);
-      }
-    }
-    
-    await updateDoc(docRef, updateData);
-
-    // Завжди очищуємо локальний стан при оновленні
-    clearTimerState();
-
-    // Оновлюємо локальний стан тільки якщо таймер активний
-    if (data.isRunning === true) {
-      const updatedEntry = {
-        ...currentData,
-        ...data,
-        id,
-        startTime: data.startTime || currentData.startTime.toDate(),
-        endTime: data.endTime || null,
-        lastUpdate: new Date(),
-        lastPauseTime: data.lastPauseTime || null,
-        createdAt: currentData.createdAt.toDate()
-      } as TimeEntry;
-
-      // Перевіряємо валідність дат перед збереженням
-      if (
-        updatedEntry.startTime instanceof Date && 
-        !isNaN(updatedEntry.startTime.getTime()) &&
-        (!updatedEntry.endTime || (updatedEntry.endTime instanceof Date && !isNaN(updatedEntry.endTime.getTime())))
-      ) {
-        saveTimerState(updatedEntry);
-      } else {
-        throw new Error('Invalid date values in updated entry');
-      }
-    }
+    await updateDoc(docRef, updateData as DocumentData);
   } catch (error) {
     console.error('Error updating time entry:', error);
-    if (error instanceof Error) {
-      throw new Error(`Помилка оновлення запису: ${error.message}`);
-    }
-    throw new Error('Помилка оновлення запису');
+    throw error;
   }
 };
 
 export const getCurrentTimeEntry = async (userId: string, teamId: string): Promise<TimeEntry | null> => {
   try {
-    // Спочатку перевіряємо Firestore
     const q = query(
       collection(db, 'timeEntries'),
       where('userId', '==', userId),
       where('teamId', '==', teamId),
-      where('isRunning', '==', true),
-      orderBy('startTime', 'desc'),
+      where('isRunning', '==', true)
     );
 
     const querySnapshot = await getDocs(q);
-    
-    // Якщо немає активних записів, очищуємо локальний стан
     if (querySnapshot.empty) {
-      clearTimerState();
       return null;
     }
 
     const doc = querySnapshot.docs[0];
     const data = doc.data() as FirestoreTimeEntry;
     
-    // Перевіряємо, чи запис не застарів
+    // Перевіряємо, чи запис не застарів (більше 24 годин)
     const now = new Date();
     const startTime = data.startTime.toDate();
     const timeSinceStart = now.getTime() - startTime.getTime();
     
     if (timeSinceStart > 24 * 60 * 60 * 1000) { // 24 години
-      clearTimerState();
-      
       // Автоматично зупиняємо застарілий запис
-      await updateDoc(doc.ref, {
+      const updateData = convertToFirestore({
         isRunning: false,
-        endTime: Timestamp.now(),
-        lastUpdate: Timestamp.now()
+        endTime: now,
+        lastUpdate: now
       });
       
+      await updateDoc(doc.ref, updateData as DocumentData);
       return null;
     }
 
-    // Якщо запис не активний, повертаємо null
-    if (!data.isRunning) {
-      clearTimerState();
-      return null;
-    }
-
-    const timeEntry: TimeEntry = {
-      id: doc.id,
-      userId: data.userId,
-      teamId: data.teamId,
-      workTypeId: data.workTypeId,
-      locationId: data.locationId,
-      startTime: startTime,
-      endTime: data.endTime ? data.endTime.toDate() : null,
-      pausedTime: data.pausedTime || 0,
-      workAmount: data.workAmount || 0,
-      isRunning: data.isRunning,
-      duration: data.duration || 0,
-      lastPauseTime: null,
-      createdAt: data.createdAt.toDate(),
-      lastUpdate: data.lastUpdate.toDate()
-    };
-
-    // Оновлюємо локальний стан тільки якщо запис активний
-    if (timeEntry.isRunning) {
-      saveTimerState(timeEntry);
-    } else {
-      clearTimerState();
-    }
-
-    return timeEntry;
+    return convertFromFirestore({ ...data, id: doc.id });
   } catch (error) {
     console.error('Error getting current time entry:', error);
-    clearTimerState();
     throw error;
   }
 };
