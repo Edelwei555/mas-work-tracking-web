@@ -220,11 +220,18 @@ const TimeTracking: React.FC = () => {
   const handleSave = async (workAmount: number) => {
     try {
       if (currentEntry) {
-        const entry: TimeEntry = {
-          ...currentEntry,
-          workAmount,
+        const entry = {
+          userId: currentEntry.userId,
+          teamId: currentEntry.teamId,
+          workTypeId: currentEntry.workTypeId,
+          locationId: currentEntry.locationId,
+          startTime: currentEntry.startTime instanceof Date ? currentEntry.startTime : new Date(currentEntry.startTime),
+          endTime: new Date(),
+          pausedTime: currentEntry.pausedTime || 0,
+          lastPauseTime: null,
           isRunning: false,
-          endTime: new Date()
+          workAmount,
+          duration: currentEntry.duration || 0
         };
         await saveTimeEntry(entry);
         setShowWorkAmountDialog(false);
