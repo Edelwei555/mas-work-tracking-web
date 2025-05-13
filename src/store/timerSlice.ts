@@ -29,7 +29,8 @@ export const startTimer = createAsyncThunk(
       pausedTime: 0,
       duration: 0,
       lastPauseTime: null,
-      isRunning: true
+      isRunning: true,
+      status: 'pending' as const
     };
     const id = await saveTimeEntry(entry);
     return { 
