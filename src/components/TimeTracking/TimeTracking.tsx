@@ -162,17 +162,17 @@ const TimeTracking: React.FC = () => {
       
       const now = new Date();
       await dispatch(startTimer({
-        startTime: now,
-        endTime: null,
-        isRunning: true,
-        workAmount: 0,
-        pausedTime: 0,
-        duration: 0,
-        lastPauseTime: null,
         userId: currentUser.uid,
         teamId: teamId,
         workTypeId: selectedWorkType,
         locationId: selectedLocation,
+        startTime: now,
+        endTime: null,
+        pausedTime: 0,
+        workAmount: 0,
+        isRunning: true,
+        duration: 0,
+        lastPauseTime: null,
         status: 'completed'
       }));
     } catch (err) {
