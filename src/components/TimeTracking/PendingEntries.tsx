@@ -67,13 +67,17 @@ const PendingEntries: React.FC = () => {
       
       workTypesResults.forEach(workTypes => {
         workTypes.forEach(workType => {
-          workTypesMap.set(workType.id, workType);
+          if (workType.id) {
+            workTypesMap.set(workType.id, workType);
+          }
         });
       });
       
       locationsResults.forEach(locations => {
         locations.forEach(location => {
-          locationsMap.set(location.id, location);
+          if (location.id) {
+            locationsMap.set(location.id, location);
+          }
         });
       });
       
