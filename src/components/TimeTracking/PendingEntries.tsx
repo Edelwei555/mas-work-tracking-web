@@ -45,7 +45,12 @@ const PendingEntries: React.FC = () => {
       const entries = await getPendingTimeEntries(currentUser.uid);
       
       // Отримуємо всі унікальні teamId з записів
-      const teamIds = [...new Set(entries.map(entry => entry.teamId))];
+      const teamIds = entries.reduce<string[]>((acc, entry) => {
+        if (!acc.includes(entry.teamId)) {
+          acc.push(entry.teamId);
+        }
+        return acc;
+      }, []);
       
       // Отримуємо всі типи робіт та локації для всіх команд
       const workTypesPromises = teamIds.map(teamId => getTeamWorkTypes(teamId));
