@@ -107,8 +107,11 @@ const PendingEntries: React.FC<PendingEntriesProps> = ({ onUpdate }) => {
   };
 
   const handleSave = async (workAmount: number) => {
-    if (!selectedEntry) return;
-    
+    if (!selectedEntry?.id) {
+      console.error('No entry selected');
+      return;
+    }
+
     try {
       await updatePendingTimeEntry(selectedEntry.id, workAmount);
       await loadPendingEntries();

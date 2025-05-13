@@ -255,13 +255,17 @@ export const getPendingTimeEntries = async (userId: string): Promise<PendingTime
   }
 };
 
-export const updatePendingTimeEntry = async (id: string, workAmount: number): Promise<void> => {
+export const updatePendingTimeEntry = async (id: string | undefined, workAmount: number): Promise<void> => {
+  if (!id) {
+    throw new Error('Entry ID is required');
+  }
+
   try {
     const now = new Date();
     const updateData = {
       workAmount,
-      status: undefined,
-      lastUpdate: now
+      status: 'completed',
+      lastUpdate: Timestamp.fromDate(now)
     };
 
     const docRef = doc(db, 'timeEntries', id);
