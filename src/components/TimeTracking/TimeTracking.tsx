@@ -13,7 +13,7 @@ import {
   Snackbar 
 } from '@mui/material';
 import { startTimer, stopTimer, pauseTimer, resumeTimer, resetTimer, updateElapsedTime } from '../../store/timerSlice';
-import { saveTimeEntry, updateTimeEntry } from '../../services/timeTracking';
+import { saveTimeEntry, updateTimeEntry, savePendingTimeEntry } from '../../services/timeTracking';
 import { TimeEntry } from '../../types/timeEntry';
 import WorkAmountDialog from './WorkAmountDialog';
 import { RootState } from '../../store/store';
@@ -21,6 +21,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getUserTeams } from '../../services/teams';
 import { getTeamWorkTypes, WorkType } from '../../services/workTypes';
 import { getTeamLocations, Location } from '../../services/locations';
+import PendingEntries from './PendingEntries';
 
 const TimeTracking: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -235,6 +236,22 @@ const TimeTracking: React.FC = () => {
     }
   };
 
+  const handlePostpone = async () => {
+    try {
+      if (currentEntry) {
+        await savePendingTimeEntry(currentEntry);
+        setShowWorkAmountDialog(false);
+        setSelectedWorkType('');
+        setSelectedLocation('');
+        dispatch(resetTimer());
+      }
+    } catch (err) {
+      console.error('Помилка відкладання запису:', err);
+      setError('Помилка відкладання запису');
+      setShowError(true);
+    }
+  };
+
   const handleCloseError = () => {
     setShowError(false);
     setError(null);
@@ -345,10 +362,13 @@ const TimeTracking: React.FC = () => {
         )}
       </Stack>
 
+      <PendingEntries onUpdate={() => {}} />
+
       <WorkAmountDialog
         open={showWorkAmountDialog}
         onClose={() => setShowWorkAmountDialog(false)}
         onSave={handleSave}
+        onPostpone={handlePostpone}
       />
     </Stack>
   );

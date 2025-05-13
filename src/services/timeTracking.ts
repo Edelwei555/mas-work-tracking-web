@@ -212,4 +212,64 @@ export const getTeamTimeEntries = async (teamId: string, startDate?: Date, endDa
     console.error('Error getting time entries:', error);
     throw error;
   }
+};
+
+export const savePendingTimeEntry = async (entry: Omit<TimeEntry, 'id' | 'createdAt' | 'lastUpdate'>): Promise<string> => {
+  try {
+    const now = new Date();
+    const firestoreEntry = convertToFirestore({
+      ...entry,
+      createdAt: now,
+      lastUpdate: now,
+      status: 'pending'
+    }) as FirestoreTimeEntry;
+
+    const docRef = doc(collection(db, 'timeEntries'));
+    await setDoc(docRef, firestoreEntry);
+    
+    return docRef.id;
+  } catch (error) {
+    console.error('Error saving pending time entry:', error);
+    throw error;
+  }
+};
+
+export const getPendingTimeEntries = async (userId: string): Promise<PendingTimeEntry[]> => {
+  try {
+    const q = query(
+      collection(db, 'timeEntries'),
+      where('userId', '==', userId),
+      where('status', '==', 'pending')
+    );
+
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data() as FirestoreTimeEntry;
+      return {
+        ...convertFromFirestore({ ...data, id: doc.id }),
+        workAmount: null,
+        status: 'pending'
+      } as PendingTimeEntry;
+    });
+  } catch (error) {
+    console.error('Error getting pending time entries:', error);
+    throw error;
+  }
+};
+
+export const updatePendingTimeEntry = async (id: string, workAmount: number): Promise<void> => {
+  try {
+    const now = new Date();
+    const updateData = {
+      workAmount,
+      status: undefined,
+      lastUpdate: now
+    };
+
+    const docRef = doc(db, 'timeEntries', id);
+    await updateDoc(docRef, updateData as DocumentData);
+  } catch (error) {
+    console.error('Error updating pending time entry:', error);
+    throw error;
+  }
 }; 

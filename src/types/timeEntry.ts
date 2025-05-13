@@ -1,26 +1,41 @@
 import { Timestamp } from 'firebase/firestore';
 
 export interface TimeEntry {
-    id?: string;
-    startTime: Date;
-    endTime: Date | null;
-    isRunning: boolean;
-    workAmount: number;
-    pausedTime: number;
+    id: string;
     userId: string;
     teamId: string;
     workTypeId: string;
     locationId: string;
-    duration: number;
+    startTime: Date;
+    endTime: Date | null;
+    pausedTime: number;
     lastPauseTime: Date | null;
-    createdAt?: Date;
-    lastUpdate?: Date;
+    isRunning: boolean;
+    workAmount?: number;
+    duration: number;
+    createdAt: Date;
+    lastUpdate: Date;
 }
 
-export interface FirestoreTimeEntry extends Omit<TimeEntry, 'startTime' | 'endTime' | 'lastPauseTime' | 'createdAt' | 'lastUpdate'> {
+export interface PendingTimeEntry extends Omit<TimeEntry, 'workAmount'> {
+    workAmount: null;
+    status: 'pending';
+}
+
+export interface FirestoreTimeEntry {
+    id: string;
+    userId: string;
+    teamId: string;
+    workTypeId: string;
+    locationId: string;
     startTime: Timestamp;
     endTime: Timestamp | null;
+    pausedTime: number;
     lastPauseTime: Timestamp | null;
+    isRunning: boolean;
+    workAmount?: number;
+    duration: number;
     createdAt: Timestamp;
     lastUpdate: Timestamp;
+    status?: 'pending';
 } 

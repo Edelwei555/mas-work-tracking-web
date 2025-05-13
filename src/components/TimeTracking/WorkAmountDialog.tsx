@@ -5,22 +5,31 @@ import {
   DialogContent, 
   DialogActions, 
   Button, 
-  TextField 
+  TextField, 
+  Stack
 } from '@mui/material';
 
 interface WorkAmountDialogProps {
   open: boolean;
   onClose: () => void;
   onSave: (workAmount: number) => void;
+  onPostpone?: () => void;
 }
 
-const WorkAmountDialog: React.FC<WorkAmountDialogProps> = ({ open, onClose, onSave }) => {
+const WorkAmountDialog: React.FC<WorkAmountDialogProps> = ({ open, onClose, onSave, onPostpone }) => {
   const [workAmount, setWorkAmount] = useState<string>('');
 
   const handleSave = () => {
     const amount = parseFloat(workAmount);
-    if (!isNaN(amount) && amount >= 0) {
+    if (!isNaN(amount) && amount > 0) {
       onSave(amount);
+      setWorkAmount('');
+    }
+  };
+
+  const handlePostpone = () => {
+    if (onPostpone) {
+      onPostpone();
       setWorkAmount('');
     }
   };
@@ -29,20 +38,25 @@ const WorkAmountDialog: React.FC<WorkAmountDialogProps> = ({ open, onClose, onSa
     <Dialog open={open} onClose={onClose}>
       <DialogTitle>Введіть обсяг виконаних робіт</DialogTitle>
       <DialogContent>
-        <TextField
-          autoFocus
-          margin="dense"
-          label="Обсяг робіт"
-          type="number"
-          fullWidth
-          value={workAmount}
-          onChange={(e) => setWorkAmount(e.target.value)}
-          inputProps={{ step: 0.1, min: 0 }}
-        />
+        <Stack spacing={2} sx={{ mt: 2 }}>
+          <TextField
+            autoFocus
+            label="Обсяг робіт"
+            type="number"
+            value={workAmount}
+            onChange={(e) => setWorkAmount(e.target.value)}
+            fullWidth
+          />
+        </Stack>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Скасувати</Button>
-        <Button onClick={handleSave} disabled={!workAmount || parseFloat(workAmount) <= 0}>
+        {onPostpone && (
+          <Button onClick={handlePostpone} color="secondary">
+            Порахувати пізніше
+          </Button>
+        )}
+        <Button onClick={handleSave} color="primary">
           Зберегти
         </Button>
       </DialogActions>
