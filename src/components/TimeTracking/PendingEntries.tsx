@@ -18,14 +18,21 @@ import { getPendingTimeEntries, updatePendingTimeEntry } from '../../services/ti
 import { useAuth } from '../../contexts/AuthContext';
 import WorkAmountDialog from './WorkAmountDialog';
 import { formatTime, formatDate } from '../../utils/timeUtils';
+import { getTeamWorkTypes, WorkType } from '../../services/workTypes';
+import { getTeamLocations, Location } from '../../services/locations';
+
+interface PendingEntryWithNames extends PendingTimeEntry {
+  workTypeName: string;
+  locationName: string;
+}
 
 const PendingEntries: React.FC = () => {
   const { t } = useTranslation();
-  const [pendingEntries, setPendingEntries] = useState<PendingTimeEntry[]>([]);
+  const [pendingEntries, setPendingEntries] = useState<PendingEntryWithNames[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showWorkAmountDialog, setShowWorkAmountDialog] = useState(false);
-  const [selectedEntry, setSelectedEntry] = useState<PendingTimeEntry | null>(null);
+  const [selectedEntry, setSelectedEntry] = useState<PendingEntryWithNames | null>(null);
   const { currentUser } = useAuth();
 
   useEffect(() => {
@@ -36,7 +43,43 @@ const PendingEntries: React.FC = () => {
     if (!currentUser) return;
     try {
       const entries = await getPendingTimeEntries(currentUser.uid);
-      setPendingEntries(entries);
+      
+      // Отримуємо всі унікальні teamId з записів
+      const teamIds = [...new Set(entries.map(entry => entry.teamId))];
+      
+      // Отримуємо всі типи робіт та локації для всіх команд
+      const workTypesPromises = teamIds.map(teamId => getTeamWorkTypes(teamId));
+      const locationsPromises = teamIds.map(teamId => getTeamLocations(teamId));
+      
+      const [workTypesResults, locationsResults] = await Promise.all([
+        Promise.all(workTypesPromises),
+        Promise.all(locationsPromises)
+      ]);
+      
+      // Створюємо мапи для швидкого пошуку
+      const workTypesMap = new Map<string, WorkType>();
+      const locationsMap = new Map<string, Location>();
+      
+      workTypesResults.forEach(workTypes => {
+        workTypes.forEach(workType => {
+          workTypesMap.set(workType.id, workType);
+        });
+      });
+      
+      locationsResults.forEach(locations => {
+        locations.forEach(location => {
+          locationsMap.set(location.id, location);
+        });
+      });
+      
+      // Додаємо назви до записів
+      const entriesWithNames = entries.map(entry => ({
+        ...entry,
+        workTypeName: workTypesMap.get(entry.workTypeId)?.name || entry.workTypeId,
+        locationName: locationsMap.get(entry.locationId)?.name || entry.locationId
+      }));
+      
+      setPendingEntries(entriesWithNames);
     } catch (error) {
       console.error('Error loading pending entries:', error);
       setError('Error loading pending entries');
@@ -45,7 +88,7 @@ const PendingEntries: React.FC = () => {
     }
   };
 
-  const handleWorkAmountClick = (entry: PendingTimeEntry) => {
+  const handleWorkAmountClick = (entry: PendingEntryWithNames) => {
     setSelectedEntry(entry);
     setShowWorkAmountDialog(true);
   };
@@ -97,8 +140,8 @@ const PendingEntries: React.FC = () => {
             {pendingEntries.map((entry) => (
               <TableRow key={entry.id}>
                 <TableCell>{formatDate(entry.startTime)}</TableCell>
-                <TableCell>{formatDate(entry.endTime)}</TableCell>
-                <TableCell>{entry.duration}</TableCell>
+                <TableCell>{entry.endTime ? formatDate(entry.endTime) : '-'}</TableCell>
+                <TableCell>{formatTime(entry.duration)}</TableCell>
                 <TableCell>{entry.workTypeName}</TableCell>
                 <TableCell>{entry.locationName}</TableCell>
                 <TableCell>
