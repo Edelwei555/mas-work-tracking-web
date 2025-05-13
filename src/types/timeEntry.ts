@@ -1,7 +1,7 @@
 import { Timestamp } from 'firebase/firestore';
 
 export interface TimeEntry {
-    id: string;
+    id?: string;
     userId: string;
     teamId: string;
     workTypeId: string;
@@ -15,15 +15,15 @@ export interface TimeEntry {
     duration: number;
     createdAt: Date;
     lastUpdate: Date;
+    status: 'pending' | 'completed';
 }
 
-export interface PendingTimeEntry extends Omit<TimeEntry, 'workAmount'> {
-    workAmount: null;
+export interface PendingTimeEntry extends TimeEntry {
     status: 'pending';
 }
 
 export interface FirestoreTimeEntry {
-    id: string;
+    id?: string;
     userId: string;
     teamId: string;
     workTypeId: string;
@@ -37,5 +37,5 @@ export interface FirestoreTimeEntry {
     duration: number;
     createdAt: Timestamp;
     lastUpdate: Timestamp;
-    status?: 'pending';
+    status: 'pending' | 'completed';
 } 
