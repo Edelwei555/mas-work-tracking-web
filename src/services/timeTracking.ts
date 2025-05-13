@@ -10,10 +10,12 @@ import {
   doc,
   getDoc,
   setDoc,
-  DocumentData
+  DocumentData,
+  deleteDoc,
+  DocumentReference
 } from 'firebase/firestore';
 import { db } from '../firebase';
-import { TimeEntry, FirestoreTimeEntry } from '../types/timeEntry';
+import { TimeEntry, FirestoreTimeEntry, PendingTimeEntry } from '../types/timeEntry';
 
 // Зберігаємо стан таймера в localStorage
 const TIMER_STATE_KEY = 'timerState';
@@ -165,68 +167,64 @@ export const getCurrentTimeEntry = async (userId: string, teamId: string): Promi
   }
 };
 
-export const getTeamTimeEntries = async (teamId: string, startDate?: Date, endDate?: Date) => {
+export const getTeamTimeEntries = async (
+  teamId: string,
+  startDate?: Date,
+  endDate?: Date
+): Promise<TimeEntry[]> => {
   try {
-    let baseQuery = query(
-      collection(db, 'timeEntries'),
+    const entriesRef = collection(db, 'timeEntries');
+    let q = query(
+      entriesRef,
       where('teamId', '==', teamId)
     );
 
-    // Додаємо фільтри за датою, якщо вони вказані
-    if (startDate && endDate) {
-      baseQuery = query(
-        baseQuery,
-        where('startTime', '>=', Timestamp.fromDate(startDate)),
-        where('startTime', '<=', Timestamp.fromDate(endDate))
-      );
+    if (startDate) {
+      q = query(q, where('startTime', '>=', Timestamp.fromDate(startDate)));
+    }
+    if (endDate) {
+      q = query(q, where('startTime', '<=', Timestamp.fromDate(endDate)));
     }
 
-    // Додаємо сортування
-    const q = query(baseQuery, orderBy('startTime', 'desc'));
-
-    const querySnapshot = await getDocs(q);
-    console.log('Found entries:', querySnapshot.size); // Додаємо лог
-
-    return querySnapshot.docs.map(doc => {
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => {
       const data = doc.data() as FirestoreTimeEntry;
-      console.log('Entry data:', data);
-
       return {
+        ...data,
         id: doc.id,
-        userId: data.userId,
-        teamId: data.teamId,
-        workTypeId: data.workTypeId,
-        locationId: data.locationId,
         startTime: data.startTime.toDate(),
-        endTime: data.endTime ? data.endTime.toDate() : null,
-        pausedTime: data.pausedTime,
-        workAmount: data.workAmount,
-        isRunning: data.isRunning,
-        duration: data.duration,
-        lastPauseTime: null,
+        endTime: data.endTime?.toDate() || null,
         createdAt: data.createdAt.toDate(),
-        lastUpdate: data.lastUpdate.toDate()
-      } satisfies TimeEntry;
+        lastUpdate: data.lastUpdate.toDate(),
+        lastPauseTime: data.lastPauseTime?.toDate() || null,
+        status: data.status || 'completed'
+      };
     });
   } catch (error) {
-    console.error('Error getting time entries:', error);
+    console.error('Error getting team time entries:', error);
     throw error;
   }
 };
 
-export const savePendingTimeEntry = async (entry: Omit<TimeEntry, 'id' | 'createdAt' | 'lastUpdate'>): Promise<string> => {
+export const savePendingTimeEntry = async (entry: Omit<TimeEntry, 'id' | 'workAmount'>): Promise<string> => {
   try {
     const now = new Date();
-    const firestoreEntry = convertToFirestore({
+    const pendingEntry: PendingTimeEntry = {
       ...entry,
-      createdAt: now,
-      lastUpdate: now,
+      workAmount: undefined,
       status: 'pending'
-    }) as FirestoreTimeEntry;
+    };
 
     const docRef = doc(collection(db, 'timeEntries'));
-    await setDoc(docRef, firestoreEntry);
-    
+    await setDoc(docRef, {
+      ...pendingEntry,
+      startTime: Timestamp.fromDate(pendingEntry.startTime),
+      endTime: pendingEntry.endTime ? Timestamp.fromDate(pendingEntry.endTime) : null,
+      createdAt: Timestamp.fromDate(now),
+      lastUpdate: Timestamp.fromDate(now),
+      lastPauseTime: pendingEntry.lastPauseTime ? Timestamp.fromDate(pendingEntry.lastPauseTime) : null
+    });
+
     return docRef.id;
   } catch (error) {
     console.error('Error saving pending time entry:', error);
