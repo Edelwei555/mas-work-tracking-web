@@ -164,7 +164,7 @@ const TimeTracking: React.FC = () => {
         workTypeId: selectedWorkType,
         locationId: selectedLocation,
         startTime: new Date(),
-        endTime: new Date(),
+        endTime: null,
         pausedTime: 0,
         workAmount: 0,
         isRunning: true,
