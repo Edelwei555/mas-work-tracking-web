@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Table,
   TableBody,
@@ -9,61 +10,62 @@ import {
   Paper,
   Button,
   Typography,
-  Stack
+  Stack,
+  Box
 } from '@mui/material';
 import { PendingTimeEntry } from '../../types/timeEntry';
 import { getPendingTimeEntries, updatePendingTimeEntry } from '../../services/timeTracking';
 import { useAuth } from '../../contexts/AuthContext';
 import WorkAmountDialog from './WorkAmountDialog';
-import { formatTime } from '../../utils/timeUtils';
+import { formatTime, formatDate } from '../../utils/timeUtils';
 
-interface PendingEntriesProps {
-  onUpdate: () => void;
-}
-
-const PendingEntries: React.FC<PendingEntriesProps> = ({ onUpdate }) => {
+const PendingEntries: React.FC = () => {
+  const { t } = useTranslation();
   const [pendingEntries, setPendingEntries] = useState<PendingTimeEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showWorkAmountDialog, setShowWorkAmountDialog] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<PendingTimeEntry | null>(null);
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
 
   useEffect(() => {
     loadPendingEntries();
-  }, [user]);
+  }, [currentUser]);
 
   const loadPendingEntries = async () => {
+    if (!currentUser) return;
     try {
-      if (user) {
-        const entries = await getPendingTimeEntries(user.uid);
-        setPendingEntries(entries);
-      }
-    } catch (err) {
-      console.error('Помилка завантаження відкладених записів:', err);
-      setError('Помилка завантаження відкладених записів');
+      const entries = await getPendingTimeEntries(currentUser.uid);
+      setPendingEntries(entries);
+    } catch (error) {
+      console.error('Error loading pending entries:', error);
+      setError('Error loading pending entries');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleWorkAmountClick = (entry: PendingTimeEntry) => {
+    setSelectedEntry(entry);
+    setShowWorkAmountDialog(true);
+  };
+
   const handleSave = async (workAmount: number) => {
+    if (!selectedEntry) return;
+    
     try {
-      if (selectedEntry) {
-        await updatePendingTimeEntry(selectedEntry.id, workAmount);
-        setShowWorkAmountDialog(false);
-        setSelectedEntry(null);
-        await loadPendingEntries();
-        onUpdate();
-      }
-    } catch (err) {
-      console.error('Помилка збереження запису:', err);
-      setError('Помилка збереження запису');
+      await updatePendingTimeEntry(selectedEntry.id, workAmount);
+      await loadPendingEntries();
+      setShowWorkAmountDialog(false);
+      setSelectedEntry(null);
+    } catch (error) {
+      console.error('Error updating pending entry:', error);
+      setError('Error updating pending entry');
     }
   };
 
   if (loading) {
-    return <Typography>Завантаження...</Typography>;
+    return <Typography>Loading...</Typography>;
   }
 
   if (error) {
@@ -75,36 +77,37 @@ const PendingEntries: React.FC<PendingEntriesProps> = ({ onUpdate }) => {
   }
 
   return (
-    <Stack spacing={2}>
-      <Typography variant="h6">Відкладені записи</Typography>
+    <Box sx={{ mt: 4 }}>
+      <Typography variant="h6" gutterBottom>
+        {t('timeTracking.pendingEntries')}
+      </Typography>
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Дата</TableCell>
-              <TableCell>Локація</TableCell>
-              <TableCell>Вид роботи</TableCell>
-              <TableCell>Витрачений час</TableCell>
-              <TableCell>Обсяг роботи</TableCell>
+              <TableCell>{t('timeTracking.startTime')}</TableCell>
+              <TableCell>{t('timeTracking.endTime')}</TableCell>
+              <TableCell>{t('timeTracking.duration')}</TableCell>
+              <TableCell>{t('timeTracking.workType')}</TableCell>
+              <TableCell>{t('timeTracking.location')}</TableCell>
+              <TableCell>{t('timeTracking.workAmount')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {pendingEntries.map((entry) => (
               <TableRow key={entry.id}>
-                <TableCell>{new Date(entry.startTime).toLocaleDateString()}</TableCell>
-                <TableCell>{entry.locationId}</TableCell>
-                <TableCell>{entry.workTypeId}</TableCell>
-                <TableCell>{formatTime(entry.duration)}</TableCell>
+                <TableCell>{formatDate(entry.startTime)}</TableCell>
+                <TableCell>{formatDate(entry.endTime)}</TableCell>
+                <TableCell>{entry.duration}</TableCell>
+                <TableCell>{entry.workTypeName}</TableCell>
+                <TableCell>{entry.locationName}</TableCell>
                 <TableCell>
-                  <Button
-                    variant="contained"
+                  <Button 
+                    variant="contained" 
                     color="primary"
-                    onClick={() => {
-                      setSelectedEntry(entry);
-                      setShowWorkAmountDialog(true);
-                    }}
+                    onClick={() => handleWorkAmountClick(entry)}
                   >
-                    Записати
+                    {t('timeTracking.enterWorkAmount')}
                   </Button>
                 </TableCell>
               </TableRow>
@@ -120,8 +123,12 @@ const PendingEntries: React.FC<PendingEntriesProps> = ({ onUpdate }) => {
           setSelectedEntry(null);
         }}
         onSave={handleSave}
+        onPostpone={() => {
+          setShowWorkAmountDialog(false);
+          setSelectedEntry(null);
+        }}
       />
-    </Stack>
+    </Box>
   );
 };
 
