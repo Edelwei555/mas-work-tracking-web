@@ -26,7 +26,11 @@ interface PendingEntryWithNames extends PendingTimeEntry {
   locationName: string;
 }
 
-const PendingEntries: React.FC = () => {
+interface PendingEntriesProps {
+  onUpdate?: () => void;
+}
+
+const PendingEntries: React.FC<PendingEntriesProps> = ({ onUpdate }) => {
   const { t } = useTranslation();
   const [pendingEntries, setPendingEntries] = useState<PendingEntryWithNames[]>([]);
   const [loading, setLoading] = useState(true);
@@ -110,6 +114,9 @@ const PendingEntries: React.FC = () => {
       await loadPendingEntries();
       setShowWorkAmountDialog(false);
       setSelectedEntry(null);
+      if (onUpdate) {
+        onUpdate();
+      }
     } catch (error) {
       console.error('Error updating pending entry:', error);
       setError('Error updating pending entry');
