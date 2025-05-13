@@ -172,7 +172,8 @@ const TimeTracking: React.FC = () => {
         userId: currentUser.uid,
         teamId: teamId,
         workTypeId: selectedWorkType,
-        locationId: selectedLocation
+        locationId: selectedLocation,
+        status: 'completed'
       }));
     } catch (err) {
       console.error('Помилка запуску таймера:', err);
