@@ -156,29 +156,22 @@ const TimeTracking: React.FC = () => {
     return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
   }, []);
 
-  const handleStart = async () => {
-    try {
-      if (!currentUser || !teamId || !selectedWorkType || !selectedLocation) return;
-      
-      const now = new Date();
-      await dispatch(startTimer({
+  const handleStart = () => {
+    if (selectedWorkType && selectedLocation && currentUser && teamId) {
+      dispatch(startTimer({
         userId: currentUser.uid,
-        teamId: teamId,
+        teamId,
         workTypeId: selectedWorkType,
         locationId: selectedLocation,
-        startTime: now,
-        endTime: null,
+        startTime: new Date(),
+        endTime: new Date(),
         pausedTime: 0,
         workAmount: 0,
         isRunning: true,
         duration: 0,
         lastPauseTime: null,
-        status: 'completed'
+        status: 'pending'
       }));
-    } catch (err) {
-      console.error('Помилка запуску таймера:', err);
-      setError('Помилка запуску таймера');
-      setShowError(true);
     }
   };
 
