@@ -71,7 +71,7 @@ const MobileBottomNav: React.FC = () => {
     { label: t('nav.teams'), icon: <GroupIcon />, path: '/teams' },
     { label: t('reports.title'), icon: <AssessmentIcon />, path: '/reports' },
     { label: t('nav.profile', 'Profile'), icon: <PersonIcon />, path: '/profile' },
-    { label: t('language', 'Мова'), icon: <LanguageIcon />, path: '/language' },
+    { label: t('language'), icon: <LanguageIcon />, path: '/language' },
   ];
 
   useEffect(() => {
