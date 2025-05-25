@@ -35,12 +35,13 @@ export const Timer = () => {
         workTypeId: selectedWorkType,
         locationId: selectedLocation,
         startTime: new Date(),
-        endTime: new Date(),
+        endTime: null,
         pausedTime: 0,
         workAmount: 0,
         isRunning: true,
         duration: 0,
-        lastPauseTime: null
+        lastPauseTime: null,
+        status: 'pending',
       }));
     }
   };
