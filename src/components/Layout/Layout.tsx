@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Button, IconButton, Menu, MenuItem } from '@mui/material';
 import { Timer, Group, Language, Work, LocationOn, Assessment } from '@mui/icons-material';
 import './Layout.css';
+import MobileBottomNav from './MobileBottomNav';
 
 const Layout: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -116,6 +117,7 @@ const Layout: React.FC = () => {
           <Outlet />
         </main>
       </div>
+      <MobileBottomNav />
     </>
   );
 };
