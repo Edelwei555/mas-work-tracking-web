@@ -44,6 +44,7 @@ const MobileBottomNav: React.FC = () => {
   const { currentUser } = useAuth();
   const [pendingCount, setPendingCount] = useState(0);
   const [show, setShow] = useState(true);
+  const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -70,31 +71,48 @@ const MobileBottomNav: React.FC = () => {
   });
 
   const handleChange = (_: any, newValue: number) => {
-    navigate(navItems[newValue].path);
+    const item = navItems[newValue];
+    if (item.label === 'Мова') {
+      setLanguageMenuOpen(true);
+      return;
+    }
+    navigate(item.path);
   };
 
   return (
-    <Slide direction="up" in={show} mountOnEnter unmountOnExit>
-      <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1201, display: { xs: 'block', md: 'none' } }} elevation={8}>
-        <BottomNavigation value={activeIndex} onChange={handleChange} showLabels sx={{ overflowX: 'auto', width: '100%' }}>
-          {navItems.map((item, idx) => (
-            <StyledBottomNavigationAction
-              key={item.label}
-              label={window.innerWidth < 400 ? '' : item.label}
-              icon={
-                item.label === 'Облік часу' && pendingCount > 0 ? (
-                  <Badge badgeContent={pendingCount} color="error">
-                    {item.icon}
-                  </Badge>
-                ) : (
-                  item.icon
-                )
-              }
-            />
-          ))}
-        </BottomNavigation>
-      </Paper>
-    </Slide>
+    <>
+      <Slide direction="up" in={show} mountOnEnter unmountOnExit>
+        <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1201, display: { xs: 'block', md: 'none' } }} elevation={8}>
+          <BottomNavigation value={activeIndex} onChange={handleChange} showLabels sx={{ overflowX: 'auto', width: '100%' }}>
+            {navItems.map((item, idx) => (
+              <StyledBottomNavigationAction
+                key={item.label}
+                label={item.label}
+                icon={
+                  item.label === 'Облік часу' && pendingCount > 0 ? (
+                    <Badge badgeContent={pendingCount} color="error">
+                      {item.icon}
+                    </Badge>
+                  ) : (
+                    item.icon
+                  )
+                }
+              />
+            ))}
+          </BottomNavigation>
+        </Paper>
+      </Slide>
+      {/* Модальне меню вибору мови */}
+      {languageMenuOpen && (
+        <div style={{ position: 'fixed', left: 0, right: 0, bottom: 70, zIndex: 1300, background: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', borderRadius: 12, margin: '0 auto', width: '90%', maxWidth: 320, padding: 16, textAlign: 'center' }}>
+          <button style={{ fontSize: 18, margin: 8, color: '#43a047', background: 'none', border: 'none' }} onClick={() => { window.localStorage.setItem('i18nextLng', 'uk'); window.location.reload(); }}>Українська</button>
+          <button style={{ fontSize: 18, margin: 8, color: '#43a047', background: 'none', border: 'none' }} onClick={() => { window.localStorage.setItem('i18nextLng', 'en'); window.location.reload(); }}>English</button>
+          <div>
+            <button style={{ marginTop: 8, color: '#888', background: 'none', border: 'none' }} onClick={() => setLanguageMenuOpen(false)}>Скасувати</button>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
