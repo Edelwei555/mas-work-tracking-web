@@ -7,10 +7,8 @@ import { CircularProgress } from '@mui/material';
 import Layout from './components/Layout/Layout';
 
 const App: React.FC = () => {
-  console.log('App loaded');
   return (
     <>
-      <div style={{ color: 'blue', fontSize: 20 }}>App loaded</div>
       <ErrorBoundary>
         <Suspense fallback={
           <div style={{ 
