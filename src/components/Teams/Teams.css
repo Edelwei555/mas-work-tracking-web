@@ -116,6 +116,20 @@
   gap: 0.5rem;
 }
 
+@media (max-width: 600px) {
+  .team-actions {
+    flex-direction: column;
+    gap: 0.75rem;
+    width: 100%;
+    align-items: stretch;
+  }
+  .team-actions > * {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+}
+
 .btn-edit {
   background-color: #ffc107;
   color: #333;
