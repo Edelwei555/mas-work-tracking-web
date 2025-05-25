@@ -106,7 +106,13 @@
     "saveError": "Помилка при збереженні даних",
     "missingFields": "Будь ласка, заповніть всі обов'язкові поля",
     "selectWorkType": "Вибрати вид роботи",
-    "selectLocation": "Вибрати локацію"
+    "selectLocation": "Вибрати локацію",
+    "pendingTitle": "Відкладені записи",
+    "end": "Завершення",
+    "duration": "Тривалість",
+    "enterWorkAmount": "Ввести обсяг",
+    "enterWorkAmountTitle": "Введіть обсяг виконаних робіт",
+    "postpone": "Порахувати пізніше"
   },
   "reports": {
     "title": "Звіти",
@@ -200,11 +206,5 @@
     "cantRemoveLastMember": "Не можна видалити останнього учасника команди",
     "cantRemoveLastAdmin": "Не можна видалити останнього адміністратора",
     "removingMember": "Помилка при видаленні учасника"
-  },
-  "pendingTitle": "Відкладені записи",
-  "end": "Завершення",
-  "duration": "Тривалість",
-  "enterWorkAmount": "Ввести обсяг",
-  "enterWorkAmountTitle": "Введіть обсяг виконаних робіт",
-  "postpone": "Порахувати пізніше"
+  }
 } 

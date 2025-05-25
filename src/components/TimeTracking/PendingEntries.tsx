@@ -141,18 +141,18 @@ const PendingEntries: React.FC<PendingEntriesProps> = ({ onUpdate }) => {
   return (
     <Box sx={{ mt: 4 }}>
       <Typography variant="h6" gutterBottom>
-        {t('timeTracking.pendingTitle', 'Pending entries')}
+        {t('timeTracking.pendingTitle')}
       </Typography>
       <TableContainer component={Paper} sx={{ maxWidth: '100vw', overflowX: 'auto' }}>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>{t('timeTracking.start', 'Start')}</TableCell>
-              <TableCell>{t('timeTracking.end', 'End')}</TableCell>
-              <TableCell>{t('timeTracking.duration', 'Duration')}</TableCell>
-              <TableCell>{t('workTypes.title', 'Work Type')}</TableCell>
-              <TableCell>{t('locations.title', 'Location')}</TableCell>
-              <TableCell>{t('timeTracking.workAmount', 'Work amount')}</TableCell>
+              <TableCell>{t('timeTracking.start')}</TableCell>
+              <TableCell>{t('timeTracking.end')}</TableCell>
+              <TableCell>{t('timeTracking.duration')}</TableCell>
+              <TableCell>{t('workTypes.title')}</TableCell>
+              <TableCell>{t('locations.title')}</TableCell>
+              <TableCell>{t('timeTracking.workAmount')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -169,7 +169,7 @@ const PendingEntries: React.FC<PendingEntriesProps> = ({ onUpdate }) => {
                     color="primary"
                     onClick={() => handleWorkAmountClick(entry)}
                   >
-                    {t('timeTracking.enterWorkAmount', 'Enter amount')}
+                    {t('timeTracking.enterWorkAmount')}
                   </Button>
                 </TableCell>
               </TableRow>
