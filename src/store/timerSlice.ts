@@ -20,7 +20,7 @@ const initialState: TimerState = {
 
 export const startTimer = createAsyncThunk(
   'timer/start',
-  async (timeEntry: Omit<PendingTimeEntry, 'createdAt' | 'lastUpdate' | 'id'>) => {
+  async (timeEntry: Omit<TimeEntry, 'createdAt' | 'lastUpdate' | 'id'>) => {
     const now = new Date();
     const entry = {
       ...timeEntry,
