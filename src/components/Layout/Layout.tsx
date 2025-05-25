@@ -106,7 +106,7 @@ const Layout: React.FC = () => {
 
             <div className="user-menu">
               <Link to="/profile" className="user-email">
-                {currentUser.email}
+                {currentUser && currentUser.email}
               </Link>
               <button onClick={handleLogout} className="sign-out-btn">
                 {t('nav.logout')}
