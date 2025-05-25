@@ -103,7 +103,7 @@ const MobileBottomNav: React.FC = () => {
   return (
     <>
       <Slide direction="up" in={show} mountOnEnter unmountOnExit>
-        <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1201, display: { xs: 'block', md: 'none' }, height: 90 }} elevation={8}>
+        <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1201, display: { xs: 'block', md: 'none' }, height: 110 }} elevation={8}>
           <BottomNavigation value={activeIndex} onChange={handleChange} showLabels sx={{ overflowX: 'auto', width: '100%' }}>
             {navItems.map((item, idx) => (
               <StyledBottomNavigationAction
