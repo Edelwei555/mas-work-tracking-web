@@ -141,18 +141,18 @@ const PendingEntries: React.FC<PendingEntriesProps> = ({ onUpdate }) => {
   return (
     <Box sx={{ mt: 4 }}>
       <Typography variant="h6" gutterBottom>
-        {t('timeTracking.pendingEntries')}
+        Відкладені записи
       </Typography>
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>{t('timeTracking.startTime')}</TableCell>
-              <TableCell>{t('timeTracking.endTime')}</TableCell>
-              <TableCell>{t('timeTracking.duration')}</TableCell>
-              <TableCell>{t('timeTracking.workType')}</TableCell>
-              <TableCell>{t('timeTracking.location')}</TableCell>
-              <TableCell>{t('timeTracking.workAmount')}</TableCell>
+              <TableCell>Початок</TableCell>
+              <TableCell>Кінець</TableCell>
+              <TableCell>Тривалість</TableCell>
+              <TableCell>Вид робіт</TableCell>
+              <TableCell>Локація</TableCell>
+              <TableCell>Обсяг роботи</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -169,7 +169,7 @@ const PendingEntries: React.FC<PendingEntriesProps> = ({ onUpdate }) => {
                     color="primary"
                     onClick={() => handleWorkAmountClick(entry)}
                   >
-                    {t('timeTracking.enterWorkAmount')}
+                    Ввести обсяг
                   </Button>
                 </TableCell>
               </TableRow>
