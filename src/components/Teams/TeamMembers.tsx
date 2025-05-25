@@ -11,6 +11,7 @@ import './TeamMembers.css';
 import { useParams } from 'react-router-dom';
 import { auth } from '../../firebase';
 import { updateTeamMemberRole, removeTeamMember } from '../../services/teamMembers';
+import { getPendingTimeEntries } from '../../services/timeTracking';
 
 interface TeamMembersProps {
   teamId?: string;
@@ -35,6 +36,7 @@ export const TeamMembers: React.FC<TeamMembersProps> = (props) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [pendingCounts, setPendingCounts] = useState<{ [userId: string]: number }>({});
 
   useEffect(() => {
     if (!teamId || !auth.currentUser) return;
@@ -48,10 +50,8 @@ export const TeamMembers: React.FC<TeamMembersProps> = (props) => {
             where('userId', '==', auth.currentUser!.uid)
           )
         );
-        
         if (!memberDoc.empty) {
           const currentUserRole = memberDoc.docs[0].data().role;
-          console.log('Current user role:', currentUserRole);
           setIsAdmin(currentUserRole === 'admin');
         }
       } catch (err) {
@@ -60,6 +60,7 @@ export const TeamMembers: React.FC<TeamMembersProps> = (props) => {
     };
 
     checkAdminStatus();
+    setLoading(true);
 
     const unsubscribe = onSnapshot(
       query(collection(db, 'teamMembers'), where('teamId', '==', teamId)),
@@ -68,12 +69,23 @@ export const TeamMembers: React.FC<TeamMembersProps> = (props) => {
           id: doc.id,
           ...doc.data()
         } as TeamMember));
-        console.log('Members list:', membersList);
         setMembers(membersList);
         setLoading(false);
+        // Окремий асинхронний виклик для підрахунку pending
+        (async () => {
+          const counts: { [userId: string]: number } = {};
+          await Promise.all(membersList.map(async (member) => {
+            try {
+              const entries = await getPendingTimeEntries(member.userId);
+              counts[member.userId] = entries.length;
+            } catch {
+              counts[member.userId] = 0;
+            }
+          }));
+          setPendingCounts(counts);
+        })();
       }
     );
-
     return () => unsubscribe();
   }, [teamId]);
 
@@ -145,6 +157,9 @@ export const TeamMembers: React.FC<TeamMembersProps> = (props) => {
               </div>
               <div className="member-name">{member.displayName || member.name}</div>
               <div className="member-email">{member.email}</div>
+              <div className="member-pending">
+                Відкладені записи: {pendingCounts[member.userId] ?? 0}
+              </div>
             </div>
             
             {isAdmin && auth.currentUser && member.userId !== auth.currentUser.uid && (
