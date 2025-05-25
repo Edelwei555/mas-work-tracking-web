@@ -233,7 +233,9 @@ const TimeTracking: React.FC = () => {
   const handlePostpone = async () => {
     try {
       if (currentEntry) {
-        await savePendingTimeEntry(currentEntry);
+        if (!(currentEntry.status === 'pending' && currentEntry.id)) {
+          await savePendingTimeEntry(currentEntry);
+        }
         setShowWorkAmountDialog(false);
         setSelectedWorkType('');
         setSelectedLocation('');
