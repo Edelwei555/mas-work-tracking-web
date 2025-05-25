@@ -282,37 +282,40 @@ const TimeTracking: React.FC = () => {
       </Snackbar>
       
       {!currentEntry && (
-        <Stack spacing={2} sx={{ width: '100%', maxWidth: 400 }}>
-          <FormControl fullWidth>
-            <InputLabel>{t('workTypes.namePlaceholder')}</InputLabel>
-            <Select
-              value={selectedWorkType}
-              onChange={(e) => setSelectedWorkType(e.target.value)}
-              label={t('workTypes.namePlaceholder')}
-            >
-              {workTypes.map((type) => (
-                <MenuItem key={type.id} value={type.id}>
-                  {type.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+        <>
+          <Stack spacing={2} sx={{ width: '100%', maxWidth: 400 }}>
+            <FormControl fullWidth>
+              <InputLabel>{t('workTypes.namePlaceholder')}</InputLabel>
+              <Select
+                value={selectedWorkType}
+                onChange={(e) => setSelectedWorkType(e.target.value)}
+                label={t('workTypes.namePlaceholder')}
+              >
+                {workTypes.map((type) => (
+                  <MenuItem key={type.id} value={type.id}>
+                    {type.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
 
-          <FormControl fullWidth>
-            <InputLabel>{t('locations.namePlaceholder')}</InputLabel>
-            <Select
-              value={selectedLocation}
-              onChange={(e) => setSelectedLocation(e.target.value)}
-              label={t('locations.namePlaceholder')}
-            >
-              {locations.map((location) => (
-                <MenuItem key={location.id} value={location.id}>
-                  {location.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Stack>
+            <FormControl fullWidth>
+              <InputLabel>{t('locations.namePlaceholder')}</InputLabel>
+              <Select
+                value={selectedLocation}
+                onChange={(e) => setSelectedLocation(e.target.value)}
+                label={t('locations.namePlaceholder')}
+              >
+                {locations.map((location) => (
+                  <MenuItem key={location.id} value={location.id}>
+                    {location.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
+          <PendingEntries onUpdate={() => {}} />
+        </>
       )}
 
       <Typography variant="h2">{formatTime(elapsedTime)}</Typography>
@@ -359,8 +362,6 @@ const TimeTracking: React.FC = () => {
           </Button>
         )}
       </Stack>
-
-      <PendingEntries onUpdate={() => {}} />
 
       <WorkAmountDialog
         open={showWorkAmountDialog}
