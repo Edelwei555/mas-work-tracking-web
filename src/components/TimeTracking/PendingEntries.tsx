@@ -85,13 +85,14 @@ const PendingEntries: React.FC<PendingEntriesProps> = ({ onUpdate }) => {
         });
       });
       
-      // Додаємо назви до записів
-      const entriesWithNames = entries.map(entry => ({
-        ...entry,
-        workTypeName: workTypesMap.get(entry.workTypeId)?.name || entry.workTypeId,
-        locationName: locationsMap.get(entry.locationId)?.name || entry.locationId
-      }));
-      
+      // Додаємо назви до записів, але тільки для тих, у кого ще не заповнено workAmount
+      const entriesWithNames = entries
+        .filter(entry => entry.workAmount === undefined || entry.workAmount === null)
+        .map(entry => ({
+          ...entry,
+          workTypeName: workTypesMap.get(entry.workTypeId)?.name || entry.workTypeId,
+          locationName: locationsMap.get(entry.locationId)?.name || entry.locationId
+        }));
       setPendingEntries(entriesWithNames);
     } catch (error) {
       console.error('Error loading pending entries:', error);
