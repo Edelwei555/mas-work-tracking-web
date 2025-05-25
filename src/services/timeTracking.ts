@@ -61,19 +61,19 @@ const convertToFirestore = (entry: Partial<TimeEntry>): Partial<FirestoreTimeEnt
   });
   
   // Конвертуємо дати в Timestamp
-  if (entry.startTime) {
+  if (entry.startTime && entry.startTime instanceof Date) {
     result.startTime = Timestamp.fromDate(entry.startTime);
   }
-  if (entry.endTime) {
+  if (entry.endTime && entry.endTime instanceof Date) {
     result.endTime = Timestamp.fromDate(entry.endTime);
   }
-  if (entry.lastPauseTime) {
+  if (entry.lastPauseTime && entry.lastPauseTime instanceof Date) {
     result.lastPauseTime = Timestamp.fromDate(entry.lastPauseTime);
   }
-  if (entry.createdAt) {
+  if (entry.createdAt && entry.createdAt instanceof Date) {
     result.createdAt = Timestamp.fromDate(entry.createdAt);
   }
-  if (entry.lastUpdate) {
+  if (entry.lastUpdate && entry.lastUpdate instanceof Date) {
     result.lastUpdate = Timestamp.fromDate(entry.lastUpdate);
   }
   
