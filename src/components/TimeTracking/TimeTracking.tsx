@@ -205,6 +205,7 @@ const TimeTracking: React.FC = () => {
         const stoppedEntry = await dispatch(stopTimer(currentEntry)).unwrap();
         if (stoppedEntry) {
           setShowWorkAmountDialog(true);
+          dispatch(resetTimer());
         }
       }
     } catch (err) {
