@@ -170,8 +170,6 @@ const TimeTracking: React.FC = () => {
         isRunning: true,
         duration: 0,
         lastPauseTime: null,
-        createdAt: new Date(),
-        lastUpdate: new Date(),
         status: 'pending',
       }));
     }
