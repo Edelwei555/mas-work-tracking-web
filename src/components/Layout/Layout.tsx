@@ -7,11 +7,12 @@ import { Timer, Group, Language, Work, LocationOn, Assessment } from '@mui/icons
 import './Layout.css';
 
 const Layout: React.FC = () => {
-  console.log('Layout loaded');
   const { t, i18n } = useTranslation();
   const { currentUser, signOut } = useAuth();
   const location = useLocation();
   const [languageAnchor, setLanguageAnchor] = React.useState<null | HTMLElement>(null);
+
+  if (!currentUser) return null;
 
   const handleLanguageMenu = (event: React.MouseEvent<HTMLElement>) => {
     setLanguageAnchor(event.currentTarget);
@@ -32,7 +33,6 @@ const Layout: React.FC = () => {
 
   return (
     <>
-      <div style={{ color: 'green', fontSize: 20 }}>Layout loaded</div>
       <div className="layout">
         <header className="header">
           <div className="header-left">
