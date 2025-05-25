@@ -30,8 +30,6 @@ const Layout: React.FC = () => {
     await signOut();
   };
 
-  if (!currentUser) return null;
-
   return (
     <>
       <div style={{ color: 'green', fontSize: 20 }}>Layout loaded</div>
