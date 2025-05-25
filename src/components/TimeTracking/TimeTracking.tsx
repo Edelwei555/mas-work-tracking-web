@@ -22,6 +22,7 @@ import { getUserTeams } from '../../services/teams';
 import { getTeamWorkTypes, WorkType } from '../../services/workTypes';
 import { getTeamLocations, Location } from '../../services/locations';
 import PendingEntries from './PendingEntries';
+import { useTranslation } from 'react-i18next';
 
 const TimeTracking: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -36,6 +37,7 @@ const TimeTracking: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showError, setShowError] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     let mounted = true;
@@ -259,14 +261,14 @@ const TimeTracking: React.FC = () => {
     return (
       <Stack spacing={2} alignItems="center" sx={{ p: 4 }}>
         <CircularProgress />
-        <Typography>Завантаження...</Typography>
+        <Typography>{t('common.loading')}</Typography>
       </Stack>
     );
   }
 
   return (
     <Stack spacing={2} alignItems="center" sx={{ p: 4 }}>
-      <Typography variant="h4">Облік часу</Typography>
+      <Typography variant="h4">{t('timeTracking.title')}</Typography>
 
       <Snackbar 
         open={showError} 
@@ -282,11 +284,11 @@ const TimeTracking: React.FC = () => {
       {!currentEntry && (
         <Stack spacing={2} sx={{ width: '100%', maxWidth: 400 }}>
           <FormControl fullWidth>
-            <InputLabel>Вид робіт</InputLabel>
+            <InputLabel>{t('workTypes.namePlaceholder')}</InputLabel>
             <Select
               value={selectedWorkType}
               onChange={(e) => setSelectedWorkType(e.target.value)}
-              label="Вид робіт"
+              label={t('workTypes.namePlaceholder')}
             >
               {workTypes.map((type) => (
                 <MenuItem key={type.id} value={type.id}>
@@ -297,11 +299,11 @@ const TimeTracking: React.FC = () => {
           </FormControl>
 
           <FormControl fullWidth>
-            <InputLabel>Локація</InputLabel>
+            <InputLabel>{t('locations.namePlaceholder')}</InputLabel>
             <Select
               value={selectedLocation}
               onChange={(e) => setSelectedLocation(e.target.value)}
-              label="Локація"
+              label={t('locations.namePlaceholder')}
             >
               {locations.map((location) => (
                 <MenuItem key={location.id} value={location.id}>
@@ -323,7 +325,7 @@ const TimeTracking: React.FC = () => {
             onClick={handleStart}
             disabled={isStartDisabled}
           >
-            Почати
+            {t('timeTracking.start')}
           </Button>
         )}
         
@@ -333,7 +335,7 @@ const TimeTracking: React.FC = () => {
             color="warning" 
             onClick={handlePause}
           >
-            Пауза
+            {t('timeTracking.pause')}
           </Button>
         )}
         
@@ -343,7 +345,7 @@ const TimeTracking: React.FC = () => {
             color="primary" 
             onClick={handleResume}
           >
-            Продовжити
+            {t('timeTracking.resume')}
           </Button>
         )}
         
@@ -353,7 +355,7 @@ const TimeTracking: React.FC = () => {
             color="error" 
             onClick={handleStop}
           >
-            Стоп
+            {t('timeTracking.stop')}
           </Button>
         )}
       </Stack>
