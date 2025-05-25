@@ -272,4 +272,16 @@ export const updatePendingTimeEntry = async (id: string | undefined, workAmount:
     console.error('Error updating pending time entry:', error);
     throw error;
   }
+};
+
+export const cleanUserPendingEntries = async (userId: string): Promise<void> => {
+  const q = query(
+    collection(db, 'timeEntries'),
+    where('userId', '==', userId),
+    where('status', '==', 'pending')
+  );
+  const snapshot = await getDocs(q);
+  for (const docSnap of snapshot.docs) {
+    await deleteDoc(docSnap.ref);
+  }
 }; 

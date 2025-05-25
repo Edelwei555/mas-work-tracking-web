@@ -11,7 +11,7 @@ import './TeamMembers.css';
 import { useParams } from 'react-router-dom';
 import { auth } from '../../firebase';
 import { updateTeamMemberRole, removeTeamMember } from '../../services/teamMembers';
-import { getPendingTimeEntries } from '../../services/timeTracking';
+import { getPendingTimeEntries, cleanUserPendingEntries } from '../../services/timeTracking';
 
 interface TeamMembersProps {
   teamId?: string;
@@ -160,6 +160,19 @@ export const TeamMembers: React.FC<TeamMembersProps> = (props) => {
               <div className="member-email">{member.email}</div>
               <div className="member-pending">
                 {t('teams.pendingEntries', 'Відкладені записи')}: {pendingCounts[member.userId] ?? 0}
+                {isAdmin && (
+                  <button
+                    onClick={async () => {
+                      await cleanUserPendingEntries(member.userId);
+                      const entries = await getPendingTimeEntries(member.userId);
+                      setPendingCounts(prev => ({ ...prev, [member.userId]: entries.length }));
+                    }}
+                    className="button-clean"
+                    style={{ marginLeft: 8 }}
+                  >
+                    Очистити
+                  </button>
+                )}
               </div>
             </div>
             
