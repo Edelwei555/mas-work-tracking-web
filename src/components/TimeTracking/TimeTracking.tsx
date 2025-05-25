@@ -281,7 +281,7 @@ const TimeTracking: React.FC = () => {
         </Alert>
       </Snackbar>
       
-      {!currentEntry && (
+      {!currentEntry && !loading && (
         <>
           <Stack spacing={2} sx={{ width: '100%', maxWidth: 400 }}>
             <FormControl fullWidth>
