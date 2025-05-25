@@ -245,7 +245,7 @@ export const getPendingTimeEntries = async (userId: string): Promise<PendingTime
       const data = doc.data() as FirestoreTimeEntry;
       return {
         ...convertFromFirestore({ ...data, id: doc.id }),
-        workAmount: null,
+        workAmount: undefined,
         status: 'pending'
       } as PendingTimeEntry;
     });
