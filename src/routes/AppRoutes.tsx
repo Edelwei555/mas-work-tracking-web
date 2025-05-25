@@ -11,6 +11,7 @@ import WorkTypes from '../components/WorkTypes/WorkTypes';
 import Locations from '../components/Locations/Locations';
 import Reports from '../components/Reports/Reports';
 import { JoinTeam } from '../components/JoinTeam';
+import Layout from '../components/Layout/Layout';
 
 // Компонент-обгортка для TeamMembers
 const TeamMembersWrapper: React.FC = () => {
@@ -43,15 +44,17 @@ const AppRoutes: React.FC = () => {
 
   return (
     <Routes>
-      <Route path="/" element={<TimeTracking />} />
-      <Route path="/profile" element={<Profile />} />
-      <Route path="/teams" element={<Teams />} />
-      <Route path="/teams/:teamId" element={<TeamMembersWrapper />} />
-      <Route path="/work-types" element={<WorkTypes />} />
-      <Route path="/locations" element={<Locations />} />
-      <Route path="/reports" element={<Reports />} />
-      <Route path="/join/:token" element={<JoinTeam />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route element={<Layout />}>
+        <Route path="/" element={<TimeTracking />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/teams" element={<Teams />} />
+        <Route path="/teams/:teamId" element={<TeamMembersWrapper />} />
+        <Route path="/work-types" element={<WorkTypes />} />
+        <Route path="/locations" element={<Locations />} />
+        <Route path="/reports" element={<Reports />} />
+        <Route path="/join/:token" element={<JoinTeam />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Route>
     </Routes>
   );
 };
