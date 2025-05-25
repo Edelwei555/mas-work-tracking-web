@@ -118,6 +118,41 @@ const Teams: React.FC = () => {
       <h2>{t('teams.title')}</h2>
       {error && <div className="error-message">{error}</div>}
 
+      {/* Список команд з кнопками */}
+      {teams.map(team => (
+        <div key={team.id} className="team-item">
+          <div className="team-info">
+            <span className="name">{team.name}</span>
+            {team.description && (
+              <span className="description">{team.description}</span>
+            )}
+          </div>
+          <div className="team-actions">
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<Group />}
+              onClick={() => team.id && handleManageMembers(team.id)}
+            >
+              {t('teams.manageMembers')}
+            </Button>
+            <button
+              className="btn-edit"
+              onClick={() => handleEdit(team)}
+            >
+              {t('common.edit')}
+            </button>
+            <button
+              className="btn-delete"
+              onClick={() => team.id && handleDelete(team.id)}
+            >
+              {t('common.delete')}
+            </button>
+          </div>
+        </div>
+      ))}
+
+      {/* Форма додавання/редагування команди */}
       <form onSubmit={handleSubmit} className="team-form">
         <div className="form-group">
           <label htmlFor="name">{t('teams.name')}</label>
@@ -151,41 +186,6 @@ const Teams: React.FC = () => {
           )}
         </div>
       </form>
-
-      <div className="teams-list">
-        {teams.map(team => (
-          <div key={team.id} className="team-item">
-            <div className="team-info">
-              <span className="name">{team.name}</span>
-              {team.description && (
-                <span className="description">{team.description}</span>
-              )}
-            </div>
-            <div className="team-actions">
-              <Button
-                variant="contained"
-                color="primary"
-                startIcon={<Group />}
-                onClick={() => team.id && handleManageMembers(team.id)}
-              >
-                {t('teams.manageMembers')}
-              </Button>
-              <button
-                className="btn-edit"
-                onClick={() => handleEdit(team)}
-              >
-                {t('common.edit')}
-              </button>
-              <button
-                className="btn-delete"
-                onClick={() => team.id && handleDelete(team.id)}
-              >
-                {t('common.delete')}
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
     </div>
   );
 };
