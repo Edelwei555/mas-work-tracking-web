@@ -100,7 +100,7 @@ const MobileBottomNav: React.FC = () => {
 
   const handleChange = (_: any, newValue: number) => {
     const item = navItems[newValue];
-    if (item.label === 'Мова') {
+    if (item.path === '/language') {
       setLanguageMenuOpen(true);
       return;
     }
@@ -136,7 +136,7 @@ const MobileBottomNav: React.FC = () => {
           <button style={{ fontSize: 18, margin: 8, color: '#43a047', background: 'none', border: 'none' }} onClick={() => { window.localStorage.setItem('i18nextLng', 'uk'); window.location.reload(); }}>Українська</button>
           <button style={{ fontSize: 18, margin: 8, color: '#43a047', background: 'none', border: 'none' }} onClick={() => { window.localStorage.setItem('i18nextLng', 'en'); window.location.reload(); }}>English</button>
           <div>
-            <button style={{ marginTop: 8, color: '#888', background: 'none', border: 'none' }} onClick={() => setLanguageMenuOpen(false)}>Скасувати</button>
+            <button style={{ marginTop: 8, color: '#888', background: 'none', border: 'none' }} onClick={() => setLanguageMenuOpen(false)}>{t('common.cancel')}</button>
           </div>
         </div>
       )}
