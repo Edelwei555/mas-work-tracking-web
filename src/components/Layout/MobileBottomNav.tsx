@@ -14,6 +14,10 @@ import { styled } from '@mui/material/styles';
 import { useTranslation } from 'react-i18next';
 
 const StyledBottomNavigationAction = styled(BottomNavigationAction)(({ theme }) => ({
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  alignItems: 'center',
   '&.Mui-selected': {
     color: '#43a047', // зелений
   },
@@ -38,13 +42,16 @@ const StyledBottomNavigationAction = styled(BottomNavigationAction)(({ theme }) 
     [theme.breakpoints.down('sm')]: {
       fontSize: 28,
     },
+    display: 'block',
+    margin: '0 auto',
   },
   '& .MuiBadge-badge': {
     fontSize: 14,
     minWidth: 22,
     height: 22,
-    top: 2,
+    top: 6,
     right: -8,
+    transform: 'none',
   },
 }));
 
@@ -103,8 +110,8 @@ const MobileBottomNav: React.FC = () => {
   return (
     <>
       <Slide direction="up" in={show} mountOnEnter unmountOnExit>
-        <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1201, display: { xs: 'block', md: 'none' }, height: 110 }} elevation={8}>
-          <BottomNavigation value={activeIndex} onChange={handleChange} showLabels sx={{ overflowX: 'auto', width: '100%' }}>
+        <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1201, height: 110, display: 'flex', alignItems: 'center' }} elevation={8}>
+          <BottomNavigation value={activeIndex} onChange={handleChange} showLabels sx={{ overflowX: 'auto', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
             {navItems.map((item, idx) => (
               <StyledBottomNavigationAction
                 key={item.label}
