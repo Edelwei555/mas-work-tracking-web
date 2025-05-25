@@ -85,9 +85,9 @@ const PendingEntries: React.FC<PendingEntriesProps> = ({ onUpdate }) => {
         });
       });
       
-      // Додаємо назви до записів, але тільки для тих, у кого ще не заповнено workAmount
+      // Додаємо назви до записів, але тільки для тих, у кого ще не заповнено workAmount або workAmount === 0
       const entriesWithNames = entries
-        .filter(entry => entry.workAmount === undefined || entry.workAmount === null)
+        .filter(entry => entry.workAmount === undefined || entry.workAmount === null || entry.workAmount === 0)
         .map(entry => ({
           ...entry,
           workTypeName: workTypesMap.get(entry.workTypeId)?.name || entry.workTypeId,
