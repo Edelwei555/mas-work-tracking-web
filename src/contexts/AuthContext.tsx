@@ -56,6 +56,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
+  // Діагностика
+  console.log('AuthProvider:', { currentUser, loading, error });
+
   const clearError = () => setError(null);
 
   const value = {

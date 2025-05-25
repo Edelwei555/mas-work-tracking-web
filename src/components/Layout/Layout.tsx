@@ -12,8 +12,6 @@ const Layout: React.FC = () => {
   const location = useLocation();
   const [languageAnchor, setLanguageAnchor] = React.useState<null | HTMLElement>(null);
 
-  if (!currentUser) return null;
-
   const handleLanguageMenu = (event: React.MouseEvent<HTMLElement>) => {
     setLanguageAnchor(event.currentTarget);
   };
