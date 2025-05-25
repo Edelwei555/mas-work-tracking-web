@@ -107,7 +107,11 @@
     "saveError": "Error saving data",
     "missingFields": "Please fill in all required fields",
     "selectWorkType": "Select work type",
-    "selectLocation": "Select location"
+    "selectLocation": "Select location",
+    "pendingTitle": "Pending entries",
+    "end": "End",
+    "duration": "Duration",
+    "enterWorkAmount": "Enter amount"
   },
   "reports": {
     "title": "Reports",

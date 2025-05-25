@@ -127,11 +127,11 @@ const PendingEntries: React.FC<PendingEntriesProps> = ({ onUpdate }) => {
   };
 
   if (loading) {
-    return <Typography>Loading...</Typography>;
+    return <Typography>{t('common.loading')}</Typography>;
   }
 
   if (error) {
-    return <Typography color="error">{error}</Typography>;
+    return <Typography color="error">{t('common.error')}</Typography>;
   }
 
   if (pendingEntries.length === 0) {
@@ -141,18 +141,18 @@ const PendingEntries: React.FC<PendingEntriesProps> = ({ onUpdate }) => {
   return (
     <Box sx={{ mt: 4 }}>
       <Typography variant="h6" gutterBottom>
-        Відкладені записи
+        {t('timeTracking.pendingTitle', 'Pending entries')}
       </Typography>
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Початок</TableCell>
-              <TableCell>Кінець</TableCell>
-              <TableCell>Тривалість</TableCell>
-              <TableCell>Вид робіт</TableCell>
-              <TableCell>Локація</TableCell>
-              <TableCell>Обсяг роботи</TableCell>
+              <TableCell>{t('timeTracking.start', 'Start')}</TableCell>
+              <TableCell>{t('timeTracking.end', 'End')}</TableCell>
+              <TableCell>{t('timeTracking.duration', 'Duration')}</TableCell>
+              <TableCell>{t('workTypes.title', 'Work Type')}</TableCell>
+              <TableCell>{t('locations.title', 'Location')}</TableCell>
+              <TableCell>{t('timeTracking.workAmount', 'Work amount')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -169,7 +169,7 @@ const PendingEntries: React.FC<PendingEntriesProps> = ({ onUpdate }) => {
                     color="primary"
                     onClick={() => handleWorkAmountClick(entry)}
                   >
-                    Ввести обсяг
+                    {t('timeTracking.enterWorkAmount', 'Enter amount')}
                   </Button>
                 </TableCell>
               </TableRow>
