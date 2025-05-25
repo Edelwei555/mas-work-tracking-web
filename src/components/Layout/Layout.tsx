@@ -7,6 +7,7 @@ import { Timer, Group, Language, Work, LocationOn, Assessment } from '@mui/icons
 import './Layout.css';
 
 const Layout: React.FC = () => {
+  console.log('Layout loaded');
   const { t, i18n } = useTranslation();
   const { currentUser, signOut } = useAuth();
   const location = useLocation();
@@ -32,91 +33,94 @@ const Layout: React.FC = () => {
   if (!currentUser) return null;
 
   return (
-    <div className="layout">
-      <header className="header">
-        <div className="header-left">
-          <Link to="/" className="logo">
-            Work Tracking
-          </Link>
-          <nav className="nav">
-            <Button
-              component={Link}
-              to="/"
-              startIcon={<Timer />}
-              className={location.pathname === '/' ? 'active' : ''}
-            >
-              {t('nav.timeTracking')}
-            </Button>
-            <Button
-              component={Link}
-              to="/work-types"
-              startIcon={<Work />}
-              className={location.pathname === '/work-types' ? 'active' : ''}
-            >
-              {t('workTypes.title')}
-            </Button>
-            <Button
-              component={Link}
-              to="/locations"
-              startIcon={<LocationOn />}
-              className={location.pathname === '/locations' ? 'active' : ''}
-            >
-              {t('locations.title')}
-            </Button>
-            <Button
-              component={Link}
-              to="/teams"
-              startIcon={<Group />}
-              className={location.pathname.startsWith('/teams') ? 'active' : ''}
-            >
-              {t('nav.teams')}
-            </Button>
-            <Button
-              component={Link}
-              to="/reports"
-              startIcon={<Assessment />}
-              className={location.pathname === '/reports' ? 'active' : ''}
-            >
-              {t('reports.title')}
-            </Button>
-          </nav>
-        </div>
-        
-        <div className="header-right">
-          <IconButton
-            onClick={handleLanguageMenu}
-            className="language-button"
-          >
-            <Language />
-          </IconButton>
-
-          <Menu
-            anchorEl={languageAnchor}
-            open={Boolean(languageAnchor)}
-            onClose={handleLanguageClose}
-          >
-            <MenuItem onClick={() => handleLanguageChange('uk')}>
-              Українська
-            </MenuItem>
-            <MenuItem onClick={() => handleLanguageChange('en')}>
-              English
-            </MenuItem>
-          </Menu>
-
-          <div className="user-menu">
-            <Link to="/profile" className="user-email">
-              {currentUser.email}
+    <>
+      <div style={{ color: 'green', fontSize: 20 }}>Layout loaded</div>
+      <div className="layout">
+        <header className="header">
+          <div className="header-left">
+            <Link to="/" className="logo">
+              Work Tracking
             </Link>
-            <button onClick={handleLogout} className="sign-out-btn">
-              {t('nav.logout')}
-            </button>
+            <nav className="nav">
+              <Button
+                component={Link}
+                to="/"
+                startIcon={<Timer />}
+                className={location.pathname === '/' ? 'active' : ''}
+              >
+                {t('nav.timeTracking')}
+              </Button>
+              <Button
+                component={Link}
+                to="/work-types"
+                startIcon={<Work />}
+                className={location.pathname === '/work-types' ? 'active' : ''}
+              >
+                {t('workTypes.title')}
+              </Button>
+              <Button
+                component={Link}
+                to="/locations"
+                startIcon={<LocationOn />}
+                className={location.pathname === '/locations' ? 'active' : ''}
+              >
+                {t('locations.title')}
+              </Button>
+              <Button
+                component={Link}
+                to="/teams"
+                startIcon={<Group />}
+                className={location.pathname.startsWith('/teams') ? 'active' : ''}
+              >
+                {t('nav.teams')}
+              </Button>
+              <Button
+                component={Link}
+                to="/reports"
+                startIcon={<Assessment />}
+                className={location.pathname === '/reports' ? 'active' : ''}
+              >
+                {t('reports.title')}
+              </Button>
+            </nav>
           </div>
-        </div>
-      </header>
-      <main className="main">
-        <Outlet />
-      </main>
-    </div>
+          
+          <div className="header-right">
+            <IconButton
+              onClick={handleLanguageMenu}
+              className="language-button"
+            >
+              <Language />
+            </IconButton>
+
+            <Menu
+              anchorEl={languageAnchor}
+              open={Boolean(languageAnchor)}
+              onClose={handleLanguageClose}
+            >
+              <MenuItem onClick={() => handleLanguageChange('uk')}>
+                Українська
+              </MenuItem>
+              <MenuItem onClick={() => handleLanguageChange('en')}>
+                English
+              </MenuItem>
+            </Menu>
+
+            <div className="user-menu">
+              <Link to="/profile" className="user-email">
+                {currentUser.email}
+              </Link>
+              <button onClick={handleLogout} className="sign-out-btn">
+                {t('nav.logout')}
+              </button>
+            </div>
+          </div>
+        </header>
+        <main className="main">
+          <Outlet />
+        </main>
+      </div>
+    </>
   );
 };
 
