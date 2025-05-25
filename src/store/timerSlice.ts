@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { saveTimeEntry, updateTimeEntry, getCurrentTimeEntry } from '../services/timeTracking';
-import { TimeEntry } from '../types/timeEntry';
+import { TimeEntry, PendingTimeEntry } from '../types/timeEntry';
 import { PayloadAction } from '@reduxjs/toolkit';
 import { RootState } from '../store';
 
@@ -20,7 +20,7 @@ const initialState: TimerState = {
 
 export const startTimer = createAsyncThunk(
   'timer/start',
-  async (timeEntry: Omit<TimeEntry, 'createdAt' | 'lastUpdate' | 'id'> & { status: 'pending' }) => {
+  async (timeEntry: Omit<PendingTimeEntry, 'createdAt' | 'lastUpdate' | 'id'>) => {
     const now = new Date();
     const entry = {
       ...timeEntry,
