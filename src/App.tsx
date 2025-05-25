@@ -26,11 +26,7 @@ const App: React.FC = () => {
           </div>
         }>
           <div className="app">
-            <Routes>
-              <Route path="/*" element={<Layout />}>
-                <Route path="*" element={<AppRoutes />} />
-              </Route>
-            </Routes>
+            <AppRoutes />
           </div>
         </Suspense>
       </ErrorBoundary>
