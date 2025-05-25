@@ -7,30 +7,34 @@ import { CircularProgress } from '@mui/material';
 import Layout from './components/Layout/Layout';
 
 const App: React.FC = () => {
+  console.log('App loaded');
   return (
-    <ErrorBoundary>
-      <Suspense fallback={
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          height: '100vh',
-          flexDirection: 'column',
-          gap: '20px'
-        }}>
-          <CircularProgress />
-          <div>Завантаження...</div>
-        </div>
-      }>
-        <div className="app">
-          <Routes>
-            <Route path="/*" element={<Layout />}>
-              <Route path="*" element={<AppRoutes />} />
-            </Route>
-          </Routes>
-        </div>
-      </Suspense>
-    </ErrorBoundary>
+    <>
+      <div style={{ color: 'blue', fontSize: 20 }}>App loaded</div>
+      <ErrorBoundary>
+        <Suspense fallback={
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            height: '100vh',
+            flexDirection: 'column',
+            gap: '20px'
+          }}>
+            <CircularProgress />
+            <div>Завантаження...</div>
+          </div>
+        }>
+          <div className="app">
+            <Routes>
+              <Route path="/*" element={<Layout />}>
+                <Route path="*" element={<AppRoutes />} />
+              </Route>
+            </Routes>
+          </div>
+        </Suspense>
+      </ErrorBoundary>
+    </>
   );
 };
 
