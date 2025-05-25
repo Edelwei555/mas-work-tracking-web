@@ -33,7 +33,7 @@ const Layout: React.FC = () => {
   return (
     <>
       <div className="layout">
-        <header className="header">
+        <header className="header header--desktop-only">
           <div className="header-left">
             <Link to="/" className="logo">
               Work Tracking

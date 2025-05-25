@@ -10,6 +10,7 @@ import LanguageIcon from '@mui/icons-material/Language';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getPendingTimeEntries } from '../../services/timeTracking';
+import { styled } from '@mui/material/styles';
 
 const navItems = [
   { label: 'Облік часу', icon: <TimerIcon />, path: '/' },
@@ -20,6 +21,22 @@ const navItems = [
   { label: 'Профіль', icon: <PersonIcon />, path: '/profile' },
   { label: 'Мова', icon: <LanguageIcon />, path: '/language' },
 ];
+
+const StyledBottomNavigationAction = styled(BottomNavigationAction)(({ theme }) => ({
+  '&.Mui-selected': {
+    color: '#43a047', // зелений
+  },
+  minWidth: 0,
+  maxWidth: 80,
+  padding: '0 2px',
+  fontSize: 10,
+  [theme.breakpoints.down('sm')]: {
+    fontSize: 9,
+    minWidth: 0,
+    maxWidth: 60,
+    padding: '0 1px',
+  },
+}));
 
 const MobileBottomNav: React.FC = () => {
   const navigate = useNavigate();
@@ -59,11 +76,11 @@ const MobileBottomNav: React.FC = () => {
   return (
     <Slide direction="up" in={show} mountOnEnter unmountOnExit>
       <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1201, display: { xs: 'block', md: 'none' } }} elevation={8}>
-        <BottomNavigation value={activeIndex} onChange={handleChange} showLabels>
+        <BottomNavigation value={activeIndex} onChange={handleChange} showLabels sx={{ overflowX: 'auto', width: '100%' }}>
           {navItems.map((item, idx) => (
-            <BottomNavigationAction
+            <StyledBottomNavigationAction
               key={item.label}
-              label={item.label}
+              label={window.innerWidth < 400 ? '' : item.label}
               icon={
                 item.label === 'Облік часу' && pendingCount > 0 ? (
                   <Badge badgeContent={pendingCount} color="error">
