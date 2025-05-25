@@ -13,18 +13,6 @@ import { getPendingTimeEntries } from '../../services/timeTracking';
 import { styled } from '@mui/material/styles';
 import { useTranslation } from 'react-i18next';
 
-const { t } = useTranslation();
-
-const navItems = [
-  { label: t('nav.timeTracking'), icon: <TimerIcon />, path: '/' },
-  { label: t('workTypes.title'), icon: <WorkIcon />, path: '/work-types' },
-  { label: t('locations.title'), icon: <LocationOnIcon />, path: '/locations' },
-  { label: t('nav.teams'), icon: <GroupIcon />, path: '/teams' },
-  { label: t('reports.title'), icon: <AssessmentIcon />, path: '/reports' },
-  { label: t('nav.profile', 'Profile'), icon: <PersonIcon />, path: '/profile' },
-  { label: t('language', 'Language'), icon: <LanguageIcon />, path: '/language' },
-];
-
 const StyledBottomNavigationAction = styled(BottomNavigationAction)(({ theme }) => ({
   '&.Mui-selected': {
     color: '#43a047', // зелений
@@ -67,6 +55,17 @@ const MobileBottomNav: React.FC = () => {
   const [pendingCount, setPendingCount] = useState(0);
   const [show, setShow] = useState(true);
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
+  const { t } = useTranslation();
+
+  const navItems = [
+    { label: t('nav.timeTracking'), icon: <TimerIcon />, path: '/' },
+    { label: t('workTypes.title'), icon: <WorkIcon />, path: '/work-types' },
+    { label: t('locations.title'), icon: <LocationOnIcon />, path: '/locations' },
+    { label: t('nav.teams'), icon: <GroupIcon />, path: '/teams' },
+    { label: t('reports.title'), icon: <AssessmentIcon />, path: '/reports' },
+    { label: t('nav.profile', 'Profile'), icon: <PersonIcon />, path: '/profile' },
+    { label: t('language', 'Language'), icon: <LanguageIcon />, path: '/language' },
+  ];
 
   useEffect(() => {
     const handleScroll = () => {
