@@ -37,6 +37,7 @@ export const TeamMembers: React.FC<TeamMembersProps> = (props) => {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [pendingCounts, setPendingCounts] = useState<{ [userId: string]: number }>({});
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (!teamId || !auth.currentUser) return;
@@ -139,11 +140,11 @@ export const TeamMembers: React.FC<TeamMembersProps> = (props) => {
     }
   };
 
-  if (loading) return <div>Завантаження...</div>;
+  if (loading) return <div>{t('common.loading')}</div>;
 
   return (
     <div className="team-members">
-      <h2>Учасники команди</h2>
+      <h2>{t('teams.title')}</h2>
       
       {error && <div className="error-message">{error}</div>}
       {successMessage && <div className="success-message">{successMessage}</div>}
@@ -153,12 +154,12 @@ export const TeamMembers: React.FC<TeamMembersProps> = (props) => {
           <div key={member.id} className="member-item">
             <div className="member-info">
               <div className="member-role">
-                {member.role === 'admin' ? 'Адміністратор' : 'Учасник'}
+                {member.role === 'admin' ? t('teams.roles.admin') : t('teams.roles.member')}
               </div>
               <div className="member-name">{member.displayName || member.name}</div>
               <div className="member-email">{member.email}</div>
               <div className="member-pending">
-                Відкладені записи: {pendingCounts[member.userId] ?? 0}
+                {t('teams.pendingEntries', 'Відкладені записи')}: {pendingCounts[member.userId] ?? 0}
               </div>
             </div>
             
@@ -168,13 +169,13 @@ export const TeamMembers: React.FC<TeamMembersProps> = (props) => {
                   onClick={() => handleRoleToggle(member.userId, member.role)}
                   className={member.role === 'admin' ? 'button-warning' : 'button-success'}
                 >
-                  {member.role === 'admin' ? 'Зняти права адміністратора' : 'Надати права адміністратора'}
+                  {member.role === 'admin' ? t('teams.removeAdmin', 'Зняти права адміністратора') : t('teams.makeAdmin', 'Надати права адміністратора')}
                 </button>
                 <button
                   onClick={() => handleRemoveMember(member.userId)}
                   className="button-danger"
                 >
-                  Видалити
+                  {t('common.delete')}
                 </button>
               </div>
             )}
@@ -188,11 +189,11 @@ export const TeamMembers: React.FC<TeamMembersProps> = (props) => {
             type="email"
             value={newMemberEmail}
             onChange={(e) => setNewMemberEmail(e.target.value)}
-            placeholder="Email учасника"
+            placeholder={t('teams.inviteEmail')}
             className="email-input"
           />
           <button onClick={handleInvite} className="button-primary">
-            Запросити
+            {t('teams.addMember')}
           </button>
         </div>
       )}

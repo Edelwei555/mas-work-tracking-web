@@ -200,6 +200,9 @@
       "admin": "Admin",
       "member": "Member"
     },
-    "addMember": "Add member"
+    "addMember": "Invite",
+    "pendingEntries": "Pending entries",
+    "removeAdmin": "Remove admin rights",
+    "makeAdmin": "Grant admin rights"
   }
 } 
