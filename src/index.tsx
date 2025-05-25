@@ -9,6 +9,8 @@ import { store, persistor } from './store/store';
 import { TimerProvider } from './contexts/TimerContext';
 import { AuthProvider } from './contexts/AuthContext';
 import './i18n';
+import 'react-app-polyfill/ie11';
+import 'react-app-polyfill/stable';
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
