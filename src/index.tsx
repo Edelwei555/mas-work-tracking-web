@@ -12,6 +12,9 @@ import './i18n';
 import 'react-app-polyfill/ie11';
 import 'react-app-polyfill/stable';
 
+document.body.innerHTML = '<div style="color:red;font-size:24px;">React index loaded</div>' + document.body.innerHTML;
+console.log('React index loaded');
+
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
