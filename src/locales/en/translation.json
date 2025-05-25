@@ -111,7 +111,9 @@
     "pendingTitle": "Pending entries",
     "end": "End",
     "duration": "Duration",
-    "enterWorkAmount": "Enter amount"
+    "enterWorkAmount": "Enter amount",
+    "enterWorkAmountTitle": "Enter the amount of work done",
+    "postpone": "Count later"
   },
   "reports": {
     "title": "Reports",

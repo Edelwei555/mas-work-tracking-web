@@ -11,15 +11,18 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getPendingTimeEntries } from '../../services/timeTracking';
 import { styled } from '@mui/material/styles';
+import { useTranslation } from 'react-i18next';
+
+const { t } = useTranslation();
 
 const navItems = [
-  { label: 'Облік часу', icon: <TimerIcon />, path: '/' },
-  { label: 'Види робіт', icon: <WorkIcon />, path: '/work-types' },
-  { label: 'Локації', icon: <LocationOnIcon />, path: '/locations' },
-  { label: 'Команди', icon: <GroupIcon />, path: '/teams' },
-  { label: 'Звіти', icon: <AssessmentIcon />, path: '/reports' },
-  { label: 'Профіль', icon: <PersonIcon />, path: '/profile' },
-  { label: 'Мова', icon: <LanguageIcon />, path: '/language' },
+  { label: t('nav.timeTracking'), icon: <TimerIcon />, path: '/' },
+  { label: t('workTypes.title'), icon: <WorkIcon />, path: '/work-types' },
+  { label: t('locations.title'), icon: <LocationOnIcon />, path: '/locations' },
+  { label: t('nav.teams'), icon: <GroupIcon />, path: '/teams' },
+  { label: t('reports.title'), icon: <AssessmentIcon />, path: '/reports' },
+  { label: t('nav.profile', 'Profile'), icon: <PersonIcon />, path: '/profile' },
+  { label: t('language', 'Language'), icon: <LanguageIcon />, path: '/language' },
 ];
 
 const StyledBottomNavigationAction = styled(BottomNavigationAction)(({ theme }) => ({
@@ -29,12 +32,31 @@ const StyledBottomNavigationAction = styled(BottomNavigationAction)(({ theme }) 
   minWidth: 0,
   maxWidth: 80,
   padding: '0 2px',
-  fontSize: 10,
+  fontSize: 12,
   [theme.breakpoints.down('sm')]: {
-    fontSize: 9,
+    fontSize: 11,
     minWidth: 0,
     maxWidth: 60,
     padding: '0 1px',
+  },
+  '& .MuiBottomNavigationAction-label': {
+    fontSize: 13,
+    [theme.breakpoints.down('sm')]: {
+      fontSize: 12,
+    },
+  },
+  '& .MuiSvgIcon-root': {
+    fontSize: 32,
+    [theme.breakpoints.down('sm')]: {
+      fontSize: 28,
+    },
+  },
+  '& .MuiBadge-badge': {
+    fontSize: 14,
+    minWidth: 22,
+    height: 22,
+    top: 2,
+    right: -8,
   },
 }));
 
@@ -82,7 +104,7 @@ const MobileBottomNav: React.FC = () => {
   return (
     <>
       <Slide direction="up" in={show} mountOnEnter unmountOnExit>
-        <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1201, display: { xs: 'block', md: 'none' } }} elevation={8}>
+        <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1201, display: { xs: 'block', md: 'none' }, height: 90 }} elevation={8}>
           <BottomNavigation value={activeIndex} onChange={handleChange} showLabels sx={{ overflowX: 'auto', width: '100%' }}>
             {navItems.map((item, idx) => (
               <StyledBottomNavigationAction

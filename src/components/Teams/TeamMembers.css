@@ -115,4 +115,25 @@
   margin: 0.5rem 0;
   background-color: #e8f5e9;
   border-radius: 4px;
+}
+
+@media (max-width: 600px) {
+  .member-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .member-actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+  }
+  .members-list {
+    max-width: 100vw;
+    overflow-x: auto;
+  }
+  .invite-form {
+    flex-direction: column;
+    gap: 8px;
+  }
 } 

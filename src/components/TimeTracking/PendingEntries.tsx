@@ -143,7 +143,7 @@ const PendingEntries: React.FC<PendingEntriesProps> = ({ onUpdate }) => {
       <Typography variant="h6" gutterBottom>
         {t('timeTracking.pendingTitle', 'Pending entries')}
       </Typography>
-      <TableContainer component={Paper}>
+      <TableContainer component={Paper} sx={{ maxWidth: '100vw', overflowX: 'auto' }}>
         <Table>
           <TableHead>
             <TableRow>
