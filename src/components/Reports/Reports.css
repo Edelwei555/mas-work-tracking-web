@@ -79,6 +79,14 @@
   margin-right: 8px;
 }
 
+.checkbox-item span {
+  display: block;
+  text-align: left;
+  font-weight: 600;
+  margin-left: 0;
+  white-space: pre-line;
+}
+
 .report-results {
   overflow-x: auto;
 }

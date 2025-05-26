@@ -286,7 +286,7 @@ const Reports: React.FC = () => {
                     checked={filters.userIds.includes(member.id)}
                     onChange={() => handleCheckboxChange('userIds', member.id)}
                   />
-                  {member.displayName || member.email}
+                  <span>{member.displayName || member.email}</span>
                 </label>
               ))}
             </div>
@@ -336,7 +336,7 @@ const Reports: React.FC = () => {
                     checked={filters.workTypeIds.includes(workType.id!)}
                     onChange={() => handleCheckboxChange('workTypeIds', workType.id!)}
                   />
-                  {workType.name}
+                  <span>{workType.name}</span>
                 </label>
               ))}
             </div>
