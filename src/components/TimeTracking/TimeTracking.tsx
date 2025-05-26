@@ -281,46 +281,49 @@ const TimeTracking: React.FC = () => {
         </Alert>
       </Snackbar>
       
-      <Stack spacing={2} sx={{ width: '100%', maxWidth: 400 }}>
-        <FormControl fullWidth>
-          <InputLabel>{t('workTypes.namePlaceholder')}</InputLabel>
-          <Select
-            value={selectedWorkType}
-            onChange={(e) => setSelectedWorkType(e.target.value)}
-            label={t('workTypes.namePlaceholder')}
-          >
-            {workTypes.map((type) => (
-              <MenuItem key={type.id} value={type.id}>
-                {type.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+      {/* Селекти тільки якщо таймер неактивний */}
+      {!currentEntry && (
+        <Stack spacing={2} sx={{ width: '100%', maxWidth: 400 }}>
+          <FormControl fullWidth>
+            <InputLabel>{t('workTypes.namePlaceholder')}</InputLabel>
+            <Select
+              value={selectedWorkType}
+              onChange={(e) => setSelectedWorkType(e.target.value)}
+              label={t('workTypes.namePlaceholder')}
+            >
+              {workTypes.map((type) => (
+                <MenuItem key={type.id} value={type.id}>
+                  {type.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
-        <FormControl fullWidth>
-          <InputLabel>{t('locations.namePlaceholder')}</InputLabel>
-          <Select
-            value={selectedLocation}
-            onChange={(e) => setSelectedLocation(e.target.value)}
-            label={t('locations.namePlaceholder')}
-          >
-            {locations.map((location) => (
-              <MenuItem key={location.id} value={location.id}>
-                {location.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Stack>
+          <FormControl fullWidth>
+            <InputLabel>{t('locations.namePlaceholder')}</InputLabel>
+            <Select
+              value={selectedLocation}
+              onChange={(e) => setSelectedLocation(e.target.value)}
+              label={t('locations.namePlaceholder')}
+            >
+              {locations.map((location) => (
+                <MenuItem key={location.id} value={location.id}>
+                  {location.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Stack>
+      )}
 
       {/* Відображення актуального виду роботи та локації під час роботи таймера */}
       {currentEntry && (
         <Stack spacing={1} sx={{ width: '100%', maxWidth: 400, mb: 1 }}>
-          <Typography variant="subtitle1" align="center">
-            {t('workTypes.title')}: {workTypes.find(w => w.id === currentEntry.workTypeId)?.name || currentEntry.workTypeId}
+          <Typography variant="subtitle1" align="center" sx={{ color: '#388e3c', fontWeight: 600, fontSize: 22 }}>
+            {t('workTypes.title')}: <span style={{ color: '#222', fontWeight: 500 }}>{workTypes.find(w => w.id === currentEntry.workTypeId)?.name || currentEntry.workTypeId}</span>
           </Typography>
-          <Typography variant="subtitle1" align="center">
-            {t('locations.title')}: {locations.find(l => l.id === currentEntry.locationId)?.name || currentEntry.locationId}
+          <Typography variant="subtitle1" align="center" sx={{ color: '#388e3c', fontWeight: 600, fontSize: 22 }}>
+            {t('locations.title')}: <span style={{ color: '#222', fontWeight: 500 }}>{locations.find(l => l.id === currentEntry.locationId)?.name || currentEntry.locationId}</span>
           </Typography>
         </Stack>
       )}
