@@ -384,7 +384,6 @@ const Reports: React.FC = () => {
           {isAdmin && (
             <button
               className="btn-danger"
-              style={{ marginLeft: 16 }}
               onClick={() => setShowClearDialog(true)}
             >
               {t('reports.clearAll', 'Очистити всі записи')}
