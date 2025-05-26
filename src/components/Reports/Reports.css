@@ -57,14 +57,18 @@
   overflow-y: auto;
   padding: 5px;
   text-align: left;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .checkbox-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   padding: 5px;
   cursor: pointer;
   user-select: none;
+  text-align: left;
 }
 
 .checkbox-item:hover {
