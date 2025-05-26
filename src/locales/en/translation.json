@@ -70,6 +70,7 @@
   "workTypes": {
     "title": "Work Types",
     "name": "Name",
+    "single": "Work type",
     "add": "Add work type",
     "edit": "Edit work type",
     "delete": "Delete work type",
@@ -82,6 +83,7 @@
   "locations": {
     "title": "Locations",
     "name": "Name",
+    "single": "Location",
     "address": "Address",
     "add": "Add location",
     "edit": "Edit location",
