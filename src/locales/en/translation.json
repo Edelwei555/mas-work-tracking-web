@@ -156,7 +156,10 @@
     "noData": "No data to display",
     "exportSuccess": "Report exported successfully",
     "exportError": "Error exporting report",
-    "error": "Error generating report"
+    "error": "Error generating report",
+    "clearAll": "Clear all records",
+    "clearAllConfirmTitle": "Clear all records?",
+    "clearAllConfirmText": "Are you sure you want to clear all history records?"
   },
   "common": {
     "loading": "Loading...",

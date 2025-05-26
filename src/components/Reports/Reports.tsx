@@ -374,7 +374,7 @@ const Reports: React.FC = () => {
           </div>
         </div>
 
-        <div className="form-group">
+        <div className="form-group form-buttons">
           <button 
             className="btn-primary"
             onClick={handleGenerateReport}
@@ -387,7 +387,7 @@ const Reports: React.FC = () => {
               style={{ marginLeft: 16 }}
               onClick={() => setShowClearDialog(true)}
             >
-              Очистити всі записи
+              {t('reports.clearAll', 'Очистити всі записи')}
             </button>
           )}
         </div>
@@ -462,20 +462,20 @@ const Reports: React.FC = () => {
       </div>
 
       <Dialog open={showClearDialog} onClose={() => setShowClearDialog(false)}>
-        <DialogTitle>Очистити всі записи?</DialogTitle>
+        <DialogTitle>{t('reports.clearAllConfirmTitle', 'Очистити всі записи?')}</DialogTitle>
         <DialogContent>
-          Ви впевнені, що хочете очистити всю історію записів?
+          {t('reports.clearAllConfirmText', 'Ви впевнені, що хочете очистити всю історію записів?')}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShowClearDialog(false)} color="primary">
-            Відмінити
+            {t('common.cancel')}
           </Button>
           <Button onClick={async () => {
             await deleteAllTeamTimeEntries(teamId);
             setShowClearDialog(false);
             handleGenerateReport();
           }} color="error">
-            Так
+            {t('common.yes', 'Так')}
           </Button>
         </DialogActions>
       </Dialog>
