@@ -284,4 +284,15 @@ export const cleanUserPendingEntries = async (userId: string): Promise<void> => 
   for (const docSnap of snapshot.docs) {
     await deleteDoc(docSnap.ref);
   }
+};
+
+export const deleteAllTeamTimeEntries = async (teamId: string): Promise<void> => {
+  const q = query(
+    collection(db, 'timeEntries'),
+    where('teamId', '==', teamId)
+  );
+  const snapshot = await getDocs(q);
+  for (const docSnap of snapshot.docs) {
+    await deleteDoc(docSnap.ref);
+  }
 }; 

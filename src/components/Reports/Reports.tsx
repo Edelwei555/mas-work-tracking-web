@@ -4,10 +4,17 @@ import { useAuth } from '../../contexts/AuthContext';
 import { WorkType, getTeamWorkTypes } from '../../services/workTypes';
 import { Location, getTeamLocations } from '../../services/locations';
 import { TimeEntry } from '../../types';
-import { getTeamTimeEntries } from '../../services/timeTracking';
+import { getTeamTimeEntries, deleteAllTeamTimeEntries } from '../../services/timeTracking';
 import { getUserTeams, getTeamMembers, User } from '../../services/teams';
 import { exportToExcel, exportToPDF, exportToCSV } from '../../services/export';
 import './Reports.css';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../../firebase';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Button from '@mui/material/Button';
 
 interface ReportFilters {
   startDate: Date;
@@ -35,6 +42,8 @@ const Reports: React.FC = () => {
     workTypeIds: [],
     userIds: []
   });
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showClearDialog, setShowClearDialog] = useState(false);
 
   // Завантаження команди користувача
   useEffect(() => {
@@ -107,6 +116,28 @@ const Reports: React.FC = () => {
 
     fetchData();
   }, [currentUser, teamId, t]);
+
+  // Перевірка чи користувач адміністратор
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (!currentUser || !teamId) return;
+      try {
+        const q = query(
+          collection(db, 'teamMembers'),
+          where('teamId', '==', teamId),
+          where('userId', '==', currentUser.uid)
+        );
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
+          const role = snapshot.docs[0].data().role;
+          setIsAdmin(role === 'admin');
+        }
+      } catch (e) {
+        setIsAdmin(false);
+      }
+    };
+    checkAdmin();
+  }, [currentUser, teamId]);
 
   const handleGenerateReport = async () => {
     if (!teamId) return;
@@ -350,6 +381,15 @@ const Reports: React.FC = () => {
           >
             {t('reports.generate')}
           </button>
+          {isAdmin && (
+            <button
+              className="btn-danger"
+              style={{ marginLeft: 16 }}
+              onClick={() => setShowClearDialog(true)}
+            >
+              Очистити всі записи
+            </button>
+          )}
         </div>
       </div>
 
@@ -420,6 +460,25 @@ const Reports: React.FC = () => {
           {t('reports.exportOptions.csv')}
         </button>
       </div>
+
+      <Dialog open={showClearDialog} onClose={() => setShowClearDialog(false)}>
+        <DialogTitle>Очистити всі записи?</DialogTitle>
+        <DialogContent>
+          Ви впевнені, що хочете очистити всю історію записів?
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowClearDialog(false)} color="primary">
+            Відмінити
+          </Button>
+          <Button onClick={async () => {
+            await deleteAllTeamTimeEntries(teamId);
+            setShowClearDialog(false);
+            handleGenerateReport();
+          }} color="error">
+            Так
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 };
