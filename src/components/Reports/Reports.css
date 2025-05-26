@@ -148,6 +148,13 @@ th {
   font-style: italic;
 }
 
+.report-filters {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
 @media (max-width: 768px) {
   .reports {
     padding: 1rem;
@@ -155,6 +162,7 @@ th {
 
   .report-filters {
     grid-template-columns: 1fr;
+    gap: 10px;
   }
 
   .form-buttons {

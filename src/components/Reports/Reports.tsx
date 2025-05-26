@@ -266,78 +266,80 @@ const Reports: React.FC = () => {
           </div>
         </div>
 
-        <div className="form-group filter-group">
-          <label>
-            {t('reports.columns.worker')}
-            <button 
-              type="button" 
-              className="select-all-btn"
-              onClick={() => handleSelectAll('userIds')}
-            >
-              {filters.userIds.length === teamMembers.length ? t('common.deselectAll') : t('common.selectAll')}
-            </button>
-          </label>
-          <div className="checkbox-list">
-            {teamMembers.map(member => (
-              <label key={member.id} className="checkbox-item">
-                <input
-                  type="checkbox"
-                  checked={filters.userIds.includes(member.id)}
-                  onChange={() => handleCheckboxChange('userIds', member.id)}
-                />
-                {member.displayName || member.email}
-              </label>
-            ))}
+        <div className="report-filters">
+          <div className="form-group filter-group">
+            <label>
+              {t('reports.columns.worker')}
+              <button 
+                type="button" 
+                className="select-all-btn"
+                onClick={() => handleSelectAll('userIds')}
+              >
+                {filters.userIds.length === teamMembers.length ? t('common.deselectAll') : t('common.selectAll')}
+              </button>
+            </label>
+            <div className="checkbox-list">
+              {teamMembers.map(member => (
+                <label key={member.id} className="checkbox-item">
+                  <input
+                    type="checkbox"
+                    checked={filters.userIds.includes(member.id)}
+                    onChange={() => handleCheckboxChange('userIds', member.id)}
+                  />
+                  {member.displayName || member.email}
+                </label>
+              ))}
+            </div>
           </div>
-        </div>
 
-        <div className="form-group filter-group">
-          <label>
-            {t('locations.title')}
-            <button 
-              type="button" 
-              className="select-all-btn"
-              onClick={() => handleSelectAll('locationIds')}
-            >
-              {filters.locationIds.length === locations.length ? t('common.deselectAll') : t('common.selectAll')}
-            </button>
-          </label>
-          <div className="checkbox-list">
-            {locations.map(location => (
-              <label key={location.id} className="checkbox-item">
-                <input
-                  type="checkbox"
-                  checked={filters.locationIds.includes(location.id!)}
-                  onChange={() => handleCheckboxChange('locationIds', location.id!)}
-                />
-                {location.name}
-              </label>
-            ))}
+          <div className="form-group filter-group">
+            <label>
+              {t('locations.title')}
+              <button 
+                type="button" 
+                className="select-all-btn"
+                onClick={() => handleSelectAll('locationIds')}
+              >
+                {filters.locationIds.length === locations.length ? t('common.deselectAll') : t('common.selectAll')}
+              </button>
+            </label>
+            <div className="checkbox-list">
+              {locations.map(location => (
+                <label key={location.id} className="checkbox-item">
+                  <input
+                    type="checkbox"
+                    checked={filters.locationIds.includes(location.id!)}
+                    onChange={() => handleCheckboxChange('locationIds', location.id!)}
+                  />
+                  {location.name}
+                </label>
+              ))}
+            </div>
           </div>
-        </div>
 
-        <div className="form-group filter-group">
-          <label>
-            {t('workTypes.title')}
-            <button 
-              type="button" 
-              className="select-all-btn"
-              onClick={() => handleSelectAll('workTypeIds')}
-            >
-              {filters.workTypeIds.length === workTypes.length ? t('common.deselectAll') : t('common.selectAll')}
-            </button>
-          </label>
-          <div className="checkbox-list">
-            {workTypes.map(workType => (
-              <label key={workType.id} className="checkbox-item">
-                <input
-                  type="checkbox"
-                  checked={filters.workTypeIds.includes(workType.id!)}
-                  onChange={() => handleCheckboxChange('workTypeIds', workType.id!)}
-                />
-                {workType.name}
-              </label>
-            ))}
+          <div className="form-group filter-group">
+            <label>
+              {t('workTypes.title')}
+              <button 
+                type="button" 
+                className="select-all-btn"
+                onClick={() => handleSelectAll('workTypeIds')}
+              >
+                {filters.workTypeIds.length === workTypes.length ? t('common.deselectAll') : t('common.selectAll')}
+              </button>
+            </label>
+            <div className="checkbox-list">
+              {workTypes.map(workType => (
+                <label key={workType.id} className="checkbox-item">
+                  <input
+                    type="checkbox"
+                    checked={filters.workTypeIds.includes(workType.id!)}
+                    onChange={() => handleCheckboxChange('workTypeIds', workType.id!)}
+                  />
+                  {workType.name}
+                </label>
+              ))}
+            </div>
           </div>
         </div>
 
