@@ -118,6 +118,15 @@ th {
   gap: 10px;
 }
 
+.btn-primary,
+.btn-danger {
+  min-width: 180px;
+  max-width: 100%;
+  font-size: 18px;
+  height: 48px;
+  box-sizing: border-box;
+}
+
 .btn-primary {
   background-color: #007bff;
   color: white;
@@ -212,7 +221,15 @@ th {
   }
 
   .btn-primary,
-  .btn-secondary {
+  .btn-danger {
     width: 100%;
+    min-width: unset;
+    margin-bottom: 12px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
   }
 } 
