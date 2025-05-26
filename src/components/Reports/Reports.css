@@ -31,10 +31,12 @@
 
 .filter-group label {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   margin-bottom: 10px;
   font-weight: bold;
+  gap: 12px;
+  text-align: left;
 }
 
 .select-all-btn {
@@ -54,6 +56,7 @@
   max-height: 200px;
   overflow-y: auto;
   padding: 5px;
+  text-align: left;
 }
 
 .checkbox-item {
@@ -153,6 +156,10 @@ th {
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
   margin-bottom: 20px;
+}
+
+.form-group.filter-group {
+  align-items: flex-start;
 }
 
 @media (max-width: 768px) {
