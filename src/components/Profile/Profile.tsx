@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { updateProfile, updatePassword } from 'firebase/auth';
-import { TextField, Button, Paper, Typography, Box, Alert } from '@mui/material';
+import { TextField, Button, Paper, Typography, Box, Alert, useTheme, useMediaQuery } from '@mui/material';
 import { updateTeamMemberDisplayName } from '../../services/teamMembers';
 import './Profile.css';
 
 const Profile: React.FC = () => {
   const { t } = useTranslation();
-  const { currentUser } = useAuth();
+  const { currentUser, signOut } = useAuth();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [displayName, setDisplayName] = useState(currentUser?.displayName || '');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -107,8 +109,19 @@ const Profile: React.FC = () => {
           disabled={loading}
           fullWidth
         >
-          {t('profile.save')}
+          {t('common.save')}
         </Button>
+        {isMobile && (
+          <Button
+            variant="outlined"
+            color="secondary"
+            fullWidth
+            style={{ marginTop: 16 }}
+            onClick={signOut}
+          >
+            {t('nav.logout')}
+          </Button>
+        )}
       </form>
     </Paper>
   );
