@@ -313,6 +313,17 @@ const TimeTracking: React.FC = () => {
         </FormControl>
       </Stack>
 
+      {/* Відображення актуального виду роботи та локації під час роботи таймера */}
+      {currentEntry && (
+        <Stack spacing={1} sx={{ width: '100%', maxWidth: 400, mb: 1 }}>
+          <Typography variant="subtitle1" align="center">
+            {t('workTypes.title')}: {workTypes.find(w => w.id === currentEntry.workTypeId)?.name || currentEntry.workTypeId}
+          </Typography>
+          <Typography variant="subtitle1" align="center">
+            {t('locations.title')}: {locations.find(l => l.id === currentEntry.locationId)?.name || currentEntry.locationId}
+          </Typography>
+        </Stack>
+      )}
       <Typography variant="h2">{formatTime(elapsedTime)}</Typography>
       
       <Stack direction="row" spacing={2}>
