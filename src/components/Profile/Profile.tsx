@@ -114,7 +114,7 @@ const Profile: React.FC = () => {
         {isMobile && (
           <Button
             variant="outlined"
-            color="secondary"
+            color="error"
             fullWidth
             style={{ marginTop: 16 }}
             onClick={signOut}
