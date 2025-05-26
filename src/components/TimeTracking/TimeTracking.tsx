@@ -320,10 +320,10 @@ const TimeTracking: React.FC = () => {
       {currentEntry && (
         <Stack spacing={1} sx={{ width: '100%', maxWidth: 400, mb: 1 }}>
           <Typography variant="subtitle1" align="center" sx={{ color: '#388e3c', fontWeight: 600, fontSize: 22 }}>
-            {t('workTypes.name')}: <span style={{ color: '#222', fontWeight: 500 }}>{workTypes.find(w => w.id === currentEntry.workTypeId)?.name || currentEntry.workTypeId}</span>
+            Вид роботи: <span style={{ color: '#222', fontWeight: 500 }}>{workTypes.find(w => w.id === currentEntry.workTypeId)?.name || currentEntry.workTypeId}</span>
           </Typography>
           <Typography variant="subtitle1" align="center" sx={{ color: '#388e3c', fontWeight: 600, fontSize: 22 }}>
-            {t('locations.name')}: <span style={{ color: '#222', fontWeight: 500 }}>{locations.find(l => l.id === currentEntry.locationId)?.name || currentEntry.locationId}</span>
+            Локація: <span style={{ color: '#222', fontWeight: 500 }}>{locations.find(l => l.id === currentEntry.locationId)?.name || currentEntry.locationId}</span>
           </Typography>
         </Stack>
       )}
