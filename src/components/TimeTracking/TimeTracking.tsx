@@ -23,6 +23,12 @@ import { getTeamWorkTypes, WorkType } from '../../services/workTypes';
 import { getTeamLocations, Location } from '../../services/locations';
 import PendingEntries from './PendingEntries';
 import { useTranslation } from 'react-i18next';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import { deleteDoc, doc } from 'firebase/firestore';
+import { db } from '../../firebase';
 
 const TimeTracking: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -38,6 +44,7 @@ const TimeTracking: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showError, setShowError] = useState(false);
   const { t } = useTranslation();
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -257,6 +264,21 @@ const TimeTracking: React.FC = () => {
 
   const isStartDisabled = !teamId || !selectedWorkType || !selectedLocation;
 
+  const handleCancel = async () => {
+    try {
+      if (currentEntry && currentEntry.id) {
+        await deleteDoc(doc(db, 'timeEntries', currentEntry.id));
+        setSelectedWorkType('');
+        setSelectedLocation('');
+        dispatch(resetTimer());
+        setShowCancelDialog(false);
+      }
+    } catch (err) {
+      setError('Помилка при скасуванні запису');
+      setShowError(true);
+    }
+  };
+
   if (loading) {
     return (
       <Stack spacing={2} alignItems="center" sx={{ p: 4 }}>
@@ -342,13 +364,17 @@ const TimeTracking: React.FC = () => {
         )}
         
         {currentEntry && currentEntry.isRunning && (
-          <Button 
-            variant="contained" 
-            color="warning" 
-            onClick={handlePause}
-          >
-            {t('timeTracking.pause')}
-          </Button>
+          <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+            <Button variant="outlined" color="secondary" onClick={() => setShowCancelDialog(true)}>
+              {t('timeTracking.cancel', 'Відмінити')}
+            </Button>
+            <Button variant="contained" color="warning" onClick={handlePause}>
+              {t('timeTracking.pause', 'Пауза')}
+            </Button>
+            <Button variant="contained" color="error" onClick={handleStop}>
+              {t('timeTracking.stop', 'Зупинити')}
+            </Button>
+          </Stack>
         )}
         
         {currentEntry && !currentEntry.isRunning && (
@@ -358,16 +384,6 @@ const TimeTracking: React.FC = () => {
             onClick={handleResume}
           >
             {t('timeTracking.resume')}
-          </Button>
-        )}
-        
-        {currentEntry && (
-          <Button 
-            variant="contained" 
-            color="error" 
-            onClick={handleStop}
-          >
-            {t('timeTracking.stop')}
           </Button>
         )}
       </Stack>
@@ -383,6 +399,17 @@ const TimeTracking: React.FC = () => {
         onSave={handleSave}
         onPostpone={handlePostpone}
       />
+
+      <Dialog open={showCancelDialog} onClose={() => setShowCancelDialog(false)}>
+        <DialogTitle>{t('timeTracking.confirmCancelTitle', 'Відмінити запис таймера?')}</DialogTitle>
+        <DialogContent>
+          {t('timeTracking.confirmCancelText', 'Чи дійсно ви хочете відмінити запис таймера? Увесь відрахований час обнулиться, а запис видалиться?')}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancel} color="error">{t('common.yes', 'Так')}</Button>
+          <Button onClick={() => setShowCancelDialog(false)} color="primary">{t('timeTracking.continue', 'Продовжити запис')}</Button>
+        </DialogActions>
+      </Dialog>
     </Stack>
   );
 };
