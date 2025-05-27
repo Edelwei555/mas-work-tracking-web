@@ -180,7 +180,8 @@
     "select": "Select...",
     "all": "All",
     "selectAll": "Select all",
-    "deselectAll": "Deselect all"
+    "deselectAll": "Deselect all",
+    "yes": "Yes"
   },
   "teams": {
     "title": "Teams",
