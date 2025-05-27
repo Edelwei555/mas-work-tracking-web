@@ -117,7 +117,7 @@ const MobileBottomNav: React.FC = () => {
                 key={item.label}
                 label={item.label}
                 icon={
-                  item.label === 'Облік часу' && pendingCount > 0 ? (
+                  item.path === '/' && pendingCount > 0 ? (
                     <Badge badgeContent={pendingCount} color="error">
                       {item.icon}
                     </Badge>

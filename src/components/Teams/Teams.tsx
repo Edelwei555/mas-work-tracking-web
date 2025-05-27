@@ -153,41 +153,39 @@ const Teams: React.FC = () => {
       ))}
 
       {/* Форма додавання/редагування команди */}
-      {(teams.length === 0 || isEditing) && (
-        <form onSubmit={handleSubmit} className="team-form">
-          <div className="form-group">
-            <label htmlFor="name">{t('teams.name')}</label>
-            <input
-              type="text"
-              id="name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-            />
-          </div>
+      <form onSubmit={handleSubmit} className="team-form">
+        <div className="form-group">
+          <label htmlFor="name">{t('teams.name')}</label>
+          <input
+            type="text"
+            id="name"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            required
+          />
+        </div>
 
-          <div className="form-group">
-            <label htmlFor="description">{t('teams.description')}</label>
-            <textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              rows={3}
-            />
-          </div>
+        <div className="form-group">
+          <label htmlFor="description">{t('teams.description')}</label>
+          <textarea
+            id="description"
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            rows={3}
+          />
+        </div>
 
-          <div className="form-buttons">
-            <button type="submit" className="btn-primary">
-              {isEditing ? t('common.save') : t('teams.add')}
+        <div className="form-buttons">
+          <button type="submit" className="btn-primary">
+            {isEditing ? t('common.save') : t('teams.add')}
+          </button>
+          {isEditing && (
+            <button type="button" className="btn-secondary" onClick={resetForm}>
+              {t('common.cancel')}
             </button>
-            {isEditing && (
-              <button type="button" className="btn-secondary" onClick={resetForm}>
-                {t('common.cancel')}
-              </button>
-            )}
-          </div>
-        </form>
-      )}
+          )}
+        </div>
+      </form>
     </div>
   );
 };
