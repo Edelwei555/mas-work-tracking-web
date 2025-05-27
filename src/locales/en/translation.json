@@ -115,7 +115,10 @@
     "duration": "Duration",
     "enterWorkAmount": "Enter amount",
     "enterWorkAmountTitle": "Enter the amount of work done",
-    "postpone": "Count later"
+    "postpone": "Count later",
+    "confirmCancelTitle": "Cancel timer entry?",
+    "confirmCancelText": "Are you sure you want to cancel the timer entry? All elapsed time will be reset and the entry will be deleted?",
+    "continue": "Continue entry"
   },
   "reports": {
     "title": "Reports",
